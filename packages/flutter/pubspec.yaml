@@ -1,0 +1,22 @@
+name: echomirror_sdk
+description: EchoMirror SDK for Flutter — mood intelligence, Stellar payments, and social wellness.
+version: 0.1.0
+homepage: https://github.com/Echo-Mirror-Butler/echomirror-sdk
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+  shared_preferences: ^2.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  library: true

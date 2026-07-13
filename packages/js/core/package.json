@@ -1,0 +1,27 @@
+{
+  "name": "@echomirror/core",
+  "version": "0.1.0",
+  "description": "EchoMirror SDK core — API client, auth, and shared TypeScript types",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "keywords": ["echomirror", "wellness", "sdk", "stellar", "mood"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "*",
+    "vitest": "*"
+  }
+}

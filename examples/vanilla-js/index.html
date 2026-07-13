@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EchoMirror SDK — Vanilla JS Example</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 480px; margin: 48px auto; padding: 0 24px; color: #0c1a2e; }
+    h1 { font-size: 1.5rem; margin-bottom: 24px; }
+    button { padding: 10px 20px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+    button:hover { background: #4f46e5; }
+    input[type=range] { width: 100%; margin: 8px 0; }
+    textarea { width: 100%; height: 80px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem; }
+    .result { margin-top: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; color: #166534; }
+    label { font-weight: 500; }
+  </style>
+</head>
+<body>
+  <h1>EchoMirror SDK — Vanilla JS</h1>
+
+  <label for="score">Mood score: <span id="score-value">7</span>/10</label>
+  <input type="range" id="score" min="1" max="10" value="7" />
+
+  <textarea id="note" placeholder="How are you feeling? (optional)"></textarea>
+
+  <button id="log-btn" style="margin-top: 12px; width: 100%">Log Mood</button>
+
+  <div id="result" style="display:none" class="result"></div>
+
+  <script type="module">
+    // In production: import { EchoMirrorClient } from 'https://cdn.jsdelivr.net/npm/@echomirror/core/+esm'
+    // This example uses a mock for demonstration.
+
+    const scoreEl = document.getElementById('score')
+    const scoreValueEl = document.getElementById('score-value')
+    const noteEl = document.getElementById('note')
+    const logBtn = document.getElementById('log-btn')
+    const resultEl = document.getElementById('result')
+
+    scoreEl.addEventListener('input', () => {
+      scoreValueEl.textContent = scoreEl.value
+    })
+
+    logBtn.addEventListener('click', async () => {
+      logBtn.disabled = true
+      logBtn.textContent = 'Logging…'
+
+      // SDK call (replace with real client once API is live)
+      await new Promise(r => setTimeout(r, 600)) // simulate network
+
+      resultEl.style.display = 'block'
+      resultEl.textContent = `Mood logged: ${scoreEl.value}/10 — Great, keep your streak going!`
+      noteEl.value = ''
+      logBtn.disabled = false
+      logBtn.textContent = 'Log Mood'
+    })
+  </script>
+</body>
+</html>
