@@ -1,0 +1,118 @@
+{
+  "name": "echomirror-sdk-vscode",
+  "displayName": "EchoMirror SDK",
+  "description": "EchoMirror SDK developer tools — Stellar address validation, mood log snippets, blockchain sync explorer, and live ECHO balance in the status bar",
+  "version": "0.1.0",
+  "publisher": "EchoMirrorButler",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": ["Other", "Snippets", "Debuggers"],
+  "keywords": ["stellar", "blockchain", "wellness", "echomirror", "web3"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "echomirror.checkBalance",
+        "title": "EchoMirror: Check Stellar Balance"
+      },
+      {
+        "command": "echomirror.validateAddress",
+        "title": "EchoMirror: Validate Stellar Address"
+      },
+      {
+        "command": "echomirror.fundTestnet",
+        "title": "EchoMirror: Fund Testnet Account (Friendbot)"
+      },
+      {
+        "command": "echomirror.openSyncExplorer",
+        "title": "EchoMirror: Open Blockchain Sync Explorer"
+      },
+      {
+        "command": "echomirror.insertMoodLogSnippet",
+        "title": "EchoMirror: Insert Mood Log Code Snippet"
+      }
+    ],
+    "configuration": {
+      "title": "EchoMirror SDK",
+      "properties": {
+        "echomirror.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your EchoMirror API key (echomirror.dev/developers)"
+        },
+        "echomirror.network": {
+          "type": "string",
+          "enum": ["mainnet", "testnet"],
+          "default": "testnet",
+          "description": "Stellar network to connect to"
+        },
+        "echomirror.statusBarPublicKey": {
+          "type": "string",
+          "default": "",
+          "description": "Stellar public key to show live ECHO balance in status bar"
+        },
+        "echomirror.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show live ECHO balance in the VS Code status bar"
+        }
+      }
+    },
+    "snippets": [
+      {
+        "language": "typescript",
+        "path": "./snippets/echomirror.code-snippets"
+      },
+      {
+        "language": "javascript",
+        "path": "./snippets/echomirror.code-snippets"
+      },
+      {
+        "language": "dart",
+        "path": "./snippets/echomirror-dart.code-snippets"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "echomirror",
+          "title": "EchoMirror SDK",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "echomirror": [
+        {
+          "id": "echomirror.syncExplorer",
+          "name": "Blockchain Sync Explorer"
+        },
+        {
+          "id": "echomirror.walletView",
+          "name": "Stellar Wallet"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -watch -p tsconfig.json",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.88.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "@vscode/vsce": "^2.26.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Echo-Mirror-Butler/echomirror-sdk"
+  },
+  "license": "MIT"
+}

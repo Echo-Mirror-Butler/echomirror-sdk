@@ -1,0 +1,17 @@
+[package]
+name = "echomirror-ffi"
+description = "EchoMirror C-ABI FFI bindings — used by Flutter (dart:ffi) and other native integrations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+echomirror-core = { path = "../echomirror-core" }
+echomirror-stellar = { path = "../echomirror-stellar" }
+serde_json.workspace = true
+sha2.workspace = true
+hex.workspace = true
+tokio = { workspace = true, features = ["rt", "rt-multi-thread"] }

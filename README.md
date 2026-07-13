@@ -1,25 +1,22 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Echo-Mirror-Butler/Echo-Mirror-Butler-/development/assets/splash_logo.png" alt="EchoMirror Logo" width="120" height="120" />
-
   <h1>EchoMirror SDK</h1>
-
-  <p><strong>Embed mood intelligence, Stellar micro-payments, and social wellness into any app — in minutes.</strong></p>
+  <p><strong>Mood intelligence · Stellar payments · Blockchain sync — for every platform and language.</strong></p>
 
   <p>
     <a href="https://www.npmjs.com/package/@echomirror/core"><img src="https://img.shields.io/npm/v/@echomirror/core?color=0c1a2e&label=npm&style=flat-square" /></a>
+    <a href="https://crates.io/crates/echomirror-core"><img src="https://img.shields.io/crates/v/echomirror-core?color=ce422b&label=crates.io&style=flat-square" /></a>
     <a href="https://pub.dev/packages/echomirror_sdk"><img src="https://img.shields.io/pub/v/echomirror_sdk?color=0c1a2e&label=pub.dev&style=flat-square" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a>
     <a href="https://github.com/Echo-Mirror-Butler/echomirror-sdk/issues"><img src="https://img.shields.io/github/issues/Echo-Mirror-Butler/echomirror-sdk?style=flat-square" /></a>
-    <a href="https://discord.gg/echomirror"><img src="https://img.shields.io/badge/discord-join-7289da?style=flat-square&logo=discord" /></a>
   </p>
 
   <p>
-    <a href="#packages">Packages</a> •
-    <a href="#quickstart">Quickstart</a> •
-    <a href="#architecture">Architecture</a> •
-    <a href="#examples">Examples</a> •
-    <a href="#contributing">Contributing</a> •
-    <a href="https://docs.echomirror.dev">Docs</a>
+    <a href="#architecture">Architecture</a> ·
+    <a href="#packages">Packages</a> ·
+    <a href="#quickstart">Quickstart</a> ·
+    <a href="#extensions">Extensions</a> ·
+    <a href="#blockchain-sync">Blockchain Sync</a> ·
+    <a href="#contributing">Contributing</a>
   </p>
 </div>
 
@@ -27,60 +24,176 @@
 
 ## What is EchoMirror SDK?
 
-EchoMirror is a social wellness platform — users track their mood, gift XLM tokens to friends, and reflect through an AI-powered mirror. The SDK opens this infrastructure to every developer.
+EchoMirror is a social wellness platform — users log their mood, gift ECHO tokens over Stellar, and reflect through an AI-powered mirror. The SDK opens this infrastructure to every developer, on every platform.
 
-**You get:**
-- A privacy-first mood capture and AI reflection engine
-- Stellar/ECHO token primitives with zero Horizon boilerplate
-- A real-time social wellness feed from the global EchoMirror network
-- Drop-in UI widgets for web and Flutter
-- Aggregated, anonymous wellness analytics for your product
+**Built on Rust.** The performance-critical core — Stellar cryptography, XDR transaction encoding, blockchain sync, and balance verification — is written in Rust and shipped as:
 
-No need to build ML pipelines, manage Stellar accounts, or design journaling UX from scratch. Embed what you need, ship faster.
+- **WebAssembly** for browsers and Node.js (`@echomirror/wasm`)
+- **C-ABI shared library** for Flutter, Swift, Python, and any FFI-capable runtime (`echomirror-ffi`)
+- **Native Rust crates** for server-side Rust backends (`echomirror-core`, `echomirror-stellar`, `echomirror-sync`)
+
+**Language bindings on top.** Idiomatic wrappers in TypeScript (React, Node.js, vanilla JS), Dart/Flutter, Python, and Swift sit on top of the Rust core — so you get native ergonomics without reimplementing crypto in every language.
+
+**Extensions included.** A VS Code extension brings live ECHO balance, Friendbot funding, and the blockchain sync explorer directly into your editor. A Chrome/Firefox extension lets you inject the mood widget and watch Stellar transactions on any site.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        EchoMirror API                           │
+│              (auth · mood · AI reflections · social)            │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │ HTTP/REST
+┌───────────────────────────▼─────────────────────────────────────┐
+│                     Rust Core Layer                             │
+│                                                                 │
+│  echomirror-core   echomirror-stellar   echomirror-sync         │
+│  ─────────────     ────────────────     ────────────────        │
+│  client, types,    Horizon client,      streaming ledger        │
+│  error handling,   balance queries,     sync engine,            │
+│  config, auth      tx building,         resumable cursors,      │
+│                    Friendbot            event broadcast         │
+│                                                                 │
+│  echomirror-wasm           echomirror-ffi                       │
+│  ─────────────────         ──────────────────                   │
+│  → WASM for browser        → C-ABI .so/.dylib/.dll             │
+│    and Node.js               for Flutter, Swift, Python         │
+└────┬──────────────────────────────────┬────────────────────────┘
+     │  wasm-bindgen                    │  dart:ffi / ctypes / swift-ffi
+     ▼                                  ▼
+┌──────────────────┐        ┌────────────────────────────────────┐
+│  JS/TS packages  │        │        Native packages             │
+│                  │        │                                    │
+│  @echomirror/    │        │  echomirror_sdk (Flutter/Dart)     │
+│    core          │        │  echomirror-python                 │
+│    mood          │        │  EchoMirrorSDK (Swift)             │
+│    stellar       │        │                                    │
+│    social        │        └────────────────────────────────────┘
+│    analytics     │
+│    react         │
+│    wasm          │
+│    widget        │
+└────┬─────────────┘
+     │
+     ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                         Extensions                               │
+│                                                                  │
+│  VS Code Extension          Chrome / Firefox Extension           │
+│  ─────────────────          ───────────────────────────          │
+│  • Live ECHO status bar     • Inject mood widget on any site     │
+│  • Friendbot command        • Watch Stellar TXs in background    │
+│  • Sync explorer panel      • Popup balance checker              │
+│  • Mood log snippets        • Desktop notifications on TX        │
+└──────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Packages
 
-This is a monorepo. Each package is independently installable.
+### Rust Crates
+
+| Crate | Description |
+|---|---|
+| [`echomirror-core`](./crates/echomirror-core) | Client, types, config, error handling |
+| [`echomirror-stellar`](./crates/echomirror-stellar) | Horizon client, balance, Friendbot, TX building |
+| [`echomirror-sync`](./crates/echomirror-sync) | Streaming blockchain sync engine with resumable cursors |
+| [`echomirror-ffi`](./crates/echomirror-ffi) | C-ABI bindings for Flutter, Python, Swift |
+| [`echomirror-wasm`](./crates/echomirror-wasm) | WebAssembly build for browser and Node.js |
+
+### JavaScript / TypeScript
 
 | Package | Platform | Description |
 |---|---|---|
-| [`@echomirror/core`](./packages/js/core) | JS/TS | Auth, API client, shared types |
-| [`@echomirror/mood`](./packages/js/mood) | JS/TS | Mood capture, streaks, AI reflections |
-| [`@echomirror/stellar`](./packages/js/stellar) | JS/TS | XLM balance, ECHO token, Freighter, Friendbot |
+| [`@echomirror/core`](./packages/js/core) | JS/TS | API client, auth, shared TypeScript types |
+| [`@echomirror/mood`](./packages/js/mood) | JS/TS | Mood logging, streaks, AI reflections |
+| [`@echomirror/stellar`](./packages/js/stellar) | JS/TS | Freighter wallet, XLM balance, ECHO token |
 | [`@echomirror/social`](./packages/js/social) | JS/TS | Global feed, leaderboard, follows |
-| [`@echomirror/widget`](./packages/js/widget) | React / Web Component | Drop-in mood check-in widget |
-| [`@echomirror/analytics`](./packages/js/analytics) | JS/TS | Emotional UX analytics events |
-| [`@echomirror/react`](./packages/js/react) | React | React hooks + context providers |
-| [`echomirror_sdk`](./packages/flutter) | Flutter/Dart | Full SDK for mobile (iOS + Android) |
+| [`@echomirror/analytics`](./packages/js/analytics) | JS/TS | Emotional UX event tracking |
+| [`@echomirror/react`](./packages/js/react) | React | Hooks, Provider, context |
+| [`@echomirror/widget`](./packages/js/widget) | React + Web Component | Drop-in floating mood widget |
+| [`@echomirror/wasm`](./packages/js/wasm) | Browser + Node.js | Rust WASM — crypto, cursor serialization |
+
+### Native
+
+| Package | Platform | Description |
+|---|---|---|
+| [`echomirror_sdk`](./packages/flutter) | Flutter/Dart | Full SDK — mood, Stellar, social, blockchain sync, FFI |
+| `echomirror-python` *(coming)* | Python | Async client — `pip install echomirror` |
+| `EchoMirrorSDK` *(coming)* | Swift | iOS/macOS SDK via SPM |
+
+### Extensions
+
+| Extension | Description |
+|---|---|
+| [`extensions/vscode`](./extensions/vscode) | VS Code — status bar, Sync Explorer, snippets, Friendbot |
+| [`extensions/chrome`](./extensions/chrome) | Chrome/Edge/Brave — mood widget injection, TX watcher |
+| `extensions/firefox` *(coming)* | Firefox — same as Chrome, MV2/MV3 dual manifest |
 
 ---
 
 ## Quickstart
 
+### Rust (server-side)
+
+```bash
+cargo add echomirror-core echomirror-stellar echomirror-sync
+```
+
+```rust
+use echomirror_core::{EchoMirrorClient, EchoMirrorConfig};
+use echomirror_stellar::{get_balance, fund_testnet_account};
+use echomirror_sync::{SyncEngine, SyncFilter};
+
+#[tokio::main]
+async fn main() {
+    let client = EchoMirrorClient::new(EchoMirrorConfig::testnet("your_api_key")).unwrap();
+    client.set_auth_token(Some("user_jwt".into())).await;
+
+    // Get Stellar balance (queries Horizon directly — no API round-trip)
+    let balance = get_balance(&client, "GPUBLIC_KEY").await.unwrap();
+    println!("{} XLM  •  {} ECHO", balance.xlm, balance.echo);
+
+    // Stream real-time blockchain events
+    let engine = SyncEngine::builder(&client)
+        .watch("GPUBLIC_KEY")
+        .filter(SyncFilter::new().asset("ECHO").min_amount(1.0))
+        .build();
+
+    let mut stream = engine.clone().subscribe();
+    engine.start();
+
+    while let Ok(event) = stream.recv().await {
+        println!("{:?}", event);
+    }
+}
+```
+
 ### JavaScript / TypeScript
 
 ```bash
-npm install @echomirror/core @echomirror/mood
+npm install @echomirror/core @echomirror/mood @echomirror/stellar
 ```
 
 ```ts
 import { EchoMirrorClient } from '@echomirror/core'
 import { logMood, getMoodStreak } from '@echomirror/mood'
+import { connectFreighter, getBalance, sendEcho } from '@echomirror/stellar'
 
-const client = new EchoMirrorClient({ apiKey: 'your_api_key' })
+const client = new EchoMirrorClient({ apiKey: 'your_api_key', network: 'testnet' })
 
-// Log a mood entry
-const entry = await logMood(client, {
-  score: 7,          // 1–10
-  note: 'Shipped something great today.',
-  tags: ['work', 'proud'],
-})
-
-// Get the user's current streak
+// Mood
+const entry = await logMood(client, { score: 8, note: 'Great day', tags: ['work'] })
 const streak = await getMoodStreak(client)
 console.log(`${streak.current} day streak 🔥`)
+
+// Stellar
+const wallet = await connectFreighter()
+const balance = await getBalance(client, wallet.publicKey)
+await sendEcho(client, { from: wallet.publicKey, to: 'GRECIPIENT', amount: 5, memo: '✨' })
 ```
 
 ### React
@@ -90,218 +203,230 @@ npm install @echomirror/react @echomirror/widget
 ```
 
 ```tsx
-import { EchoMirrorProvider } from '@echomirror/react'
+import { EchoMirrorProvider, useMoodStreak } from '@echomirror/react'
 import { MoodWidget } from '@echomirror/widget'
 
-export default function App() {
+function App() {
+  const { streak } = useMoodStreak()
   return (
-    <EchoMirrorProvider apiKey="your_api_key">
-      <YourApp />
-      {/* Floating mood check-in — works on any page */}
+    <div>
+      <p>{streak?.current} day streak 🔥</p>
       <MoodWidget position="bottom-right" theme="auto" />
+    </div>
+  )
+}
+
+export default function Root() {
+  return (
+    <EchoMirrorProvider apiKey="your_api_key" config={{ network: 'testnet' }}>
+      <App />
     </EchoMirrorProvider>
   )
 }
 ```
 
-### Stellar Payments
-
-```bash
-npm install @echomirror/core @echomirror/stellar
-```
-
-```ts
-import { EchoMirrorClient } from '@echomirror/core'
-import { getBalance, sendEcho, connectFreighter } from '@echomirror/stellar'
-
-const client = new EchoMirrorClient({ apiKey: 'your_api_key' })
-
-// Connect user's Freighter wallet (browser)
-const wallet = await connectFreighter()
-
-// Get live XLM + ECHO balance
-const balance = await getBalance(client, wallet.publicKey)
-console.log(`${balance.xlm} XLM  •  ${balance.echo} ECHO`)
-
-// Gift ECHO tokens to a friend
-await sendEcho(client, {
-  from: wallet.publicKey,
-  to: 'GFRIEND_PUBLIC_KEY_HERE',
-  amount: 5,
-  memo: 'Great energy today ✨',
-})
-```
-
 ### Flutter
 
 ```yaml
-# pubspec.yaml
 dependencies:
-  echomirror_sdk: ^1.0.0
+  echomirror_sdk: ^0.1.0
 ```
 
 ```dart
 import 'package:echomirror_sdk/echomirror_sdk.dart';
 
 void main() async {
-  await EchoMirror.initialize(apiKey: 'your_api_key');
-
-  // Log a mood
-  final entry = await EchoMirror.mood.log(
-    score: 8,
-    note: 'Morning walk helped a lot.',
-    tags: ['wellness', 'outdoors'],
+  await EchoMirror.initialize(
+    apiKey: 'your_api_key',
+    network: StellarNetwork.testnet,
   );
-
-  // Get Stellar balance
-  final balance = await EchoMirror.stellar.getBalance(publicKey);
-  print('Balance: ${balance.xlm} XLM');
+  runApp(const MyApp());
 }
+
+// In your widget:
+final balance = await EchoMirror.instance.stellar.getBalance(publicKey);
+final streak  = await EchoMirror.instance.mood.getStreak();
+
+// Blockchain sync — real-time Stellar event stream
+final sync = BlockchainSyncClient(EchoMirror.instance.config);
+sync.watch(publicKey).listen((event) {
+  if (event is LedgerSyncEvent) {
+    print('New ledger: ${event.ledgerSequence}');
+  }
+});
+```
+
+### WebAssembly (browser, no bundler)
+
+```html
+<script type="module">
+  import init, { isValidStellarAddress, hashPublicKey } from '@echomirror/wasm'
+  await init()
+
+  console.log(isValidStellarAddress('GPUBLIC_KEY')) // true
+  console.log(hashPublicKey('GPUBLIC_KEY'))          // sha256 hex
+</script>
 ```
 
 ---
 
-## Architecture
+## Blockchain Sync
 
-```
-echomirror-sdk/
-├── packages/
-│   ├── js/
-│   │   ├── core/          # EchoMirrorClient, auth, API layer, TypeScript types
-│   │   ├── mood/          # Mood logging, streak engine, AI reflections
-│   │   ├── stellar/       # Horizon client, Freighter adapter, ECHO token ops
-│   │   ├── social/        # Global mirror feed, leaderboard, follows
-│   │   ├── widget/        # React + Web Component mood widget
-│   │   ├── analytics/     # Emotional UX event tracking
-│   │   └── react/         # React hooks, providers, context
-│   └── flutter/           # Dart SDK — mirrors JS package structure
-├── examples/
-│   ├── react-app/         # Vite + React example showing all packages
-│   ├── next-app/          # Next.js example with SSR
-│   ├── flutter-app/       # Flutter example app
-│   └── vanilla-js/        # Browser-only, no bundler
-├── docs/                  # Docusaurus docs site
-└── CONTRIBUTING.md
-```
+The `echomirror-sync` Rust crate and `BlockchainSyncClient` in Flutter provide a **resumable, real-time Stellar blockchain sync engine**.
 
-### How it connects to EchoMirror
+### How it works
 
-```
-Your App  →  EchoMirror SDK  →  EchoMirror API  →  Supabase (mood, auth, social)
-                                                 →  Stellar Horizon (XLM, ECHO token)
-                                                 →  AI inference (reflections, insights)
-```
+1. **Start from any ledger** — pass a starting sequence number, or use `SyncCursor::genesis()` to start from the tip
+2. **Resumable cursors** — after each page, the engine saves a `SyncCursor` (ledger sequence + paging token). Restart the engine anytime and it picks up exactly where it left off — no re-scanning
+3. **Filters** — only emit events matching your rules: specific accounts, assets (`ECHO`/`XLM`), minimum amounts, memo prefixes
+4. **Multi-account** — watch up to 100 accounts in a single engine instance
+5. **Event types** — `TransactionDetected`, `LedgerClosed`, `SyncStarted`, `SyncPaused`, `SyncCompleted`, `Error`
 
-The SDK handles auth token refresh, request retries, Stellar account derivation, and WebSocket subscriptions for the real-time social feed. You write product code, not plumbing.
+### Persistence
+
+Implement `CursorStore` to persist cursors in your database:
+
+```rust
+use echomirror_sync::{CursorStore, SyncCursor};
+use async_trait::async_trait;
+
+struct RedisCursorStore { client: redis::Client }
+
+#[async_trait]
+impl CursorStore for RedisCursorStore {
+    async fn load(&self, account: &str) -> Option<SyncCursor> {
+        // load from Redis
+    }
+    async fn save(&self, account: &str, cursor: &SyncCursor) {
+        // save to Redis
+    }
+}
+
+let engine = SyncEngine::builder(&client)
+    .watch("GPUBLIC_KEY")
+    .cursor_store(Arc::new(RedisCursorStore { client }))
+    .build();
+```
 
 ---
 
-## Use Cases
+## Extensions
 
-### For Wellness Apps
-Add a daily mood log + AI reflection to a meditation, fitness, or therapy app. Users get their streak and insights without leaving your experience.
+### VS Code Extension
 
-### For Productivity Tools
-Embed the `<MoodWidget />` in a Notion clone or task manager. Correlate emotional state with task completion in your analytics — know when your users are burning out before they do.
+Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/publishers/EchoMirrorButler) *(coming soon)* or build locally:
 
-### For Social Platforms
-Pull the global EchoMirror feed and show users how the world is feeling right now. Show community leaderboards. Let users gift ECHO tokens to each other as reactions.
+```bash
+cd extensions/vscode
+npm install && npm run build
+code --install-extension echomirror-sdk-vscode-0.1.0.vsix
+```
 
-### For Web3 / DeFi Apps
-Use `@echomirror/stellar` standalone — the cleanest abstraction for Freighter wallet connection, ECHO token operations, and XLM balance queries on Stellar mainnet and testnet.
+**Features:**
+- **Status bar** — live ECHO balance, refreshes every 60s
+- **Sync Explorer** — real-time Stellar transaction stream in a VS Code panel
+- **Friendbot command** — `EchoMirror: Fund Testnet Account` — one click, 10,000 XLM
+- **Address validator** — `EchoMirror: Validate Stellar Address`
+- **Code snippets** — `em-mood`, `em-streak`, `em-balance`, `em-freighter`, `em-send`, `em-sync` for TypeScript and Dart
 
-### For Flutter Mobile Apps
-The `echomirror_sdk` Dart package gives native iOS and Android access to all features — mood, Stellar, social feed — with Riverpod providers included, plug-and-play with any GoRouter setup.
+### Chrome / Firefox Extension
 
-### For Games
-Track player emotional state across sessions. Gift ECHO as in-game rewards. Show a "world mood" overlay on your game's home screen.
+```bash
+cd extensions/chrome
+npm install && npm run build
+# Load extensions/chrome/dist as unpacked extension in chrome://extensions
+```
+
+**Features:**
+- **Popup** — check any account's XLM + ECHO balance on any network
+- **Inject mood widget** — adds the floating `<MoodWidget />` to any website
+- **Background watcher** — monitors an account's Stellar transactions, sends desktop notifications on new TXs
 
 ---
 
-## Examples
+## Build from Source
 
-| Example | Description |
-|---|---|
-| [`examples/react-app`](./examples/react-app) | Full Vite app — all packages wired together |
-| [`examples/next-app`](./examples/next-app) | Server-side rendering with Next.js 14 |
-| [`examples/flutter-app`](./examples/flutter-app) | Mobile app — mood + wallet + leaderboard |
-| [`examples/vanilla-js`](./examples/vanilla-js) | Single HTML file, no bundler |
+### JavaScript packages
 
----
+```bash
+npm install       # installs all workspaces
+npm run build     # builds all @echomirror/* packages
+npm run test      # runs all tests
+```
 
-## API Reference
+### Rust crates
 
-Full API docs at **[docs.echomirror.dev](https://docs.echomirror.dev)** (coming soon).
+```bash
+cargo build --workspace
+cargo test --workspace
+```
 
-### `@echomirror/core`
-| Export | Description |
-|---|---|
-| `EchoMirrorClient` | Main client class — pass your API key here |
-| `EchoMirrorConfig` | Config interface |
-| `MoodEntry`, `StellarBalance`, `UserProfile` | Core TypeScript types |
+### WebAssembly
 
-### `@echomirror/mood`
-| Export | Description |
-|---|---|
-| `logMood(client, payload)` | Create a mood log entry |
-| `getMoodStreak(client)` | Get current + longest streak |
-| `getMoodHistory(client, options)` | Paginated mood history |
-| `getAIReflection(client, entryId)` | Get AI-generated insight for an entry |
-| `getMoodSummary(client, period)` | Aggregated stats for a time window |
+```bash
+cargo install wasm-pack
+wasm-pack build crates/echomirror-wasm --target web \
+  --out-dir packages/js/wasm/wasm-dist
+```
 
-### `@echomirror/stellar`
-| Export | Description |
-|---|---|
-| `connectFreighter()` | Prompt Freighter wallet connection (browser) |
-| `getBalance(client, publicKey)` | XLM + ECHO token balance |
-| `sendEcho(client, payload)` | Send ECHO tokens to any Stellar address |
-| `fundTestnetAccount(publicKey)` | Friendbot funding for testnet dev |
-| `getTransactionHistory(client, publicKey)` | Paginated Stellar tx history |
+### Flutter FFI shared library
 
-### `@echomirror/widget`
-| Export | Description |
-|---|---|
-| `<MoodWidget />` | React component — floating check-in UI |
-| `<MoodWidgetProvider />` | Context for custom trigger integration |
-| `defineMoodWidget()` | Register as a native Web Component |
+```bash
+# macOS
+cargo build -p echomirror-ffi --release
+# → target/release/libechomirror_ffi.dylib
+
+# Android arm64
+cargo build -p echomirror-ffi --target aarch64-linux-android --release
+
+# Android x86_64
+cargo build -p echomirror-ffi --target x86_64-linux-android --release
+
+# Linux
+cargo build -p echomirror-ffi --release
+# → target/release/libechomirror_ffi.so
+```
 
 ---
 
 ## Contributing
 
-We welcome contributions — bug fixes, new features, examples, and docs.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave points.
 
-**See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.**
-
-Quick start for contributors:
-
-```bash
-git clone https://github.com/Echo-Mirror-Butler/echomirror-sdk.git
-cd echomirror-sdk
-npm install          # installs all workspace packages
-npm run build        # builds all packages
-npm run test         # runs all tests
-```
-
-Each package in `packages/js/*` is an independent npm workspace with its own `src/`, `tests/`, and `README.md`.
+**Good first issues** — look for the `good first issue` label.
 
 ---
 
 ## Roadmap
 
-- [ ] `@echomirror/core` — API client + auth
-- [ ] `@echomirror/mood` — mood log, streak, AI reflection
-- [ ] `@echomirror/stellar` — Freighter, XLM, ECHO token
-- [ ] `@echomirror/widget` — React + Web Component
-- [ ] `@echomirror/social` — global feed, leaderboard
-- [ ] `@echomirror/react` — hooks + providers
-- [ ] `@echomirror/analytics` — emotional UX events
-- [ ] `echomirror_sdk` — Flutter/Dart package
-- [ ] Docusaurus docs site
+**Rust crates**
+- [x] `echomirror-core` — client, types, errors
+- [x] `echomirror-stellar` — Horizon, balance, Friendbot, TX build
+- [x] `echomirror-sync` — streaming ledger sync, resumable cursors
+- [x] `echomirror-ffi` — C-ABI for Flutter/Python/Swift
+- [x] `echomirror-wasm` — WASM for browser/Node.js
+- [ ] `echomirror-sync` — SSE streaming (replace polling)
+- [ ] `echomirror-sync` — PostgreSQL cursor store
+
+**JS/TS packages**
+- [x] `@echomirror/core`, `mood`, `stellar`, `react`
+- [ ] Build pipeline (tsconfig, vitest)
+- [ ] `@echomirror/social`, `analytics`, `widget`, `wasm`
 - [ ] npm publish pipeline
-- [ ] pub.dev publish pipeline
-- [ ] Webhook support for mood events
-- [ ] Offline-first mode (IndexedDB / Hive cache)
+
+**Native**
+- [x] `echomirror_sdk` Flutter — mood, stellar, social, blockchain sync, FFI
+- [ ] Riverpod providers
+- [ ] Flutter tests
+- [ ] Python binding (`echomirror-python`)
+- [ ] Swift package (`EchoMirrorSDK`)
+- [ ] pub.dev publish
+
+**Extensions**
+- [x] VS Code — status bar, sync explorer, snippets, Friendbot, validator
+- [x] Chrome — popup, mood inject, background TX watcher
+- [ ] Firefox — MV2 manifest
+- [ ] VS Code Marketplace publish
 
 ---
 
@@ -313,10 +438,4 @@ MIT — see [LICENSE](./LICENSE).
 
 <div align="center">
   <p>Built with love by the <a href="https://github.com/Echo-Mirror-Butler">Echo Mirror Butler</a> team and contributors.</p>
-  <p>
-    <a href="https://echomirrorbutler.vercel.app">App</a> •
-    <a href="https://docs.echomirror.dev">Docs</a> •
-    <a href="https://discord.gg/echomirror">Discord</a> •
-    <a href="https://twitter.com/echomirrorapp">Twitter</a>
-  </p>
 </div>

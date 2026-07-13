@@ -1,0 +1,83 @@
+{
+  "EchoMirror: Log Mood": {
+    "prefix": "em-mood",
+    "body": [
+      "const entry = await logMood(client, {",
+      "  score: ${1:7},",
+      "  note: '${2:How are you feeling?}',",
+      "  tags: ['${3:work}'],",
+      "})"
+    ],
+    "description": "Log a mood entry with EchoMirror SDK"
+  },
+  "EchoMirror: Get Streak": {
+    "prefix": "em-streak",
+    "body": [
+      "const streak = await getMoodStreak(client)",
+      "console.log(`${streak.current} day streak 🔥`)"
+    ],
+    "description": "Get the user's current mood streak"
+  },
+  "EchoMirror: Get Balance": {
+    "prefix": "em-balance",
+    "body": [
+      "const balance = await getBalance(client, '${1:publicKey}')",
+      "console.log(`${balance.xlm} XLM  •  ${balance.echo} ECHO`)"
+    ],
+    "description": "Get Stellar XLM and ECHO balance"
+  },
+  "EchoMirror: Connect Freighter": {
+    "prefix": "em-freighter",
+    "body": [
+      "const wallet = await connectFreighter()",
+      "console.log(wallet.publicKey)"
+    ],
+    "description": "Connect Freighter wallet"
+  },
+  "EchoMirror: Send ECHO": {
+    "prefix": "em-send",
+    "body": [
+      "await sendEcho(client, {",
+      "  from: wallet.publicKey,",
+      "  to: '${1:GRECIPIENT}',",
+      "  amount: ${2:5},",
+      "  memo: '${3:Great work today!}',",
+      "})"
+    ],
+    "description": "Send ECHO tokens to a Stellar address"
+  },
+  "EchoMirror: Provider Setup": {
+    "prefix": "em-provider",
+    "body": [
+      "<EchoMirrorProvider apiKey=\"${1:your_api_key}\">",
+      "  ${2:<App />}",
+      "  <MoodWidget position=\"bottom-right\" theme=\"auto\" />",
+      "</EchoMirrorProvider>"
+    ],
+    "description": "Wrap app with EchoMirror React Provider"
+  },
+  "EchoMirror: Fund Testnet": {
+    "prefix": "em-friendbot",
+    "body": [
+      "await fundTestnetAccount(client, '${1:publicKey}')"
+    ],
+    "description": "Fund a testnet account via Friendbot"
+  },
+  "EchoMirror: Sync Engine": {
+    "prefix": "em-sync",
+    "body": [
+      "const engine = SyncEngine.builder(client)",
+      "  .watch('${1:GPUBLIC_KEY}')",
+      "  .filter(SyncFilter.new().asset('ECHO').minAmount(${2:1.0}))",
+      "  .build()",
+      "",
+      "const stream = engine.subscribe()",
+      "engine.start()",
+      "",
+      "while let Ok(event) = stream.recv().await {",
+      "  // handle event",
+      "}"
+    ],
+    "description": "Start a blockchain sync engine (Rust)"
+  }
+}
