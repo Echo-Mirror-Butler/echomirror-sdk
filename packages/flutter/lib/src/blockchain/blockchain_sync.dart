@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'package:ffi/ffi.dart';
-import 'package:http/http.dart' as http;
 import '../echo_mirror.dart';
 import 'sync_models.dart';
 
@@ -18,9 +17,6 @@ typedef _FreeStringDart = void Function(Pointer<Utf8>);
 typedef _IsValidAddressNative = Uint8 Function(Pointer<Utf8>);
 typedef _IsValidAddressDart = int Function(Pointer<Utf8>);
 
-typedef _SerializeCursorNative = Pointer<Utf8> Function(Uint32, Pointer<Utf8>, Uint64);
-typedef _SerializeCursorDart = Pointer<Utf8> Function(int, Pointer<Utf8>, int);
-
 /// Loads the native Rust library for crypto operations.
 /// Falls back gracefully to pure-Dart implementations if not available.
 class EchoMirrorNative {
@@ -28,7 +24,6 @@ class EchoMirrorNative {
   static _HashPublicKeyDart? _hashPublicKey;
   static _FreeStringDart? _freeString;
   static _IsValidAddressDart? _isValidAddress;
-  static _SerializeCursorDart? _serializeCursor;
 
   static void initialize() {
     try {
@@ -43,17 +38,16 @@ class EchoMirrorNative {
       }
 
       if (_lib != null) {
-        _hashPublicKey = _lib!.lookupFunction<_HashPublicKeyNative, _HashPublicKeyDart>(
+        _hashPublicKey =
+            _lib!.lookupFunction<_HashPublicKeyNative, _HashPublicKeyDart>(
           'echomirror_hash_public_key',
         );
         _freeString = _lib!.lookupFunction<_FreeStringNative, _FreeStringDart>(
           'echomirror_free_string',
         );
-        _isValidAddress = _lib!.lookupFunction<_IsValidAddressNative, _IsValidAddressDart>(
+        _isValidAddress =
+            _lib!.lookupFunction<_IsValidAddressNative, _IsValidAddressDart>(
           'echomirror_is_valid_stellar_address',
-        );
-        _serializeCursor = _lib!.lookupFunction<_SerializeCursorNative, _SerializeCursorDart>(
-          'echomirror_serialize_cursor',
         );
       }
     } catch (_) {
@@ -184,7 +178,8 @@ class BlockchainSyncClient {
     }
   }
 
-  Future<List<_HorizonRecord>> _fetchPage(String publicKey, String cursor) async {
+  Future<List<_HorizonRecord>> _fetchPage(
+      String publicKey, String cursor) async {
     var url =
         '$_horizonBase/accounts/$publicKey/transactions?limit=50&order=asc&cursor=$cursor';
 
@@ -192,18 +187,27 @@ class BlockchainSyncClient {
     if (res.statusCode != 200) return [];
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final records =
-        (body['_embedded']['records'] as List<dynamic>).cast<Map<String, dynamic>>();
+    final records = (body['_embedded']['records'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
 
     return records.map(_HorizonRecord.fromJson).toList();
   }
 }
 
-class _HorizonRecord {
+class _HorizonRecord implements SyncMatchableRecord {
   final String id;
   final String hash;
   final String pagingToken;
   final int ledger;
+  @override
+  final String from;
+  @override
+  final String to;
+  @override
+  final String assetCode;
+  @override
+  final double amount;
+  @override
   final String? memo;
 
   _HorizonRecord({
@@ -211,6 +215,10 @@ class _HorizonRecord {
     required this.hash,
     required this.pagingToken,
     required this.ledger,
+    required this.from,
+    required this.to,
+    required this.assetCode,
+    required this.amount,
     this.memo,
   });
 
@@ -219,6 +227,10 @@ class _HorizonRecord {
         hash: json['hash'] as String,
         pagingToken: json['paging_token'] as String,
         ledger: json['ledger'] as int,
+        from: json['source_account'] as String? ?? '',
+        to: json['account'] as String? ?? '',
+        assetCode: json['asset_code'] as String? ?? 'XLM',
+        amount: double.tryParse(json['amount'] as String? ?? '0') ?? 0,
         memo: json['memo'] as String?,
       );
 }

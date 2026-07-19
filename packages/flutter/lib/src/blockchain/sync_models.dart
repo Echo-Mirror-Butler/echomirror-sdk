@@ -105,27 +105,21 @@ class SyncFilter {
     this.memoPrefix,
   });
 
-  bool matches(_MatchableRecord record) {
-    if (account != null && record.from != account && record.to != account) return false;
+  bool matches(SyncMatchableRecord record) {
+    if (account != null && record.from != account && record.to != account)
+      return false;
     if (assetCode != null && record.assetCode != assetCode) return false;
     if (minAmount != null && record.amount < minAmount!) return false;
-    if (memoPrefix != null && !(record.memo?.startsWith(memoPrefix!) ?? false)) return false;
+    if (memoPrefix != null && !(record.memo?.startsWith(memoPrefix!) ?? false))
+      return false;
     return true;
   }
 }
 
-class _MatchableRecord {
-  final String from;
-  final String to;
-  final String assetCode;
-  final double amount;
-  final String? memo;
-
-  const _MatchableRecord({
-    required this.from,
-    required this.to,
-    required this.assetCode,
-    required this.amount,
-    this.memo,
-  });
+abstract interface class SyncMatchableRecord {
+  String get from;
+  String get to;
+  String get assetCode;
+  double get amount;
+  String? get memo;
 }

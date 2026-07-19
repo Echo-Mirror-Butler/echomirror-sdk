@@ -34,11 +34,11 @@ impl EchoMirrorClient {
         &self.config
     }
 
-    pub(crate) async fn get<T: DeserializeOwned>(&self, path: &str) -> Result<T> {
+    pub async fn get<T: DeserializeOwned>(&self, path: &str) -> Result<T> {
         self.request::<(), T>(Method::GET, path, None).await
     }
 
-    pub(crate) async fn post<B: Serialize, T: DeserializeOwned>(
+    pub async fn post<B: Serialize, T: DeserializeOwned>(
         &self,
         path: &str,
         body: &B,
@@ -46,7 +46,7 @@ impl EchoMirrorClient {
         self.request(Method::POST, path, Some(body)).await
     }
 
-    pub(crate) async fn delete(&self, path: &str) -> Result<()> {
+    pub async fn delete(&self, path: &str) -> Result<()> {
         self.request::<(), ()>(Method::DELETE, path, None).await
     }
 

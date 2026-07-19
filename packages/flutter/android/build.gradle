@@ -1,0 +1,58 @@
+group = 'dev.echomirror.sdk'
+version = '0.1.0'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.5.2'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'dev.echomirror.sdk'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 23
+    }
+}
+
+tasks.register('cargoBuildAndroid') {
+    group = 'build'
+    description = 'Builds echomirror-ffi for Android ABIs and copies .so files into jniLibs.'
+
+    doLast {
+        def ndkHome = System.getenv('ANDROID_NDK_HOME') ?: System.getenv('ANDROID_NDK_ROOT')
+        if (ndkHome == null || ndkHome.isBlank()) {
+            throw new GradleException('ANDROID_NDK_HOME or ANDROID_NDK_ROOT must point to an installed Android NDK.')
+        }
+
+        exec {
+            workingDir projectDir.parentFile.parentFile.parentFile
+            commandLine 'cargo', 'ndk',
+                '-t', 'arm64-v8a',
+                '-t', 'armeabi-v7a',
+                '-t', 'x86',
+                '-t', 'x86_64',
+                '-o', "${projectDir}/src/main/jniLibs",
+                'build', '-p', 'echomirror-ffi', '--release'
+            environment 'ANDROID_NDK_HOME', ndkHome
+            environment 'ANDROID_NDK_ROOT', ndkHome
+        }
+    }
+}
+
+preBuild.dependsOn tasks.named('cargoBuildAndroid')
