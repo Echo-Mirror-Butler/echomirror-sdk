@@ -1,0 +1,68 @@
+name: Flutter SDK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  flutter-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: packages/flutter
+        run: flutter pub get
+
+      - name: Build mock native library
+        working-directory: packages/flutter
+        run: |
+          cc -shared -fPIC test/native_mock/echomirror_mock.c \
+            -o test/native_mock/libechomirror_mock.so
+
+      - name: Run Flutter tests
+        working-directory: packages/flutter
+        env:
+          ECHOMIRROR_MOCK_FFI: test/native_mock/libechomirror_mock.so
+        run: flutter test
+
+  android-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Build Android FFI libraries
+        run: bash packages/flutter/scripts/build_android.sh
+
+      - name: Verify Android ABI outputs
+        run: |
+          test -f packages/flutter/android/src/main/jniLibs/arm64-v8a/libechomirror_ffi.so
+          test -f packages/flutter/android/src/main/jniLibs/armeabi-v7a/libechomirror_ffi.so
+          test -f packages/flutter/android/src/main/jniLibs/x86/libechomirror_ffi.so
+          test -f packages/flutter/android/src/main/jniLibs/x86_64/libechomirror_ffi.so
+
+  ios-xcframework:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build iOS xcframework
+        run: bash packages/flutter/scripts/build_ios_xcframework.sh
+
+      - name: Verify iOS xcframework output
+        run: test -d packages/flutter/ios/Frameworks/EchoMirrorFFI.xcframework
