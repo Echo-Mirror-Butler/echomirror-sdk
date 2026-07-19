@@ -20,6 +20,10 @@ jobs:
         working-directory: packages/flutter
         run: flutter pub get
 
+      - name: Analyze Flutter package
+        working-directory: packages/flutter
+        run: flutter analyze
+
       - name: Build mock native library
         working-directory: packages/flutter
         run: |
@@ -40,6 +44,10 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - uses: android-actions/setup-android@v3
+
+      - uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
 
       - name: Install cargo-ndk
         run: cargo install cargo-ndk

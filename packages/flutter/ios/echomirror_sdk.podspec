@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
   s.summary          = 'EchoMirror SDK Flutter native FFI plugin.'
   s.description      = 'Bundles the EchoMirror Rust FFI library for Flutter apps.'
   s.homepage         = 'https://github.com/Echo-Mirror-Butler/echomirror-sdk'
-  s.license          = { :file => '../../LICENSE' }
+  s.license          = { :file => '../../../LICENSE' }
   s.author           = { 'EchoMirror' => 'maintainers@echomirror.dev' }
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
