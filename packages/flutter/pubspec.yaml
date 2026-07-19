@@ -10,13 +10,22 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  ffi: ^2.1.2
   http: ^1.2.0
+  hooks_riverpod: ^2.5.1
+  plugin_platform_interface: ^2.1.8
   shared_preferences: ^2.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  mocktail: ^1.0.3
 
 flutter:
-  library: true
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true
