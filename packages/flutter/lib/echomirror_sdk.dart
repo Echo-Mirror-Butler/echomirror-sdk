@@ -21,3 +21,8 @@ export 'src/stellar/stellar_models.dart';
 export 'src/social/social_client.dart';
 export 'src/social/social_models.dart';
 export 'src/errors.dart';
+export 'src/ffi/echomirror_ffi.dart';
+export 'src/providers/echomirror_providers.dart';
+export 'src/providers/native_mood_client.dart';
+export 'src/providers/native_social_client.dart';
+export 'src/providers/native_stellar_client.dart';
