@@ -1,0 +1,19 @@
+name: echomirror_flutter_provider_example
+description: Demonstrates EchoMirror Flutter Riverpod providers.
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  echomirror_sdk:
+    path: ../../packages/flutter
+  hooks_riverpod: ^2.5.1
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
