@@ -7,7 +7,8 @@ import 'native_library.dart';
 /// High-level typed native API used by Flutter clients and providers.
 class EchoMirrorFfi implements NativeEchoMirrorApi {
   EchoMirrorFfi({EchoMirrorBindings? bindings})
-      : _bindings = bindings ?? EchoMirrorBindings.fromLookup(openNativeLibrary().lookup);
+      : _bindings = bindings ??
+            EchoMirrorBindings.fromLookup(openNativeLibrary().lookup);
 
   final EchoMirrorBindings _bindings;
   final _events = StreamController<NativeEvent>.broadcast();
@@ -17,19 +18,16 @@ class EchoMirrorFfi implements NativeEchoMirrorApi {
   Future<String> version() => _guard(() async => _bindings.version);
 
   @override
-  Future<bool> verifyMoodScore(int score) => _guard(
-        () async => _bindings.verifyMoodScore(score),
-      );
+  Future<bool> verifyMoodScore(int score) =>
+      _guard(() async => _bindings.verifyMoodScore(score));
 
   @override
-  Future<String> hashPublicKey(String publicKey) => _guard(
-        () async => _bindings.hashPublicKey(publicKey),
-      );
+  Future<String> hashPublicKey(String publicKey) =>
+      _guard(() async => _bindings.hashPublicKey(publicKey));
 
   @override
-  Future<bool> isValidStellarAddress(String address) => _guard(
-        () async => _bindings.isValidStellarAddress(address),
-      );
+  Future<bool> isValidStellarAddress(String address) =>
+      _guard(() async => _bindings.isValidStellarAddress(address));
 
   @override
   Future<NativeSyncCursor> serializeCursor({

@@ -20,15 +20,8 @@ typedef _IsValidStellarAddressNative = Uint8 Function(Pointer<Utf8>);
 typedef _IsValidStellarAddressDart = int Function(Pointer<Utf8>);
 
 typedef _SerializeCursorNative = Pointer<Utf8> Function(
-  Uint32,
-  Pointer<Utf8>,
-  Uint64,
-);
-typedef _SerializeCursorDart = Pointer<Utf8> Function(
-  int,
-  Pointer<Utf8>,
-  int,
-);
+    Uint32, Pointer<Utf8>, Uint64);
+typedef _SerializeCursorDart = Pointer<Utf8> Function(int, Pointer<Utf8>, int);
 
 /// Typed Dart wrapper over the EchoMirror C ABI.
 class EchoMirrorBindings {

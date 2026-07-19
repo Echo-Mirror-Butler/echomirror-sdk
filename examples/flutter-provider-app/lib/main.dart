@@ -25,7 +25,9 @@ class EchoMirrorExampleApp extends ConsumerWidget {
                 return const CircularProgressIndicator();
               }
 
-              return Text('Created ${snapshot.data!.asset} tx ${snapshot.data!.id}');
+              return Text(
+                'Created ${snapshot.data!.asset} tx ${snapshot.data!.id}',
+              );
             },
           ),
         ),

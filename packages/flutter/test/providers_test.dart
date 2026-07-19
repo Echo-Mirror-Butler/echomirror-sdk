@@ -50,14 +50,17 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final stream = container.read(nativeEventsProvider.stream);
-      final expectation = expectLater(
-        stream,
-        emits(
-          isA<NativeEvent>()
-              .having((event) => event.name, 'name', 'mood.logged'),
-        ),
+      final event = Completer<NativeEvent>();
+      final subscription = container.listen(
+        nativeEventsProvider,
+        (_, next) {
+          if (next.hasValue && !event.isCompleted) {
+            event.complete(next.requireValue);
+          }
+        },
       );
+      addTearDown(subscription.close);
+
       fakeApi.emit(
         const NativeEvent('mood.logged', {
           'score': 9,
@@ -65,7 +68,16 @@ void main() {
         }),
       );
 
-      await expectation;
+      await expectLater(
+        event.future,
+        completion(
+          isA<NativeEvent>().having(
+            (event) => event.name,
+            'name',
+            'mood.logged',
+          ),
+        ),
+      );
     });
   });
 }

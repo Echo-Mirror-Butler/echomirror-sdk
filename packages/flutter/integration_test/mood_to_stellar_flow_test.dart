@@ -22,18 +22,15 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final entry = await container.read(moodClientProvider).log(
-      score: 10,
-      note: 'release-ready',
-      tags: const ['ship'],
-    );
-    final transaction = await container
-        .read(stellarClientProvider)
-        .createMoodRewardTransaction(
-          moodEntry: entry,
-          destinationPublicKey:
-              'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        );
+    final entry = await container
+        .read(moodClientProvider)
+        .log(score: 10, note: 'release-ready', tags: const ['ship']);
+    final transaction =
+        await container.read(stellarClientProvider).createMoodRewardTransaction(
+              moodEntry: entry,
+              destinationPublicKey:
+                  'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            );
 
     expect(entry.score, 10);
     expect(transaction.asset, 'ECHO');
@@ -53,7 +50,8 @@ class IntegrationFakeNativeApi implements NativeEchoMirrorApi {
   Future<bool> verifyMoodScore(int score) async => score >= 1 && score <= 10;
 
   @override
-  Future<String> hashPublicKey(String publicKey) async => 'integration_$publicKey';
+  Future<String> hashPublicKey(String publicKey) async =>
+      'integration_$publicKey';
 
   @override
   Future<bool> isValidStellarAddress(String address) async {
