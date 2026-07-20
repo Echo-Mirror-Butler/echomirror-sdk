@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "declaration": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "baseUrl": ".",
+    "paths": {
+      "@echomirror/core": ["packages/js/core/src/index.ts"],
+      "@echomirror/mood": ["packages/js/mood/src/index.ts"],
+      "@echomirror/stellar": ["packages/js/stellar/src/index.ts"],
+      "@echomirror/react": ["packages/js/react/src/index.tsx"],
+      "@echomirror/widget": ["packages/js/widget/src/index.ts"]
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
-  "name": "@echomirror/core",
+  "name": "@echomirror/mood",
   "version": "0.1.0",
-  "description": "EchoMirror SDK core — API client, auth, and shared TypeScript types",
+  "description": "EchoMirror SDK — mood logging, history, streaks, and AI reflections",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,11 +20,13 @@
   "keywords": [
     "echomirror",
     "wellness",
-    "sdk",
-    "stellar",
-    "mood"
+    "mood",
+    "sdk"
   ],
   "license": "MIT",
+  "dependencies": {
+    "@echomirror/core": "*"
+  },
   "devDependencies": {
     "typescript": "*",
     "vitest": "*"

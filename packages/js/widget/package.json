@@ -1,0 +1,74 @@
+{
+  "name": "@echomirror/widget",
+  "version": "0.1.0",
+  "description": "Production-ready <MoodWidget /> for EchoMirror — headless core logic, themable accessible React UI, and a framework-agnostic API for any renderer.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node ./scripts/copy-styles.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "keywords": [
+    "echomirror",
+    "mood",
+    "widget",
+    "react",
+    "accessible",
+    "headless",
+    "stellar"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@echomirror/core": "*",
+    "@echomirror/mood": "*",
+    "@echomirror/stellar": "*",
+    "use-sync-external-store": "^1.2.0"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
+  },
+  "devDependencies": {
+    "@storybook/addon-a11y": "^8.2.0",
+    "@storybook/addon-essentials": "^8.2.0",
+    "@storybook/react-vite": "^8.2.0",
+    "@storybook/test": "^8.2.0",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.4.6",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/jest-axe": "^3.5.9",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/use-sync-external-store": "^1.5.0",
+    "axe-core": "^4.9.1",
+    "eslint": "*",
+    "jest-axe": "^9.0.0",
+    "jsdom": "^24.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "storybook": "^8.2.0",
+    "typescript": "*",
+    "vitest": "*"
+  },
+  "type": "module"
+}
