@@ -14,6 +14,9 @@ MACOS_TARGETS=("aarch64-apple-darwin" "x86_64-apple-darwin")
 rm -rf "$ARTIFACT_DIR/EchoMirrorFFI.xcframework" "$BUILD_DIR"
 mkdir -p "$ARTIFACT_DIR" "$BUILD_DIR/ios-simulator" "$BUILD_DIR/macos"
 
+export IPHONEOS_DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET:-15.0}"
+export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-12.0}"
+
 build_target() {
   local target="$1"
   rustup target add "$target"
