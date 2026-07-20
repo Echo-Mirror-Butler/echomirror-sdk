@@ -123,7 +123,7 @@ EchoMirror is a social wellness platform — users log their mood, gift ECHO tok
 |---|---|---|
 | [`echomirror_sdk`](./packages/flutter) | Flutter/Dart | Full SDK — mood, Stellar, social, blockchain sync, FFI |
 | `echomirror-python` *(coming)* | Python | Async client — `pip install echomirror` |
-| `EchoMirrorSDK` *(coming)* | Swift | iOS/macOS SDK via SPM |
+| [`EchoMirrorSDK`](./packages/swift/EchoMirrorSDK) | Swift | iOS/macOS SDK via SPM and `echomirror-ffi` |
 
 ### Extensions
 
@@ -254,6 +254,34 @@ sync.watch(publicKey).listen((event) {
     print('New ledger: ${event.ledgerSequence}');
   }
 });
+```
+
+### Swift
+
+Build the local XCFramework, then add `packages/swift/EchoMirrorSDK` as a Swift
+Package Manager dependency:
+
+```bash
+packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
+swift test --package-path packages/swift/EchoMirrorSDK
+```
+
+```swift
+import EchoMirrorSDK
+
+let sdk = try EchoMirror(
+    config: EchoMirrorConfig(apiKey: "your_api_key", network: .testnet)
+)
+
+let entry = try await sdk.mood.logMood(
+    userId: "user-1",
+    score: 8,
+    note: "Great day",
+    tags: ["swift"]
+)
+
+let balance = try await sdk.stellar.getBalance(publicKey: "GPUBLIC_KEY")
+let profile = try await sdk.social.profile(userId: entry.userId)
 ```
 
 ### WebAssembly (browser, no bundler)
@@ -389,6 +417,19 @@ cargo build -p echomirror-ffi --release
 
 ---
 
+### Swift XCFramework
+
+```bash
+packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
+swift test --package-path packages/swift/EchoMirrorSDK
+```
+
+The script builds `echomirror-ffi` as static libraries for iOS devices, iOS
+simulators, and macOS, then packages them as
+`packages/swift/EchoMirrorSDK/Artifacts/EchoMirrorFFI.xcframework`.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave points.
@@ -419,7 +460,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave po
 - [ ] Riverpod providers
 - [ ] Flutter tests
 - [ ] Python binding (`echomirror-python`)
-- [ ] Swift package (`EchoMirrorSDK`)
+- [x] Swift package (`EchoMirrorSDK`)
 - [ ] pub.dev publish
 
 **Extensions**

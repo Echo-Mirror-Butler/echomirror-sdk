@@ -1,0 +1,21 @@
+name: Swift SDK CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  swift-sdk:
+    name: Build XCFramework and Test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin,x86_64-apple-darwin
+      - name: Build EchoMirrorFFI XCFramework
+        run: bash packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
+      - name: Run Swift tests
+        run: swift test --package-path packages/swift/EchoMirrorSDK
