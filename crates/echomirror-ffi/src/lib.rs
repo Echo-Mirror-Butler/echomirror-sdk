@@ -34,15 +34,16 @@ final hashPublicKey = lib.lookupFunction<
 ```
 */
 
+use sha2::{Digest, Sha256};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use sha2::{Digest, Sha256};
 
 // ── Memory management ─────────────────────────────────────────────────────────
 
 /// Free a C string returned by this library.
 /// Flutter must call this after reading any `*mut c_char` return value.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_free_string(ptr: *mut c_char) {
     if ptr.is_null() {
         return;
@@ -55,7 +56,11 @@ pub extern "C" fn echomirror_free_string(ptr: *mut c_char) {
 /// Validate a mood score (1–10). Returns 1 if valid, 0 if not.
 #[no_mangle]
 pub extern "C" fn echomirror_verify_mood_score(score: u8) -> u8 {
-    if (1..=10).contains(&score) { 1 } else { 0 }
+    if (1..=10).contains(&score) {
+        1
+    } else {
+        0
+    }
 }
 
 // ── Stellar crypto ────────────────────────────────────────────────────────────
@@ -65,13 +70,12 @@ pub extern "C" fn echomirror_verify_mood_score(score: u8) -> u8 {
 ///
 /// Returns null if `public_key` is null.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_hash_public_key(public_key: *const c_char) -> *mut c_char {
     if public_key.is_null() {
         return std::ptr::null_mut();
     }
-    let key = unsafe { CStr::from_ptr(public_key) }
-        .to_str()
-        .unwrap_or("");
+    let key = unsafe { CStr::from_ptr(public_key) }.to_str().unwrap_or("");
 
     let mut hasher = Sha256::new();
     hasher.update(key.as_bytes());
@@ -84,19 +88,22 @@ pub extern "C" fn echomirror_hash_public_key(public_key: *const c_char) -> *mut 
 
 /// Returns 1 if the address looks like a valid Stellar G-address, 0 otherwise.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_is_valid_stellar_address(address: *const c_char) -> u8 {
     if address.is_null() {
         return 0;
     }
-    let addr = unsafe { CStr::from_ptr(address) }
-        .to_str()
-        .unwrap_or("");
+    let addr = unsafe { CStr::from_ptr(address) }.to_str().unwrap_or("");
 
     let valid = addr.starts_with('G')
         && addr.len() == 56
         && addr.chars().all(|c| c.is_ascii_alphanumeric());
 
-    if valid { 1 } else { 0 }
+    if valid {
+        1
+    } else {
+        0
+    }
 }
 
 // ── Sync cursor ───────────────────────────────────────────────────────────────
@@ -104,6 +111,7 @@ pub extern "C" fn echomirror_is_valid_stellar_address(address: *const c_char) ->
 /// Serialize a sync cursor to a JSON C string.
 /// Caller must free with `echomirror_free_string`.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_serialize_cursor(
     ledger_sequence: u32,
     paging_token: *const c_char,
