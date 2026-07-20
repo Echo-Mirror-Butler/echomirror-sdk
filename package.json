@@ -3,9 +3,7 @@
   "private": true,
   "description": "EchoMirror SDK monorepo — mood intelligence, Stellar payments, and social wellness for any app",
   "workspaces": [
-    "packages/js/*",
-    "examples/react-app",
-    "examples/next-app"
+    "packages/js/*"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
