@@ -1,5 +1,3 @@
 node_modules/
 dist/
-target/
 *.tsbuildinfo
-crates/echomirror-wasm/pkg/
