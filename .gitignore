@@ -33,3 +33,9 @@ packages/flutter/build/
 packages/flutter/.flutter-plugins
 packages/flutter/.flutter-plugins-dependencies
 packages/flutter/packages
+
+# Stellar package e2e (Freighter extension + bundled harness + reports)
+packages/js/stellar/e2e/.freighter/
+packages/js/stellar/e2e/app/bundle.js
+packages/js/stellar/test-results/
+packages/js/stellar/playwright-report/

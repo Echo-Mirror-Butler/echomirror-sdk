@@ -1,7 +1,7 @@
 {
   "name": "@echomirror/stellar",
-  "version": "0.1.0",
-  "description": "EchoMirror SDK Stellar blockchain module",
+  "version": "0.2.0",
+  "description": "EchoMirror SDK Stellar integration — multi-wallet (Freighter, Albedo, xBull), transaction builders, and typed errors",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -14,20 +14,34 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
+    "test:integration": "STELLAR_INTEGRATION=1 vitest run tests/integration --testTimeout 120000",
+    "pretest:e2e": "node e2e/scripts/fetch-freighter.mjs",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"
   },
   "keywords": [
     "echomirror",
     "stellar",
-    "blockchain"
+    "blockchain",
+    "freighter",
+    "albedo",
+    "xbull",
+    "wallet",
+    "payments"
   ],
   "license": "MIT",
   "dependencies": {
-    "@echomirror/core": "*"
+    "@albedo-link/intent": "^0.12.0",
+    "@echomirror/core": "*",
+    "@stellar/freighter-api": "^6.0.0",
+    "@stellar/stellar-sdk": "^13.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.1",
     "typescript": "*",
     "vitest": "*"
   }
