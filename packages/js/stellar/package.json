@@ -1,7 +1,7 @@
 {
-  "name": "@echomirror/core",
+  "name": "@echomirror/stellar",
   "version": "0.1.0",
-  "description": "EchoMirror SDK core — API client, auth, and shared TypeScript types",
+  "description": "EchoMirror SDK — Stellar payments, balances, and transfers over the Stellar network",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,12 +19,14 @@
   },
   "keywords": [
     "echomirror",
-    "wellness",
-    "sdk",
     "stellar",
-    "mood"
+    "payments",
+    "sdk"
   ],
   "license": "MIT",
+  "dependencies": {
+    "@echomirror/core": "*"
+  },
   "devDependencies": {
     "typescript": "*",
     "vitest": "*"

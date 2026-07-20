@@ -1,7 +1,7 @@
 {
-  "name": "@echomirror/core",
+  "name": "@echomirror/react",
   "version": "0.1.0",
-  "description": "EchoMirror SDK core — API client, auth, and shared TypeScript types",
+  "description": "EchoMirror SDK — React provider, hooks, and context for mood, stellar, and social features",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,15 +19,25 @@
   },
   "keywords": [
     "echomirror",
-    "wellness",
-    "sdk",
-    "stellar",
-    "mood"
+    "react",
+    "hooks",
+    "sdk"
   ],
   "license": "MIT",
+  "dependencies": {
+    "@echomirror/core": "*"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
+  },
   "devDependencies": {
     "typescript": "*",
-    "vitest": "*"
+    "vitest": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0"
   },
   "type": "module"
 }
