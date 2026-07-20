@@ -1,0 +1,7 @@
+node_modules/
+dist/
+packages/js/stellar/e2e/.freighter/
+packages/js/stellar/e2e/app/bundle.js
+test-results/
+playwright-report/
+.DS_Store

@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>@echomirror/stellar e2e harness</title>
+  </head>
+  <body>
+    <h1>@echomirror/stellar e2e harness</h1>
+    <button id="connect">Connect wallet</button>
+    <div>wallet: <span id="wallet-id">—</span></div>
+    <div>pubkey: <span id="pubkey">—</span></div>
+    <div>network: <span id="network">—</span></div>
+    <hr />
+    <input id="destination" placeholder="destination G…" size="60" />
+    <input id="amount" placeholder="amount" value="10" />
+    <button id="pay">Send payment</button>
+    <div>status: <span id="status">idle</span></div>
+    <div>tx hash: <span id="tx-hash">—</span></div>
+    <div>error: <span id="error">—</span></div>
+    <script src="./bundle.js"></script>
+  </body>
+</html>

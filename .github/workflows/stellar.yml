@@ -1,0 +1,70 @@
+name: stellar
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/js/**'
+      - '.github/workflows/stellar.yml'
+  pull_request:
+    paths:
+      - 'packages/js/**'
+      - '.github/workflows/stellar.yml'
+
+jobs:
+  unit:
+    name: Unit tests & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w @echomirror/core
+      - run: npm run typecheck -w @echomirror/stellar
+      - run: npm run build -w @echomirror/stellar
+      - run: npm test -w @echomirror/stellar
+
+  integration:
+    name: Testnet integration (live Horizon + Friendbot)
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w @echomirror/core
+      - run: npm run test:integration -w @echomirror/stellar
+
+  freighter-e2e:
+    name: Freighter browser e2e (Playwright)
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w @echomirror/core
+      # Downloads the pinned-channel Freighter build from the Chrome Web Store
+      - run: node e2e/scripts/fetch-freighter.mjs
+        working-directory: packages/js/stellar
+      - run: npx playwright install --with-deps chromium
+        working-directory: packages/js/stellar
+      # Extensions need real Chromium; xvfb covers environments where the new
+      # headless mode cannot load extensions.
+      - run: xvfb-run --auto-servernum npx playwright test
+        working-directory: packages/js/stellar
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: packages/js/stellar/test-results/
+          retention-days: 7
