@@ -47,7 +47,7 @@ pub struct PyEchoMirrorClient {
 impl PyEchoMirrorClient {
     #[new]
     #[pyo3(signature = (api_key, base_url=None, network=PyStellarNetwork::Mainnet, timeout_secs=10, horizon_url=None, friendbot_url=None))]
-    fn new(
+    pub fn new(
         api_key: String,
         base_url: Option<String>,
         network: PyStellarNetwork,
@@ -73,7 +73,8 @@ impl PyEchoMirrorClient {
     }
 
     /// Set (or clear, with `None`) the bearer auth token used for authenticated requests.
-    fn set_auth_token<'py>(
+    #[pyo3(signature = (token=None))]
+    pub fn set_auth_token<'py>(
         &self,
         py: Python<'py>,
         token: Option<String>,
@@ -91,6 +92,9 @@ impl PyEchoMirrorClient {
     }
 
     fn __repr__(&self) -> String {
-        format!("EchoMirrorClient(network={:?})", self.inner.config().network)
+        format!(
+            "EchoMirrorClient(network={:?})",
+            self.inner.config().network
+        )
     }
 }
