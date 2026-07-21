@@ -51,3 +51,50 @@ pub async fn build_echo_transfer(
 ) -> Result<UnsignedTransaction> {
     client.post("/stellar/build-transfer", &params).await
 }
+
+#[derive(Debug, Serialize)]
+struct SubmitTransactionBody<'a> {
+    xdr: &'a str,
+}
+
+/// Submit a pre-signed XDR transaction (server-side or custom signing).
+///
+/// ```rust,no_run
+/// use echomirror_core::{EchoMirrorClient, EchoMirrorConfig};
+/// use echomirror_stellar::transaction::submit_transaction;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     let client = EchoMirrorClient::new(EchoMirrorConfig::testnet("api_key")).unwrap();
+///     let tx = submit_transaction(&client, "signed-xdr-envelope").await.unwrap();
+///     println!("Submitted {}", tx.stellar_tx_hash);
+/// }
+/// ```
+pub async fn submit_transaction(
+    client: &EchoMirrorClient,
+    signed_xdr: &str,
+) -> Result<echomirror_core::StellarTransaction> {
+    client
+        .post("/stellar/submit", &SubmitTransactionBody { xdr: signed_xdr })
+        .await
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TransactionHistoryPage {
+    pub transactions: Vec<echomirror_core::StellarTransaction>,
+    pub cursor: Option<String>,
+}
+
+/// Get paginated Stellar transaction history for a public key via the EchoMirror API.
+pub async fn get_transaction_history(
+    client: &EchoMirrorClient,
+    public_key: &str,
+    limit: u32,
+    cursor: Option<&str>,
+) -> Result<TransactionHistoryPage> {
+    let mut path = format!("/stellar/transactions?public_key={public_key}&limit={limit}");
+    if let Some(c) = cursor {
+        path.push_str(&format!("&cursor={c}"));
+    }
+    client.get(&path).await
+}
