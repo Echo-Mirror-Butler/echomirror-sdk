@@ -1,7 +1,6 @@
 use crate::{
     cursor::{CursorStore, InMemoryCursorStore, SyncCursor},
     filter::SyncFilter,
-    stream::SyncEventStream,
 };
 use echomirror_core::{EchoMirrorClient, Result, SyncEvent};
 use echomirror_stellar::horizon::HorizonClient;

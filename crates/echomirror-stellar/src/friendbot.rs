@@ -1,4 +1,4 @@
-use echomirror_core::{config::StellarNetwork, EchoMirrorClient, EchoMirrorError, Result};
+use echomirror_core::{EchoMirrorClient, EchoMirrorError, Result};
 use reqwest::Client;
 
 /// Fund a Stellar testnet account using Friendbot (gives 10,000 XLM).
@@ -16,13 +16,9 @@ use reqwest::Client;
 /// }
 /// ```
 pub async fn fund_testnet_account(client: &EchoMirrorClient, public_key: &str) -> Result<()> {
-    let friendbot_url = client
-        .config()
-        .network
-        .friendbot_url()
-        .ok_or_else(|| EchoMirrorError::Config(
-            "fund_testnet_account is only available on testnet".into(),
-        ))?;
+    let friendbot_url = client.config().network.friendbot_url().ok_or_else(|| {
+        EchoMirrorError::Config("fund_testnet_account is only available on testnet".into())
+    })?;
 
     let url = format!("{}?addr={}", friendbot_url, public_key);
     let res = Client::new()

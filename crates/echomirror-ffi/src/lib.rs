@@ -72,6 +72,9 @@ fn optional_string_from_ptr(ptr: *const c_char) -> Result<Option<String>, EchoMi
     if ptr.is_null() {
         return Ok(None);
     }
+use sha2::{Digest, Sha256};
+use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
 
     string_from_ptr(ptr).map(Some)
 }
@@ -164,6 +167,7 @@ fn is_valid_stellar_address_str(address: &str) -> bool {
 
 /// Free a C string returned by this library.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_free_string(ptr: *mut c_char) {
     if ptr.is_null() {
         return;
@@ -178,32 +182,61 @@ pub extern "C" fn echomirror_free_string(ptr: *mut c_char) {
 #[no_mangle]
 pub extern "C" fn echomirror_version() -> *mut c_char {
     string_into_raw(env!("CARGO_PKG_VERSION"))
+pub extern "C" fn echomirror_verify_mood_score(score: u8) -> u8 {
+    if (1..=10).contains(&score) {
+        1
+    } else {
+        0
+    }
 }
 
 /// SHA-256 hash of a Stellar public key as a lowercase hex string.
 /// Caller must free the returned string with `echomirror_free_string`.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_hash_public_key(public_key: *const c_char) -> *mut c_char {
     let Ok(key) = string_from_ptr(public_key) else {
         return ptr::null_mut();
     };
+    if public_key.is_null() {
+        return std::ptr::null_mut();
+    }
+    let key = unsafe { CStr::from_ptr(public_key) }.to_str().unwrap_or("");
+
+    let mut hasher = Sha256::new();
+    hasher.update(key.as_bytes());
+    let hash = hex::encode(hasher.finalize());
 
     string_into_raw(hash_id(&key))
 }
 
 /// Returns 1 if the address looks like a valid Stellar G-address, 0 otherwise.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_is_valid_stellar_address(address: *const c_char) -> u8 {
     let Ok(address) = string_from_ptr(address) else {
         return 0;
     };
 
     u8::from(is_valid_stellar_address_str(&address))
+    }
+    let addr = unsafe { CStr::from_ptr(address) }.to_str().unwrap_or("");
+
+    let valid = addr.starts_with('G')
+        && addr.len() == 56
+        && addr.chars().all(|c| c.is_ascii_alphanumeric());
+
+    if valid {
+        1
+    } else {
+        0
+    }
 }
 
 /// Serialize a sync cursor to a JSON C string.
 /// Caller must free with `echomirror_free_string`.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_serialize_cursor(
     ledger_sequence: u32,
     paging_token: *const c_char,
