@@ -1,4 +1,4 @@
-[package]
+﻿[package]
 name = "echomirror-sync"
 description = "EchoMirror blockchain sync engine — real-time Stellar ledger streaming with resumable cursors"
 version.workspace = true
@@ -16,3 +16,4 @@ thiserror.workspace = true
 chrono.workspace = true
 futures = "0.3"
 tokio-stream = "0.1"
+async-trait.workspace = true
