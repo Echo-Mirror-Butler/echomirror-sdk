@@ -122,7 +122,7 @@ EchoMirror is a social wellness platform — users log their mood, gift ECHO tok
 | Package | Platform | Description |
 |---|---|---|
 | [`echomirror_sdk`](./packages/flutter) | Flutter/Dart | Full SDK — mood, Stellar, social, blockchain sync, FFI |
-| `echomirror-python` *(coming)* | Python | Async client — `pip install echomirror` |
+| [`echomirror-python`](./crates/echomirror-python) | Python | Async client (PyO3 + maturin) — `pip install echomirror-sdk` |
 | `EchoMirrorSDK` *(coming)* | Swift | iOS/macOS SDK via SPM |
 
 ### Extensions
