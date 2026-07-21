@@ -1,7 +1,8 @@
 {
   "name": "@echomirror/stellar",
   "version": "0.1.0",
-  "description": "EchoMirror SDK Stellar — wallet connections, balances, and echo transfers",
+  "description": "EchoMirror SDK Stellar ï¿½ wallet connections, balances, and echo transfers",
+  "description": "EchoMirror SDK Stellar blockchain module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -19,6 +20,15 @@
     "lint": "eslint src"
   },
   "keywords": ["echomirror", "wellness", "sdk", "stellar"],
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "echomirror",
+    "stellar",
+    "blockchain"
+  ],
   "license": "MIT",
   "dependencies": {
     "@echomirror/core": "*"

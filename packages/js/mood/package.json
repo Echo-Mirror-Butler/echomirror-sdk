@@ -1,7 +1,8 @@
 {
   "name": "@echomirror/mood",
   "version": "0.1.0",
-  "description": "EchoMirror SDK mood — mood logging, streaks, and AI reflections",
+  "description": "EchoMirror SDK mood ï¿½ mood logging, streaks, and AI reflections",
+  "description": "EchoMirror SDK mood tracking module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -19,6 +20,15 @@
     "lint": "eslint src"
   },
   "keywords": ["echomirror", "wellness", "sdk", "mood"],
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "echomirror",
+    "mood",
+    "wellness"
+  ],
   "license": "MIT",
   "dependencies": {
     "@echomirror/core": "*"

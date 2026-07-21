@@ -43,6 +43,7 @@ impl EchoMirrorClient {
         path: &str,
         body: &B,
     ) -> Result<T> {
+    pub async fn post<B: Serialize, T: DeserializeOwned>(&self, path: &str, body: &B) -> Result<T> {
         self.request(Method::POST, path, Some(body)).await
     }
 
@@ -63,7 +64,10 @@ impl EchoMirrorClient {
             .http
             .request(method, &url)
             .header("x-api-key", &self.config.api_key)
-            .header("x-echomirror-network", format!("{:?}", self.config.network).to_lowercase());
+            .header(
+                "x-echomirror-network",
+                format!("{:?}", self.config.network).to_lowercase(),
+            );
 
         if let Some(tok) = &token {
             req = req.bearer_auth(tok);
@@ -86,7 +90,9 @@ impl EchoMirrorClient {
                     .and_then(|v| v.to_str().ok())
                     .and_then(|v| v.parse().ok())
                     .unwrap_or(60);
-                return Err(EchoMirrorError::RateLimit { retry_after_secs: retry });
+                return Err(EchoMirrorError::RateLimit {
+                    retry_after_secs: retry,
+                });
             }
             StatusCode::NO_CONTENT => {
                 // Safety: T must be () for 204 responses
@@ -94,7 +100,10 @@ impl EchoMirrorClient {
             }
             s if !s.is_success() => {
                 let msg = res.text().await.unwrap_or_default();
-                return Err(EchoMirrorError::Http { status: s.as_u16(), message: msg });
+                return Err(EchoMirrorError::Http {
+                    status: s.as_u16(),
+                    message: msg,
+                });
             }
             _ => {}
         }

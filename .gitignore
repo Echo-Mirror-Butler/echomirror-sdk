@@ -26,3 +26,6 @@ docs-site/.docusaurus/
 docs-site/docs/api/js/
 docs-site/static/api/rust/
 docs-site/static/api/dart/
+node_modules/
+dist/
+*.tsbuildinfo

@@ -1,4 +1,4 @@
-use echomirror_core::{EchoMirrorError, Result, StellarBalance, StellarTransaction};
+use echomirror_core::{EchoMirrorError, Result};
 use reqwest::Client;
 use serde::Deserialize;
 
