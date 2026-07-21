@@ -80,12 +80,28 @@ fn base64_encode(input: &[u8]) -> String {
     let mut i = 0;
     while i < input.len() {
         let b0 = input[i] as u32;
-        let b1 = if i + 1 < input.len() { input[i + 1] as u32 } else { 0 };
-        let b2 = if i + 2 < input.len() { input[i + 2] as u32 } else { 0 };
+        let b1 = if i + 1 < input.len() {
+            input[i + 1] as u32
+        } else {
+            0
+        };
+        let b2 = if i + 2 < input.len() {
+            input[i + 2] as u32
+        } else {
+            0
+        };
         out.push(CHARS[((b0 >> 2) & 0x3f) as usize] as char);
         out.push(CHARS[(((b0 & 0x3) << 4) | (b1 >> 4)) as usize] as char);
-        out.push(if i + 1 < input.len() { CHARS[(((b1 & 0xf) << 2) | (b2 >> 6)) as usize] as char } else { '=' });
-        out.push(if i + 2 < input.len() { CHARS[(b2 & 0x3f) as usize] as char } else { '=' });
+        out.push(if i + 1 < input.len() {
+            CHARS[(((b1 & 0xf) << 2) | (b2 >> 6)) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if i + 2 < input.len() {
+            CHARS[(b2 & 0x3f) as usize] as char
+        } else {
+            '='
+        });
         i += 3;
     }
     out
