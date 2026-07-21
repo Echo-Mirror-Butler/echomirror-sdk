@@ -61,6 +61,7 @@ impl PyEchoMirror {
     }
 
     /// Set the auth token used by all three sub-clients for authenticated calls.
+    #[pyo3(signature = (token=None))]
     fn set_auth_token<'py>(
         &self,
         py: Python<'py>,
