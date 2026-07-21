@@ -44,7 +44,7 @@ class _Handler(BaseHTTPRequestHandler):
         for key, value in (headers or {}).items():
             self.send_header(key, value)
         self.end_headers()
-        if body is not None:
+        if status != 204:
             self.wfile.write(json.dumps(body).encode())
 
     def do_GET(self) -> None:  # noqa: N802
