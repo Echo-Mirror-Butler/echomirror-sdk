@@ -75,7 +75,10 @@ pub async fn submit_transaction(
     signed_xdr: &str,
 ) -> Result<echomirror_core::StellarTransaction> {
     client
-        .post("/stellar/submit", &SubmitTransactionBody { xdr: signed_xdr })
+        .post(
+            "/stellar/submit",
+            &SubmitTransactionBody { xdr: signed_xdr },
+        )
         .await
 }
 
