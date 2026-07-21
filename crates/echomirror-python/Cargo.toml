@@ -1,0 +1,24 @@
+[package]
+name = "echomirror-python"
+description = "PyO3 native bindings for the EchoMirror SDK — Mood, Stellar, and Social APIs, with asyncio support"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+# Must match the `module-name` leaf in pyproject.toml ([tool.maturin]).
+name = "_echomirror"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+echomirror-core = { path = "../echomirror-core" }
+echomirror-stellar = { path = "../echomirror-stellar" }
+pyo3 = { workspace = true, features = ["extension-module"] }
+pyo3-async-runtimes = { workspace = true, features = ["tokio-runtime"] }
+tokio.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+
+[package.metadata.maturin]
+python-source = "python"
+module-name = "echomirror._echomirror"
