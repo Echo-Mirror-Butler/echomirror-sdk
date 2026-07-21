@@ -35,13 +35,29 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install maturin and test dependencies
-        run: pip install maturin pytest pytest-asyncio
+      - name: Create virtualenv
+        shell: bash
+        run: python -m venv .venv
 
       - name: Build and install (develop mode)
         working-directory: crates/echomirror-python
-        run: maturin develop --release
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            source ../../.venv/Scripts/activate
+          else
+            source ../../.venv/bin/activate
+          fi
+          pip install maturin pytest pytest-asyncio
+          maturin develop --release
 
       - name: Run tests
         working-directory: crates/echomirror-python
-        run: pytest -v
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            source ../../.venv/Scripts/activate
+          else
+            source ../../.venv/bin/activate
+          fi
+          pytest -v
