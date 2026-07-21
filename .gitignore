@@ -1,3 +1,6 @@
 node_modules/
 dist/
 *.tsbuildinfo
+target/
+packages/js/wasm/wasm-web/
+packages/js/wasm/wasm-node/

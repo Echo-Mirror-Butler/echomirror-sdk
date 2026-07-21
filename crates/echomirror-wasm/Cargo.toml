@@ -14,7 +14,6 @@ wasm-bindgen-futures.workspace = true
 js-sys.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-chrono.workspace = true
 sha2.workspace = true
 hex.workspace = true
 

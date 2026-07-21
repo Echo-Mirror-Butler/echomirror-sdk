@@ -392,10 +392,12 @@ cargo test --workspace
 ### WebAssembly
 
 ```bash
-cargo install wasm-pack
-wasm-pack build crates/echomirror-wasm --target web \
-  --out-dir packages/js/wasm/wasm-dist
+npm run build:wasm -w packages/js/wasm   # wasm-pack build, web + nodejs targets
+npm run build -w packages/js/wasm        # compile the TS wrapper
 ```
+
+See [`packages/js/wasm/README.md`](./packages/js/wasm/README.md) for bundle size,
+memory management, and test details.
 
 ### Flutter FFI shared library
 
@@ -451,9 +453,11 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave po
 
 **JS/TS packages**
 - [x] `@echomirror/core`, `mood`, `stellar`, `react`
-- [ ] Build pipeline (tsconfig, vitest)
-- [ ] `@echomirror/social`, `analytics`, `widget`, `wasm`
-- [ ] npm publish pipeline
+- [x] Build pipeline (tsconfig, vitest)
+- [x] `@echomirror/wasm` — dual-target (browser + Node) wasm-pack build, ergonomic TS wrapper
+- [ ] `@echomirror/social`, `analytics`, `widget`
+- [x] npm publish pipeline (`@echomirror/wasm`)
+- [ ] npm publish pipeline (remaining packages)
 
 **Native**
 - [x] `echomirror_sdk` Flutter — mood, stellar, social, blockchain sync, FFI

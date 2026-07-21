@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EchoMirrorProvider, useProfile, useMoodStreak } from '@echomirror/react'
 import { logMood } from '@echomirror/mood'
 import { connectFreighter, getBalance } from '@echomirror/stellar'
 import { useEchoMirrorClient } from '@echomirror/react'
+import { init as initWasm, hashPublicKey, MoodBuffer } from '@echomirror/wasm'
 
 function MoodLogger() {
   const client = useEchoMirrorClient()
@@ -123,11 +124,48 @@ function WalletConnector() {
   )
 }
 
+function WasmInsights() {
+  const [ready, setReady] = useState(false)
+  const [anonymizedId, setAnonymizedId] = useState<string | null>(null)
+  const [localAverage, setLocalAverage] = useState<number | null>(null)
+
+  // init() fetches + instantiates the .wasm binary once per page load.
+  useEffect(() => {
+    initWasm().then(() => setReady(true))
+  }, [])
+
+  useEffect(() => {
+    if (!ready) return
+    setAnonymizedId(hashPublicKey('GDEMO...PUBLICKEY').slice(0, 16))
+
+    // MoodBuffer owns wasm-side memory — free() it once you're done with
+    // it (here: synchronously, since we only need the average).
+    const buffer = new MoodBuffer()
+    try {
+      for (const score of [7, 8, 6, 9, 7]) buffer.push(score)
+      setLocalAverage(buffer.average())
+    } finally {
+      buffer.free()
+    }
+  }, [ready])
+
+  if (!ready) return null
+
+  return (
+    <div style={{ padding: '0 24px', maxWidth: 480, margin: '24px auto 0', fontFamily: 'sans-serif' }}>
+      <h2>@echomirror/wasm — client-side helpers</h2>
+      <p style={{ color: '#16a34a' }}>Anonymized wallet id: {anonymizedId}…</p>
+      <p style={{ color: '#16a34a' }}>Local 5-entry average (computed in wasm): {localAverage?.toFixed(1)}/10</p>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <EchoMirrorProvider apiKey={import.meta.env.VITE_ECHOMIRROR_API_KEY ?? 'demo'}>
       <MoodLogger />
       <WalletConnector />
+      <WasmInsights />
     </EchoMirrorProvider>
   )
 }
