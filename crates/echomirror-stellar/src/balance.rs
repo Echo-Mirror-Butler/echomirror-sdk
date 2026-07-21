@@ -20,7 +20,7 @@ const ECHO_ASSET_CODE: &str = "ECHO";
 /// }
 /// ```
 pub async fn get_balance(client: &EchoMirrorClient, public_key: &str) -> Result<StellarBalance> {
-    let horizon = HorizonClient::new(client.config().network.horizon_url());
+    let horizon = HorizonClient::new(client.config().resolved_horizon_url());
     let balances = horizon.account_balances(public_key).await?;
 
     let mut xlm = "0".to_string();
