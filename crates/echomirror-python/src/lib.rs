@@ -44,12 +44,21 @@ fn _echomirror(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyGlobalFeedEntry>()?;
 
     // Exceptions
-    m.add("EchoMirrorException", py.get_type::<errors::EchoMirrorException>())?;
-    m.add("AuthError", py.get_type::<errors::AuthError>())?;
-    m.add("NetworkError", py.get_type::<errors::NetworkError>())?;
-    m.add("RateLimitError", py.get_type::<errors::RateLimitError>())?;
-    m.add("NotFoundError", py.get_type::<errors::NotFoundError>())?;
-    m.add("ConfigError", py.get_type::<errors::ConfigError>())?;
+    m.add(
+        "EchoMirrorException",
+        py.get_type_bound::<errors::EchoMirrorException>(),
+    )?;
+    m.add("AuthError", py.get_type_bound::<errors::AuthError>())?;
+    m.add("NetworkError", py.get_type_bound::<errors::NetworkError>())?;
+    m.add(
+        "RateLimitError",
+        py.get_type_bound::<errors::RateLimitError>(),
+    )?;
+    m.add(
+        "NotFoundError",
+        py.get_type_bound::<errors::NotFoundError>(),
+    )?;
+    m.add("ConfigError", py.get_type_bound::<errors::ConfigError>())?;
 
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
