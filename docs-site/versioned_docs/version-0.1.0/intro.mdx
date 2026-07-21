@@ -1,0 +1,26 @@
+﻿---
+sidebar_position: 1
+---
+
+# Introduction
+
+EchoMirror is a social wellness platform  - users log their mood, gift ECHO tokens over Stellar, and reflect through an AI-powered mirror. The EchoMirror SDK opens this infrastructure to every developer, on every platform.
+
+## Built on Rust
+
+The performance-critical core  - Stellar cryptography, XDR transaction encoding, blockchain sync, and balance verification  - is written in Rust and shipped as:
+
+- **WebAssembly** for browsers and Node.js (`@echomirror/wasm`)
+- **C-ABI shared library** for Flutter, Swift, Python, and any FFI-capable runtime (`echomirror-ffi`)
+- **Native Rust crates** for server-side Rust backends (`echomirror-core`, `echomirror-stellar`, `echomirror-sync`)
+
+## Language bindings on top
+
+Idiomatic wrappers in TypeScript (React, Node.js, vanilla JS), Dart/Flutter, Python, and Swift sit on top of the Rust core  - so you get native ergonomics without reimplementing crypto in every language.
+
+## Where to go next
+
+- [Core Concepts](./core-concepts)  - how the pieces fit together
+- Quickstarts  - [JavaScript/TypeScript](./quickstart/javascript), [React](./quickstart/react), [Flutter](./quickstart/flutter), [Rust](./quickstart/rust)
+- [JS API Reference](./api/js)  - [Rust API Reference](pathname:///api/rust/)  - [Dart API Reference](pathname:///api/dart/)
+

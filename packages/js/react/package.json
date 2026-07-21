@@ -1,6 +1,7 @@
 {
   "name": "@echomirror/react",
   "version": "0.1.0",
+  "description": "EchoMirror SDK React bindings � hooks and context provider",
   "description": "EchoMirror SDK React bindings",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -14,6 +15,11 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "keywords": ["echomirror", "wellness", "sdk", "react"],
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"
@@ -28,12 +34,15 @@
     "@echomirror/core": "*"
   },
   "peerDependencies": {
+    "react": ">=17"
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   },
   "devDependencies": {
     "typescript": "*",
     "vitest": "*",
+    "react": "^18.3.0",
+    "@types/react": "^18.3.0"
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0"
   }

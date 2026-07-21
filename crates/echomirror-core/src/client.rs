@@ -38,6 +38,11 @@ impl EchoMirrorClient {
         self.request::<(), T>(Method::GET, path, None).await
     }
 
+    pub async fn post<B: Serialize, T: DeserializeOwned>(
+        &self,
+        path: &str,
+        body: &B,
+    ) -> Result<T> {
     pub async fn post<B: Serialize, T: DeserializeOwned>(&self, path: &str, body: &B) -> Result<T> {
         self.request(Method::POST, path, Some(body)).await
     }
