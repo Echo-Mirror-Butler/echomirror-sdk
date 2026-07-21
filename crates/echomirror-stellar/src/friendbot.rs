@@ -1,4 +1,4 @@
-use echomirror_core::{config::StellarNetwork, EchoMirrorClient, EchoMirrorError, Result};
+use echomirror_core::{EchoMirrorClient, EchoMirrorError, Result};
 use reqwest::Client;
 
 /// Fund a Stellar testnet account using Friendbot (gives 10,000 XLM).
