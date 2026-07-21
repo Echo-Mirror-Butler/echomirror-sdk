@@ -68,7 +68,7 @@ async def test_build_transfer_and_submit(mock_server, base_url):
         200,
         {
             "id": "tx1",
-            "tx_type": "send",
+            "type": "send",
             "asset": "ECHO",
             "amount": "10.0000000",
             "from": "GFROM",
@@ -113,7 +113,7 @@ async def test_get_transaction_history(mock_server, base_url):
             "transactions": [
                 {
                     "id": "tx1",
-                    "tx_type": "receive",
+                    "type": "receive",
                     "asset": "XLM",
                     "amount": "5.0000000",
                     "from": "GA",
