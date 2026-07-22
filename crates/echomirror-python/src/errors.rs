@@ -22,9 +22,10 @@ pub fn to_py_err(err: EchoMirrorError) -> PyErr {
         EchoMirrorError::Network(e) => NetworkError::new_err(e.to_string()),
         EchoMirrorError::NotFound(msg) => NotFoundError::new_err(msg),
         EchoMirrorError::Config(msg) => ConfigError::new_err(msg),
-        EchoMirrorError::Http { status, message } if status == 404 => {
-            NotFoundError::new_err(message)
-        }
+        EchoMirrorError::Http {
+            status: 404,
+            message,
+        } => NotFoundError::new_err(message),
         other => EchoMirrorException::new_err(other.to_string()),
     }
 }
