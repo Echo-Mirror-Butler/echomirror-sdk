@@ -1,3 +1,10 @@
+// pyo3 0.22's `create_exception!` macro and `#[pymethods]` codegen trip two
+// lints on code *they* generate, not on anything we wrote: an `unexpected_cfgs`
+// warning from an internal `gil-refs` check, and a `useless_conversion` on the
+// generated `PyErr -> PyErr` wrapping for async method return types.
+#![allow(unexpected_cfgs)]
+#![allow(clippy::useless_conversion)]
+
 use pyo3::prelude::*;
 
 mod client;
