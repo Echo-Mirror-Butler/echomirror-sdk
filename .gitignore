@@ -28,3 +28,9 @@ docs-site/.docusaurus/
 docs-site/docs/api/js/
 docs-site/static/api/rust/
 docs-site/static/api/dart/
+# Flutter
+packages/flutter/.dart_tool/
+packages/flutter/build/
+packages/flutter/.flutter-plugins
+packages/flutter/.flutter-plugins-dependencies
+packages/flutter/packages

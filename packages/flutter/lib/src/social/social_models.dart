@@ -15,7 +15,8 @@ class GlobalFeedEntry {
     required this.createdAt,
   });
 
-  factory GlobalFeedEntry.fromJson(Map<String, dynamic> json) => GlobalFeedEntry(
+  factory GlobalFeedEntry.fromJson(Map<String, dynamic> json) =>
+      GlobalFeedEntry(
         id: json['id'] as String,
         score: json['score'] as int,
         tags: (json['tags'] as List<dynamic>).cast<String>(),
@@ -46,7 +47,8 @@ class LeaderboardEntry {
     required this.weeklyScore,
   });
 
-  factory LeaderboardEntry.fromJson(Map<String, dynamic> json) => LeaderboardEntry(
+  factory LeaderboardEntry.fromJson(Map<String, dynamic> json) =>
+      LeaderboardEntry(
         rank: json['rank'] as int,
         userId: json['user_id'] as String,
         displayName: json['display_name'] as String,
