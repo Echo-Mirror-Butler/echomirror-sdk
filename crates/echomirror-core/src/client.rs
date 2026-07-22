@@ -42,6 +42,11 @@ impl EchoMirrorClient {
         self.request(Method::POST, path, Some(body)).await
     }
 
+    /// POST with no request body (e.g. trigger-style endpoints).
+    pub async fn post_empty<T: DeserializeOwned>(&self, path: &str) -> Result<T> {
+        self.request::<(), T>(Method::POST, path, None).await
+    }
+
     pub async fn delete(&self, path: &str) -> Result<()> {
         self.request::<(), ()>(Method::DELETE, path, None).await
     }

@@ -16,6 +16,14 @@ pub struct EchoMirrorConfig {
 
     /// Maximum retry attempts on transient failures (default: 3)
     pub max_retries: u32,
+
+    /// Override the Horizon base URL (default: the network's public Horizon).
+    /// Useful for self-hosted Horizon instances and tests.
+    pub horizon_url: Option<String>,
+
+    /// Override the Friendbot URL (default: the network's public Friendbot,
+    /// testnet only). Useful for tests.
+    pub friendbot_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -56,6 +64,8 @@ impl EchoMirrorConfig {
             network: StellarNetwork::Mainnet,
             timeout: Duration::from_secs(10),
             max_retries: 3,
+            horizon_url: None,
+            friendbot_url: None,
         }
     }
 
@@ -74,5 +84,30 @@ impl EchoMirrorConfig {
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self
+    }
+
+    pub fn with_horizon_url(mut self, url: impl Into<String>) -> Self {
+        self.horizon_url = Some(url.into());
+        self
+    }
+
+    pub fn with_friendbot_url(mut self, url: impl Into<String>) -> Self {
+        self.friendbot_url = Some(url.into());
+        self
+    }
+
+    /// Resolve the effective Horizon URL: the override if set, else the network default.
+    pub fn resolved_horizon_url(&self) -> String {
+        self.horizon_url
+            .clone()
+            .unwrap_or_else(|| self.network.horizon_url().to_string())
+    }
+
+    /// Resolve the effective Friendbot URL: the override if set, else the network
+    /// default (`None` on mainnet, where there is no Friendbot).
+    pub fn resolved_friendbot_url(&self) -> Option<String> {
+        self.friendbot_url
+            .clone()
+            .or_else(|| self.network.friendbot_url().map(str::to_string))
     }
 }
