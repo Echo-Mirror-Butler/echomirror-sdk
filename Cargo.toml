@@ -7,6 +7,7 @@ members = [
     "crates/echomirror-sync",
     "crates/echomirror-ffi",
     "crates/echomirror-wasm",
+    "crates/echomirror-python",
 ]
 
 [workspace.package]
@@ -25,7 +26,7 @@ serde_json = "1.0"
 # HTTP
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 # Stellar SDK
-stellar-sdk = "0.9"
+stellar-sdk = { version = "0.9" }
 # error handling
 thiserror = "1.0"
 anyhow = "1.0"
@@ -34,11 +35,14 @@ async-trait = "0.1"
 # time
 chrono = { version = "0.4", features = ["serde"] }
 # WASM
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-js-sys = "0.3"
+wasm-bindgen = { version = "0.2" }
+wasm-bindgen-futures = { version = "0.4" }
+js-sys = { version = "0.3" }
 # FFI
-uniffi = "0.27"
+uniffi = { version = "0.27" }
+# Python bindings
+pyo3 = { version = "0.22" }
+pyo3-async-runtimes = { version = "0.22" }
 # crypto
 sha2 = "0.10"
 hex = "0.4"

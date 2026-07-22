@@ -133,6 +133,17 @@ pub struct UserProfile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GlobalFeedEntry {
+    pub id: String,
+    /// 1 (very low) – 10 (excellent)
+    pub score: u8,
+    pub tags: Vec<String>,
+    pub country: Option<String>,
+    pub city: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LeaderboardEntry {
     pub rank: u32,
     pub user_id: String,

@@ -578,6 +578,12 @@ mod tests {
         assert!(payload.contains("\"score\":7"));
         assert!(payload.contains("\"userId\":\"user-1\""));
 
+        // The channel message arriving only means the callback ran; the
+        // spawned OS thread that called it may still be a few instructions
+        // from fully exiting. Give it a moment before tearing down, to avoid
+        // a rare crash if the process starts exiting while it's still alive.
+        thread::sleep(Duration::from_millis(50));
+
         echomirror_mood_client_free(client);
     }
 }
