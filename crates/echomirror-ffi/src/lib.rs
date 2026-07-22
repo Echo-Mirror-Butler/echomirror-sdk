@@ -249,6 +249,7 @@ pub extern "C" fn echomirror_mood_client_new(
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_mood_client_free(client: *mut EchoMirrorMoodClient) {
     if client.is_null() {
         return;
@@ -259,6 +260,7 @@ pub extern "C" fn echomirror_mood_client_free(client: *mut EchoMirrorMoodClient)
 
 /// Callback payload is a JSON mood entry.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_mood_log_async(
     client: *const EchoMirrorMoodClient,
     user_id: *const c_char,
@@ -329,6 +331,7 @@ pub extern "C" fn echomirror_stellar_client_new(
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_stellar_client_free(client: *mut EchoMirrorStellarClient) {
     if client.is_null() {
         return;
@@ -339,6 +342,7 @@ pub extern "C" fn echomirror_stellar_client_free(client: *mut EchoMirrorStellarC
 
 /// Callback payload is a JSON Stellar balance.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_stellar_get_balance_async(
     client: *const EchoMirrorStellarClient,
     public_key: *const c_char,
@@ -425,6 +429,7 @@ pub extern "C" fn echomirror_social_client_new(
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_social_client_free(client: *mut EchoMirrorSocialClient) {
     if client.is_null() {
         return;
@@ -435,6 +440,7 @@ pub extern "C" fn echomirror_social_client_free(client: *mut EchoMirrorSocialCli
 
 /// Callback payload is a JSON user profile snapshot.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_social_profile_async(
     client: *const EchoMirrorSocialClient,
     user_id: *const c_char,
