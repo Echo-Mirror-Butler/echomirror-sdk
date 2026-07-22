@@ -4,7 +4,9 @@ use pyo3::types::PyAny;
 
 use crate::client::PyEchoMirrorClient;
 use crate::errors::to_py_err;
-use crate::types::{PyStellarBalance, PyStellarTransaction, PyTransactionHistoryPage, PyUnsignedTransaction};
+use crate::types::{
+    PyStellarBalance, PyStellarTransaction, PyTransactionHistoryPage, PyUnsignedTransaction,
+};
 
 /// Stellar balance lookups, ECHO transfers, transaction history, and testnet funding.
 ///
@@ -88,9 +90,10 @@ impl PyStellarClient {
     ) -> PyResult<Bound<'py, PyAny>> {
         let inner = self.client.inner.clone();
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let page = stellar::get_transaction_history(&inner, &public_key, limit, cursor.as_deref())
-                .await
-                .map_err(to_py_err)?;
+            let page =
+                stellar::get_transaction_history(&inner, &public_key, limit, cursor.as_deref())
+                    .await
+                    .map_err(to_py_err)?;
             Ok(PyTransactionHistoryPage {
                 transactions: page.transactions.into_iter().map(Into::into).collect(),
                 cursor: page.cursor,
