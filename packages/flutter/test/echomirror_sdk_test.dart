@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:echomirror_sdk/echomirror_sdk.dart';
 
 void main() {
   test('echomirror_sdk library can be imported', () {

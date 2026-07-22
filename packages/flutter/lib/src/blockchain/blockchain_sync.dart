@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'package:ffi/ffi.dart';
-import 'package:http/http.dart' as http;
 import '../echo_mirror.dart';
 import 'sync_models.dart';
 
@@ -29,7 +28,6 @@ class EchoMirrorNative {
   static _HashPublicKeyDart? _hashPublicKey;
   static _FreeStringDart? _freeString;
   static _IsValidAddressDart? _isValidAddress;
-  static _SerializeCursorDart? _serializeCursor;
 
   static void initialize() {
     try {
@@ -54,10 +52,6 @@ class EchoMirrorNative {
         _isValidAddress =
             _lib!.lookupFunction<_IsValidAddressNative, _IsValidAddressDart>(
           'echomirror_is_valid_stellar_address',
-        );
-        _serializeCursor =
-            _lib!.lookupFunction<_SerializeCursorNative, _SerializeCursorDart>(
-          'echomirror_serialize_cursor',
         );
       }
     } catch (_) {
@@ -122,7 +116,6 @@ class BlockchainSyncClient {
   Stream<SyncEventBase> watch(
     String publicKey, {
     Duration pollInterval = const Duration(seconds: 5),
-    SyncFilter? filter,
   }) {
     if (_controllers.containsKey(publicKey)) {
       return _controllers[publicKey]!.stream;
@@ -132,7 +125,7 @@ class BlockchainSyncClient {
     _controllers[publicKey] = controller;
     _cursors[publicKey] = SyncCursor.genesis();
 
-    _poll(publicKey, pollInterval, filter, controller);
+    _poll(publicKey, pollInterval, controller);
     return controller.stream;
   }
 
@@ -153,7 +146,6 @@ class BlockchainSyncClient {
   void _poll(
     String publicKey,
     Duration interval,
-    SyncFilter? filter,
     StreamController<SyncEventBase> controller,
   ) async {
     while (!controller.isClosed) {
@@ -162,13 +154,11 @@ class BlockchainSyncClient {
         final records = await _fetchPage(publicKey, cursor.pagingToken);
 
         for (final record in records) {
-          if (filter == null || filter.matches(record)) {
-            controller.add(LedgerSyncEvent(
-              ledgerSequence: record.ledger,
-              txHash: record.hash,
-              pagingToken: record.pagingToken,
-            ));
-          }
+          controller.add(LedgerSyncEvent(
+            ledgerSequence: record.ledger,
+            txHash: record.hash,
+            pagingToken: record.pagingToken,
+          ));
         }
 
         if (records.isNotEmpty) {
