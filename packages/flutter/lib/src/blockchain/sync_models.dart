@@ -106,10 +106,12 @@ class SyncFilter {
   });
 
   bool matches(_MatchableRecord record) {
-    if (account != null && record.from != account && record.to != account) return false;
+    if (account != null && record.from != account && record.to != account)
+      return false;
     if (assetCode != null && record.assetCode != assetCode) return false;
     if (minAmount != null && record.amount < minAmount!) return false;
-    if (memoPrefix != null && !(record.memo?.startsWith(memoPrefix!) ?? false)) return false;
+    if (memoPrefix != null && !(record.memo?.startsWith(memoPrefix!) ?? false))
+      return false;
     return true;
   }
 }

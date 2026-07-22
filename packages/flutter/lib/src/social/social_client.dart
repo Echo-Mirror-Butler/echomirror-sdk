@@ -11,7 +11,8 @@ class SocialClient {
   Map<String, String> get _headers => {
         'x-api-key': config.apiKey,
         'x-echomirror-network': config.network.name,
-        if (config.authToken != null) 'authorization': 'Bearer ${config.authToken}',
+        if (config.authToken != null)
+          'authorization': 'Bearer ${config.authToken}',
       };
 
   /// Get the global mood feed — anonymized entries from across the EchoMirror network.
