@@ -39,7 +39,10 @@ impl From<echomirror_core::AiReflection> for PyAiReflection {
 #[pymethods]
 impl PyAiReflection {
     fn __repr__(&self) -> String {
-        format!("AiReflection(id={:?}, sentiment={:?})", self.id, self.sentiment)
+        format!(
+            "AiReflection(id={:?}, sentiment={:?})",
+            self.id, self.sentiment
+        )
     }
 }
 
@@ -258,7 +261,10 @@ impl From<echomirror_stellar::UnsignedTransaction> for PyUnsignedTransaction {
 #[pymethods]
 impl PyUnsignedTransaction {
     fn __repr__(&self) -> String {
-        format!("UnsignedTransaction(fee={}, sequence={:?})", self.fee, self.sequence)
+        format!(
+            "UnsignedTransaction(fee={}, sequence={:?})",
+            self.fee, self.sequence
+        )
     }
 }
 
@@ -337,7 +343,10 @@ impl From<echomirror_core::LeaderboardEntry> for PyLeaderboardEntry {
 #[pymethods]
 impl PyLeaderboardEntry {
     fn __repr__(&self) -> String {
-        format!("LeaderboardEntry(rank={}, display_name={:?})", self.rank, self.display_name)
+        format!(
+            "LeaderboardEntry(rank={}, display_name={:?})",
+            self.rank, self.display_name
+        )
     }
 }
 
