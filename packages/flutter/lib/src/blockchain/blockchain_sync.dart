@@ -17,10 +17,6 @@ typedef _FreeStringDart = void Function(Pointer<Utf8>);
 typedef _IsValidAddressNative = Uint8 Function(Pointer<Utf8>);
 typedef _IsValidAddressDart = int Function(Pointer<Utf8>);
 
-typedef _SerializeCursorNative = Pointer<Utf8> Function(
-    Uint32, Pointer<Utf8>, Uint64);
-typedef _SerializeCursorDart = Pointer<Utf8> Function(int, Pointer<Utf8>, int);
-
 /// Loads the native Rust library for crypto operations.
 /// Falls back gracefully to pure-Dart implementations if not available.
 class EchoMirrorNative {
