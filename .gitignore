@@ -1,3 +1,10 @@
 node_modules/
 dist/
 *.tsbuildinfo
+
+# Flutter
+packages/flutter/.dart_tool/
+packages/flutter/build/
+packages/flutter/.flutter-plugins
+packages/flutter/.flutter-plugins-dependencies
+packages/flutter/packages
