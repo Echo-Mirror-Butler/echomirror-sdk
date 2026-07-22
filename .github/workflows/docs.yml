@@ -1,0 +1,81 @@
+﻿name: Docs
+
+on:
+  pull_request:
+    paths:
+      - 'packages/js/**'
+      - 'crates/**'
+      - 'packages/flutter/**'
+      - 'docs-site/**'
+      - '.github/workflows/docs.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/js/**'
+      - 'crates/**'
+      - 'packages/flutter/**'
+      - 'docs-site/**'
+      - '.github/workflows/docs.yml'
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # JS/TS API reference (typedoc)
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Build JS packages
+        run: |
+          npm run build --workspace=@echomirror/core
+          npm run build --workspace=@echomirror/mood
+          npm run build --workspace=@echomirror/react
+          npm run build --workspace=@echomirror/stellar
+
+      # Rust API reference (cargo doc)
+      - name: Generate Rust docs
+        run: cargo doc --workspace --no-deps
+
+      # Dart API reference (dartdoc)
+      - name: Install Flutter package dependencies
+        working-directory: packages/flutter
+        run: flutter pub get
+
+      - name: Generate Dart docs
+        working-directory: packages/flutter
+        run: dart doc .
+
+      # Wire generated docs into the Docusaurus static folder
+      - name: Copy Rust docs into docs site
+        run: |
+          mkdir -p docs-site/static/api
+          cp -r target/doc docs-site/static/api/rust
+
+      - name: Copy Dart docs into docs site
+        run: cp -r packages/flutter/doc/api docs-site/static/api/dart
+
+      # Build the docs site — fails on typedoc errors, undocumented public
+      # APIs surfaced as typedoc warnings-as-errors, or broken internal links
+      # (onBrokenLinks: 'throw' in docusaurus.config.ts)
+      - name: Install docs site dependencies
+        working-directory: docs-site
+        run: npm install
+
+      - name: Build docs site
+        working-directory: docs-site
+        run: npm run build
