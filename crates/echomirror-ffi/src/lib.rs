@@ -72,9 +72,6 @@ fn optional_string_from_ptr(ptr: *const c_char) -> Result<Option<String>, EchoMi
     if ptr.is_null() {
         return Ok(None);
     }
-use sha2::{Digest, Sha256};
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
 
     string_from_ptr(ptr).map(Some)
 }
@@ -131,9 +128,12 @@ fn map_core_error(error: EchoMirrorError) -> EchoMirrorFfiErrorCode {
     match error {
         EchoMirrorError::Http { .. }
         | EchoMirrorError::Auth(_)
+        | EchoMirrorError::AuthExpired
         | EchoMirrorError::RateLimit { .. }
         | EchoMirrorError::Network(_) => EchoMirrorFfiErrorCode::Network,
-        EchoMirrorError::Serialization(_) => EchoMirrorFfiErrorCode::Serialization,
+        EchoMirrorError::Serialization(_) | EchoMirrorError::InvalidResponse(_) => {
+            EchoMirrorFfiErrorCode::Serialization
+        }
         EchoMirrorError::Config(_) => EchoMirrorFfiErrorCode::InvalidConfig,
         EchoMirrorError::Stellar(_)
         | EchoMirrorError::Sync(_)
@@ -182,12 +182,6 @@ pub extern "C" fn echomirror_free_string(ptr: *mut c_char) {
 #[no_mangle]
 pub extern "C" fn echomirror_version() -> *mut c_char {
     string_into_raw(env!("CARGO_PKG_VERSION"))
-pub extern "C" fn echomirror_verify_mood_score(score: u8) -> u8 {
-    if (1..=10).contains(&score) {
-        1
-    } else {
-        0
-    }
 }
 
 /// SHA-256 hash of a Stellar public key as a lowercase hex string.
@@ -198,14 +192,6 @@ pub extern "C" fn echomirror_hash_public_key(public_key: *const c_char) -> *mut 
     let Ok(key) = string_from_ptr(public_key) else {
         return ptr::null_mut();
     };
-    if public_key.is_null() {
-        return std::ptr::null_mut();
-    }
-    let key = unsafe { CStr::from_ptr(public_key) }.to_str().unwrap_or("");
-
-    let mut hasher = Sha256::new();
-    hasher.update(key.as_bytes());
-    let hash = hex::encode(hasher.finalize());
 
     string_into_raw(hash_id(&key))
 }
@@ -219,18 +205,6 @@ pub extern "C" fn echomirror_is_valid_stellar_address(address: *const c_char) ->
     };
 
     u8::from(is_valid_stellar_address_str(&address))
-    }
-    let addr = unsafe { CStr::from_ptr(address) }.to_str().unwrap_or("");
-
-    let valid = addr.starts_with('G')
-        && addr.len() == 56
-        && addr.chars().all(|c| c.is_ascii_alphanumeric());
-
-    if valid {
-        1
-    } else {
-        0
-    }
 }
 
 /// Serialize a sync cursor to a JSON C string.
@@ -278,6 +252,7 @@ pub extern "C" fn echomirror_mood_client_new(
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_mood_client_free(client: *mut EchoMirrorMoodClient) {
     if client.is_null() {
         return;
@@ -288,6 +263,7 @@ pub extern "C" fn echomirror_mood_client_free(client: *mut EchoMirrorMoodClient)
 
 /// Callback payload is a JSON mood entry.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_mood_log_async(
     client: *const EchoMirrorMoodClient,
     user_id: *const c_char,
@@ -358,6 +334,7 @@ pub extern "C" fn echomirror_stellar_client_new(
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_stellar_client_free(client: *mut EchoMirrorStellarClient) {
     if client.is_null() {
         return;
@@ -368,6 +345,7 @@ pub extern "C" fn echomirror_stellar_client_free(client: *mut EchoMirrorStellarC
 
 /// Callback payload is a JSON Stellar balance.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_stellar_get_balance_async(
     client: *const EchoMirrorStellarClient,
     public_key: *const c_char,
@@ -454,6 +432,7 @@ pub extern "C" fn echomirror_social_client_new(
 }
 
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_social_client_free(client: *mut EchoMirrorSocialClient) {
     if client.is_null() {
         return;
@@ -464,6 +443,7 @@ pub extern "C" fn echomirror_social_client_free(client: *mut EchoMirrorSocialCli
 
 /// Callback payload is a JSON user profile snapshot.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_social_profile_async(
     client: *const EchoMirrorSocialClient,
     user_id: *const c_char,
@@ -600,6 +580,12 @@ mod tests {
         assert_eq!(callback_code, error_code(EchoMirrorFfiErrorCode::Ok));
         assert!(payload.contains("\"score\":7"));
         assert!(payload.contains("\"userId\":\"user-1\""));
+
+        // The channel message arriving only means the callback ran; the
+        // spawned OS thread that called it may still be a few instructions
+        // from fully exiting. Give it a moment before tearing down, to avoid
+        // a rare crash if the process starts exiting while it's still alive.
+        thread::sleep(Duration::from_millis(50));
 
         echomirror_mood_client_free(client);
     }

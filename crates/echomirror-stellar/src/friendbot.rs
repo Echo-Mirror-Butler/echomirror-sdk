@@ -16,7 +16,7 @@ use reqwest::Client;
 /// }
 /// ```
 pub async fn fund_testnet_account(client: &EchoMirrorClient, public_key: &str) -> Result<()> {
-    let friendbot_url = client.config().network.friendbot_url().ok_or_else(|| {
+    let friendbot_url = client.config().resolved_friendbot_url().ok_or_else(|| {
         EchoMirrorError::Config("fund_testnet_account is only available on testnet".into())
     })?;
 

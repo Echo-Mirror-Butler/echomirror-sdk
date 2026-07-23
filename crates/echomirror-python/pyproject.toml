@@ -1,0 +1,45 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "echomirror-sdk"
+version = "0.1.0"
+description = "Python SDK for EchoMirror — mood tracking with Stellar-powered rewards"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Echo Mirror Butler", email = "dev@echomirror.dev" }]
+keywords = ["echomirror", "stellar", "blockchain", "mood-tracking", "asyncio"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Rust",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Framework :: AsyncIO",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Echo-Mirror-Butler/echomirror-sdk"
+Repository = "https://github.com/Echo-Mirror-Butler/echomirror-sdk"
+Issues = "https://github.com/Echo-Mirror-Butler/echomirror-sdk/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=7.4", "pytest-asyncio>=0.23"]
+
+[tool.maturin]
+python-source = "python"
+module-name = "echomirror._echomirror"
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

@@ -52,7 +52,7 @@ public final class MoodClient {
                         }
                     }
 
-                    echomirror_mood_log_async(
+                    return echomirror_mood_log_async(
                         handle,
                         userIdCString,
                         score,

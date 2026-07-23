@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'package:ffi/ffi.dart';
-import 'package:http/http.dart' as http;
 import '../echo_mirror.dart';
 import 'sync_models.dart';
 
@@ -18,9 +17,6 @@ typedef _FreeStringDart = void Function(Pointer<Utf8>);
 typedef _IsValidAddressNative = Uint8 Function(Pointer<Utf8>);
 typedef _IsValidAddressDart = int Function(Pointer<Utf8>);
 
-typedef _SerializeCursorNative = Pointer<Utf8> Function(Uint32, Pointer<Utf8>, Uint64);
-typedef _SerializeCursorDart = Pointer<Utf8> Function(int, Pointer<Utf8>, int);
-
 /// Loads the native Rust library for crypto operations.
 /// Falls back gracefully to pure-Dart implementations if not available.
 class EchoMirrorNative {
@@ -28,7 +24,6 @@ class EchoMirrorNative {
   static _HashPublicKeyDart? _hashPublicKey;
   static _FreeStringDart? _freeString;
   static _IsValidAddressDart? _isValidAddress;
-  static _SerializeCursorDart? _serializeCursor;
 
   static void initialize() {
     try {
@@ -43,17 +38,16 @@ class EchoMirrorNative {
       }
 
       if (_lib != null) {
-        _hashPublicKey = _lib!.lookupFunction<_HashPublicKeyNative, _HashPublicKeyDart>(
+        _hashPublicKey =
+            _lib!.lookupFunction<_HashPublicKeyNative, _HashPublicKeyDart>(
           'echomirror_hash_public_key',
         );
         _freeString = _lib!.lookupFunction<_FreeStringNative, _FreeStringDart>(
           'echomirror_free_string',
         );
-        _isValidAddress = _lib!.lookupFunction<_IsValidAddressNative, _IsValidAddressDart>(
+        _isValidAddress =
+            _lib!.lookupFunction<_IsValidAddressNative, _IsValidAddressDart>(
           'echomirror_is_valid_stellar_address',
-        );
-        _serializeCursor = _lib!.lookupFunction<_SerializeCursorNative, _SerializeCursorDart>(
-          'echomirror_serialize_cursor',
         );
       }
     } catch (_) {
@@ -118,7 +112,6 @@ class BlockchainSyncClient {
   Stream<SyncEventBase> watch(
     String publicKey, {
     Duration pollInterval = const Duration(seconds: 5),
-    SyncFilter? filter,
   }) {
     if (_controllers.containsKey(publicKey)) {
       return _controllers[publicKey]!.stream;
@@ -128,7 +121,7 @@ class BlockchainSyncClient {
     _controllers[publicKey] = controller;
     _cursors[publicKey] = SyncCursor.genesis();
 
-    _poll(publicKey, pollInterval, filter, controller);
+    _poll(publicKey, pollInterval, controller);
     return controller.stream;
   }
 
@@ -149,7 +142,6 @@ class BlockchainSyncClient {
   void _poll(
     String publicKey,
     Duration interval,
-    SyncFilter? filter,
     StreamController<SyncEventBase> controller,
   ) async {
     while (!controller.isClosed) {
@@ -158,13 +150,11 @@ class BlockchainSyncClient {
         final records = await _fetchPage(publicKey, cursor.pagingToken);
 
         for (final record in records) {
-          if (filter == null || filter.matches(record)) {
-            controller.add(LedgerSyncEvent(
-              ledgerSequence: record.ledger,
-              txHash: record.hash,
-              pagingToken: record.pagingToken,
-            ));
-          }
+          controller.add(LedgerSyncEvent(
+            ledgerSequence: record.ledger,
+            txHash: record.hash,
+            pagingToken: record.pagingToken,
+          ));
         }
 
         if (records.isNotEmpty) {
@@ -184,7 +174,8 @@ class BlockchainSyncClient {
     }
   }
 
-  Future<List<_HorizonRecord>> _fetchPage(String publicKey, String cursor) async {
+  Future<List<_HorizonRecord>> _fetchPage(
+      String publicKey, String cursor) async {
     var url =
         '$_horizonBase/accounts/$publicKey/transactions?limit=50&order=asc&cursor=$cursor';
 
@@ -192,8 +183,8 @@ class BlockchainSyncClient {
     if (res.statusCode != 200) return [];
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final records =
-        (body['_embedded']['records'] as List<dynamic>).cast<Map<String, dynamic>>();
+    final records = (body['_embedded']['records'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
 
     return records.map(_HorizonRecord.fromJson).toList();
   }

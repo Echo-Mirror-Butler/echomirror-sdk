@@ -13,7 +13,8 @@ class MoodClient {
         'x-api-key': config.apiKey,
         'x-echomirror-network': config.network.name,
         'content-type': 'application/json',
-        if (config.authToken != null) 'authorization': 'Bearer ${config.authToken}',
+        if (config.authToken != null)
+          'authorization': 'Bearer ${config.authToken}',
       };
 
   Future<T> _request<T>(

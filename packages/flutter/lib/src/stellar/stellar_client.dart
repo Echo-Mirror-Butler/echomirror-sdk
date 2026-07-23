@@ -13,7 +13,8 @@ class StellarClient {
         'x-api-key': config.apiKey,
         'x-echomirror-network': config.network.name,
         'content-type': 'application/json',
-        if (config.authToken != null) 'authorization': 'Bearer ${config.authToken}',
+        if (config.authToken != null)
+          'authorization': 'Bearer ${config.authToken}',
       };
 
   /// Get XLM and ECHO token balance for a Stellar public key.
@@ -28,7 +29,8 @@ class StellarClient {
       headers: _headers,
     );
     _checkStatus(res);
-    return StellarBalance.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+    return StellarBalance.fromJson(
+        jsonDecode(res.body) as Map<String, dynamic>);
   }
 
   /// Fund a testnet account using Stellar Friendbot.
@@ -39,7 +41,8 @@ class StellarClient {
   /// ```
   Future<void> fundTestnetAccount(String publicKey) async {
     if (config.network != StellarNetwork.testnet) {
-      throw const EchoMirrorError('fundTestnetAccount is only available on testnet');
+      throw const EchoMirrorError(
+          'fundTestnetAccount is only available on testnet');
     }
     final res = await config.httpClient.post(
       Uri.parse('${config.baseUrl}/stellar/friendbot'),
@@ -55,7 +58,8 @@ class StellarClient {
     int limit = 20,
     String? cursor,
   }) async {
-    var url = '${config.baseUrl}/stellar/transactions?public_key=$publicKey&limit=$limit';
+    var url =
+        '${config.baseUrl}/stellar/transactions?public_key=$publicKey&limit=$limit';
     if (cursor != null) url += '&cursor=$cursor';
 
     final res = await config.httpClient.get(Uri.parse(url), headers: _headers);
