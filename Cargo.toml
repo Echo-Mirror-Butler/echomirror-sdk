@@ -46,3 +46,5 @@ pyo3-async-runtimes = { version = "0.22" }
 # crypto
 sha2 = "0.10"
 hex = "0.4"
+# random
+rand = "0.8"
