@@ -16,6 +16,7 @@ create_exception!(_echomirror, ConfigError, EchoMirrorException);
 pub fn to_py_err(err: EchoMirrorError) -> PyErr {
     match err {
         EchoMirrorError::Auth(msg) => AuthError::new_err(msg),
+        EchoMirrorError::AuthExpired => AuthError::new_err("Authentication token expired"),
         EchoMirrorError::RateLimit { retry_after_secs } => RateLimitError::new_err(format!(
             "Rate limit exceeded — retry after {retry_after_secs}s"
         )),

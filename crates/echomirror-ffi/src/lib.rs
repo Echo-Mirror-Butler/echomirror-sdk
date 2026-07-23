@@ -128,9 +128,12 @@ fn map_core_error(error: EchoMirrorError) -> EchoMirrorFfiErrorCode {
     match error {
         EchoMirrorError::Http { .. }
         | EchoMirrorError::Auth(_)
+        | EchoMirrorError::AuthExpired
         | EchoMirrorError::RateLimit { .. }
         | EchoMirrorError::Network(_) => EchoMirrorFfiErrorCode::Network,
-        EchoMirrorError::Serialization(_) => EchoMirrorFfiErrorCode::Serialization,
+        EchoMirrorError::Serialization(_) | EchoMirrorError::InvalidResponse(_) => {
+            EchoMirrorFfiErrorCode::Serialization
+        }
         EchoMirrorError::Config(_) => EchoMirrorFfiErrorCode::InvalidConfig,
         EchoMirrorError::Stellar(_)
         | EchoMirrorError::Sync(_)

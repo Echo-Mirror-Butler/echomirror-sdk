@@ -10,6 +10,9 @@ pub enum EchoMirrorError {
     #[error("Authentication failed: {0}")]
     Auth(String),
 
+    #[error("Authentication token expired")]
+    AuthExpired,
+
     #[error("Rate limit exceeded — retry after {retry_after_secs}s")]
     RateLimit { retry_after_secs: u64 },
 
@@ -18,6 +21,9 @@ pub enum EchoMirrorError {
 
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
+
+    #[error("Invalid response from server: {0}")]
+    InvalidResponse(String),
 
     #[error("Stellar error: {0}")]
     Stellar(String),
@@ -33,4 +39,29 @@ pub enum EchoMirrorError {
 
     #[error("{0}")]
     Other(String),
+}
+
+impl EchoMirrorError {
+    /// Returns true if this error is retryable (transient failures)
+    pub fn is_retryable(&self) -> bool {
+        match self {
+            // Network errors are retryable (connection issues, timeouts, etc.)
+            EchoMirrorError::Network(_) => true,
+            // 5xx server errors are retryable
+            EchoMirrorError::Http { status, .. } if *status >= 500 => true,
+            // 4xx client errors are NOT retryable
+            EchoMirrorError::Http { status, .. } if *status >= 400 && *status < 500 => false,
+            // Rate limit errors are retryable (with backoff)
+            EchoMirrorError::RateLimit { .. } => true,
+            // Auth expired is retryable after token refresh
+            EchoMirrorError::AuthExpired => true,
+            // Other errors are not retryable
+            _ => false,
+        }
+    }
+
+    /// Returns true if this error indicates the auth token should be refreshed
+    pub fn is_auth_expired(&self) -> bool {
+        matches!(self, EchoMirrorError::AuthExpired)
+    }
 }
