@@ -4,6 +4,7 @@ import { logMood } from '@echomirror/mood'
 import { connectFreighter, getBalance } from '@echomirror/stellar'
 import { useEchoMirrorClient } from '@echomirror/react'
 import { init as initWasm, hashPublicKey, MoodBuffer } from '@echomirror/wasm'
+import { useGlobalFeed, useLeaderboard } from '@echomirror/social'
 
 function MoodLogger() {
   const client = useEchoMirrorClient()
@@ -124,6 +125,75 @@ function WalletConnector() {
   )
 }
 
+function GlobalFeedView() {
+  const client = useEchoMirrorClient()
+  const { entries, isLoading, fetchMore, hasMore, refresh } = useGlobalFeed(client)
+
+  return (
+    <div style={{ padding: '0 24px', maxWidth: 480, margin: '24px auto 0', fontFamily: 'sans-serif' }}>
+      <h2>@echomirror/social — Global Feed</h2>
+      <button onClick={refresh} disabled={isLoading} style={{ marginBottom: 12, padding: '6px 16px', background: '#6366f1', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+        {isLoading ? 'Loading…' : 'Refresh'}
+      </button>
+      {entries.map((entry) => (
+        <div key={entry.id} style={{ padding: '8px 12px', marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 8 }}>
+          <p style={{ margin: 0, fontWeight: 600 }}>Score: {entry.score}/10</p>
+          <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 14 }}>
+            {entry.tags.join(', ')} {entry.country ? `• ${entry.country}` : ''}
+          </p>
+        </div>
+      ))}
+      {hasMore && (
+        <button onClick={fetchMore} disabled={isLoading} style={{ padding: '8px 20px', background: '#0c1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+          Load More
+        </button>
+      )}
+    </div>
+  )
+}
+
+function LeaderboardView() {
+  const client = useEchoMirrorClient()
+  const [window, setWindow] = useState<'daily' | 'weekly' | 'all-time'>('weekly')
+  const { entries, isLoading, refresh } = useLeaderboard(client, window)
+
+  return (
+    <div style={{ padding: '0 24px', maxWidth: 480, margin: '24px auto 0', fontFamily: 'sans-serif' }}>
+      <h2>@echomirror/social — Leaderboard</h2>
+      <div style={{ marginBottom: 12 }}>
+        {(['daily', 'weekly', 'all-time'] as const).map((w) => (
+          <button
+            key={w}
+            onClick={() => setWindow(w)}
+            style={{
+              padding: '4px 12px',
+              marginRight: 8,
+              background: window === w ? '#6366f1' : '#e5e7eb',
+              color: window === w ? 'white' : '#374151',
+              border: 'none',
+              borderRadius: 6,
+              cursor: 'pointer',
+            }}
+          >
+            {w}
+          </button>
+        ))}
+        <button onClick={refresh} disabled={isLoading} style={{ padding: '4px 12px', background: '#0c1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+          ↻
+        </button>
+      </div>
+      {entries.map((entry) => (
+        <div key={entry.userId} style={{ padding: '8px 12px', marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 8 }}>
+          <p style={{ margin: 0, fontWeight: 600 }}>#{entry.rank} {entry.displayName}</p>
+          <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 14 }}>
+            Score: {entry.weeklyScore} • Streak: {entry.streak} days
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function WasmInsights() {
   const [ready, setReady] = useState(false)
   const [anonymizedId, setAnonymizedId] = useState<string | null>(null)
@@ -165,6 +235,8 @@ export default function App() {
     <EchoMirrorProvider apiKey={import.meta.env.VITE_ECHOMIRROR_API_KEY ?? 'demo'}>
       <MoodLogger />
       <WalletConnector />
+      <GlobalFeedView />
+      <LeaderboardView />
       <WasmInsights />
     </EchoMirrorProvider>
   )
