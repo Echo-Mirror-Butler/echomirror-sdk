@@ -20,5 +20,12 @@ jobs:
       - run: npm run lint --workspaces --if-present
       - run: npm run build -w packages/js/core
       - run: npm run typecheck --workspaces --if-present
-      - run: npm run test --workspaces --if-present
+      # @echomirror/wasm's test suite runs against its compiled wasm-pack
+      # output (wasm-web/, wasm-node/), which needs a Rust toolchain to
+      # produce — that full pipeline (build:wasm -> build -> test ->
+      # test:browser) runs in rust-ci.yml's wasm-build job instead. lint,
+      # typecheck, and build above still cover it: the "#wasm-binding"
+      # import resolves against its own ambient .d.ts for type-checking,
+      # with no dependency on the wasm-pack artifacts existing.
+      - run: npm run test --if-present --workspace=packages/js/core --workspace=packages/js/mood --workspace=packages/js/react --workspace=packages/js/stellar
       - run: npm run build --workspaces --if-present

@@ -1,0 +1,74 @@
+name: Publish @echomirror/wasm
+
+on:
+  push:
+    tags:
+      - 'wasm-v*'
+  workflow_dispatch:
+    inputs:
+      npm_tag:
+        description: 'npm dist-tag to publish under'
+        required: false
+        default: 'latest'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    name: Build, test & publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}-wasm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - name: Build wasm (web + nodejs targets)
+        run: npm run build:wasm -w packages/js/wasm
+
+      - name: Build TS wrapper
+        run: npm run build -w packages/js/wasm
+
+      - name: Enforce bundle size budget
+        run: npm run size -w packages/js/wasm
+
+      - name: Test (Node target)
+        run: npm run test -w packages/js/wasm
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test (headless browser target)
+        run: npm run test:browser -w packages/js/wasm
+
+      - name: Verify package.json version matches tag
+        if: startsWith(github.ref, 'refs/tags/wasm-v')
+        run: |
+          tag_version="${GITHUB_REF_NAME#wasm-v}"
+          pkg_version=$(node -p "require('./packages/js/wasm/package.json').version")
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "Tag wasm-v$tag_version does not match package.json version $pkg_version"
+            exit 1
+          fi
+
+      - name: Publish to npm
+        working-directory: packages/js/wasm
+        run: npm publish --access public --provenance --tag "${{ inputs.npm_tag || 'latest' }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

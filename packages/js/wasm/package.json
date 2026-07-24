@@ -1,0 +1,54 @@
+{
+  "name": "@echomirror/wasm",
+  "version": "0.1.0",
+  "description": "EchoMirror SDK compiled to WebAssembly — crypto, XDR and sync helpers for browser and Node.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "browser": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/index.js",
+      "node": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "imports": {
+    "#wasm-binding": {
+      "types": "./src/wasm-binding.d.ts",
+      "node": "./wasm-node/echomirror_wasm.cjs",
+      "browser": "./wasm-web/echomirror_wasm.js",
+      "default": "./wasm-web/echomirror_wasm.js"
+    }
+  },
+  "files": [
+    "dist",
+    "wasm-web",
+    "wasm-node",
+    "src/wasm-binding.d.ts"
+  ],
+  "scripts": {
+    "build:wasm": "node scripts/build.mjs",
+    "build": "tsc",
+    "size": "node scripts/report-size.mjs",
+    "test": "vitest run --config vitest.config.ts --passWithNoTests",
+    "test:browser": "vitest run --config vitest.browser.config.ts --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist wasm-web wasm-node"
+  },
+  "keywords": ["echomirror", "wasm", "webassembly", "stellar", "mood"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "*",
+    "vitest": "*",
+    "@vitest/browser": "^1.6.0",
+    "playwright": "^1.44.0",
+    "wasm-pack": "^0.15.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -26,6 +26,10 @@
 
   <div id="result" style="display:none" class="result"></div>
 
+  <h1 style="margin-top: 48px">@echomirror/wasm — client-side helpers</h1>
+  <p id="wasm-hash" class="result" style="display:none"></p>
+  <p id="wasm-avg" class="result" style="display:none"></p>
+
   <script type="module">
     // In production: import { EchoMirrorClient } from 'https://cdn.jsdelivr.net/npm/@echomirror/core/+esm'
     // This example uses a mock for demonstration.
@@ -53,6 +57,25 @@
       logBtn.disabled = false
       logBtn.textContent = 'Log Mood'
     })
+
+    // @echomirror/wasm: crypto + local aggregation that runs entirely in
+    // the browser, no server round-trip. `init()` fetches and instantiates
+    // the .wasm binary once — call it before anything else.
+    import { init, hashPublicKey, MoodBuffer } from '@echomirror/wasm'
+
+    await init()
+
+    const anonymizedId = hashPublicKey('GDEMO...PUBLICKEY')
+    document.getElementById('wasm-hash').style.display = 'block'
+    document.getElementById('wasm-hash').textContent = `Anonymized wallet id: ${anonymizedId.slice(0, 16)}…`
+
+    // MoodBuffer owns wasm-side memory — always free() it (or use
+    // `using` in an environment that supports it) once you're done.
+    using localHistory = new MoodBuffer()
+    for (const score of [7, 8, 6, 9, 7]) localHistory.push(score)
+    document.getElementById('wasm-avg').style.display = 'block'
+    document.getElementById('wasm-avg').textContent =
+      `Local 5-entry average (computed in wasm): ${localHistory.average().toFixed(1)}/10`
   </script>
 </body>
 </html>

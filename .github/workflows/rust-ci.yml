@@ -45,7 +45,7 @@ jobs:
       - run: cargo test --workspace
 
   wasm-build:
-    name: WASM Build
+    name: WASM Build (@echomirror/wasm)
     runs-on: ubuntu-latest
     needs: [fmt, clippy, test]
     steps:
@@ -56,6 +56,18 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ hashFiles('Cargo.lock') }}-wasm
-      - name: Install wasm-pack
-        run: cargo install wasm-pack
-      - run: wasm-pack build crates/echomirror-wasm --target web
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Builds both wasm-pack targets (web + nodejs) via wasm-pack build,
+      # with wasm-opt applied per crates/echomirror-wasm/Cargo.toml, then
+      # compiles the hand-written TS wrapper.
+      - run: npm run build:wasm -w packages/js/wasm
+      - run: npm run build -w packages/js/wasm
+      - run: npm run size -w packages/js/wasm
+      - run: npm run test -w packages/js/wasm
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:browser -w packages/js/wasm
