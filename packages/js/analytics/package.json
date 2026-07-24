@@ -1,0 +1,36 @@
+{
+  "name": "@echomirror/analytics",
+  "version": "0.1.0",
+  "description": "EchoMirror SDK analytics — privacy-safe emotional UX event tracking, offline batching, and vendor-neutral dashboard export",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "echomirror",
+    "analytics",
+    "events",
+    "privacy",
+    "wellness"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@echomirror/core": "*"
+  },
+  "devDependencies": {
+    "typescript": "*",
+    "vitest": "*"
+  }
+}
