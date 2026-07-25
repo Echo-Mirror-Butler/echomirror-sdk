@@ -48,3 +48,11 @@ sha2 = "0.10"
 hex = "0.4"
 # random
 rand = "0.8"
+# streaming sync
+eventsource-stream = "0.2"
+tokio-util = "0.7"
+tracing = "0.1"
+# postgres cursor store (optional feature of echomirror-sync)
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "migrate", "macros"] }
+# testing
+wiremock = "0.6"

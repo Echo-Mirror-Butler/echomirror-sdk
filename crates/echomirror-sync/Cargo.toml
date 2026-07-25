@@ -1,9 +1,13 @@
 [package]
 name = "echomirror-sync"
-description = "EchoMirror blockchain sync engine — real-time Stellar ledger streaming with resumable cursors"
+description = "EchoMirror blockchain sync engine — real-time Stellar SSE streaming with resumable cursors and gap backfill"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+
+[features]
+default = []
+postgres = ["dep:sqlx"]
 
 [dependencies]
 echomirror-core = { path = "../echomirror-core" }
@@ -15,5 +19,13 @@ reqwest = { workspace = true, features = ["stream"] }
 thiserror.workspace = true
 chrono.workspace = true
 async-trait.workspace = true
+rand.workspace = true
 futures = "0.3"
-tokio-stream = "0.1"
+tokio-stream = { version = "0.1", features = ["time"] }
+eventsource-stream.workspace = true
+tokio-util.workspace = true
+tracing.workspace = true
+sqlx = { workspace = true, optional = true }
+
+[dev-dependencies]
+wiremock.workspace = true

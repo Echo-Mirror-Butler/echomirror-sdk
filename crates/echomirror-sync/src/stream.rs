@@ -28,7 +28,7 @@ impl SyncEventStream {
                     }
                 }
                 Err(broadcast::error::RecvError::Lagged(n)) => {
-                    eprintln!("echomirror-sync: stream lagged by {} messages", n);
+                    tracing::warn!(missed = n, "sync event stream lagged");
                 }
                 Err(broadcast::error::RecvError::Closed) => break,
             }
