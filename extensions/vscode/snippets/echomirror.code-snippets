@@ -79,5 +79,17 @@
       "}"
     ],
     "description": "Start a blockchain sync engine (Rust)"
+  },
+  "EchoMirror: Initialize Client": {
+    "prefix": "echomirror-init",
+    "body": [
+      "import { EchoMirrorClient } from '@echomirror/core'",
+      "",
+      "const client = new EchoMirrorClient({",
+      "  apiKey: process.env.ECHOMIRROR_API_KEY || '${1:your_api_key}',",
+      "  network: '${2:testnet}'",
+      "})"
+    ],
+    "description": "Boilerplate EchoMirror client setup"
   }
 }
