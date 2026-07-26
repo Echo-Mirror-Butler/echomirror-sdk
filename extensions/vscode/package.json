@@ -4,7 +4,6 @@
   "description": "EchoMirror SDK developer tools — Stellar address validation, mood log snippets, blockchain sync explorer, and live ECHO balance in the status bar",
   "version": "0.1.0",
   "publisher": "EchoMirrorButler",
-  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.88.0"
   },
@@ -35,6 +34,22 @@
       {
         "command": "echomirror.insertMoodLogSnippet",
         "title": "EchoMirror: Insert Mood Log Code Snippet"
+      },
+      {
+        "command": "echomirror.logMood",
+        "title": "EchoMirror: Log Mood"
+      },
+      {
+        "command": "echomirror.viewStreak",
+        "title": "EchoMirror: View Streak"
+      },
+      {
+        "command": "echomirror.signIn",
+        "title": "EchoMirror: Sign In"
+      },
+      {
+        "command": "echomirror.signOut",
+        "title": "EchoMirror: Sign Out"
       }
     ],
     "configuration": {
@@ -81,8 +96,7 @@
       "activitybar": [
         {
           "id": "echomirror",
-          "title": "EchoMirror SDK",
-          "icon": "media/icon.svg"
+          "title": "EchoMirror SDK"
         }
       ]
     },
@@ -100,15 +114,23 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "watch": "tsc -watch -p tsconfig.json",
-    "package": "vsce package"
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "build": "npm run esbuild-base -- --sourcemap",
+    "watch": "npm run esbuild-base -- --sourcemap --watch",
+    "package": "vsce package --no-dependencies",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@echomirror/core": "*",
+    "@echomirror/mood": "*"
   },
   "devDependencies": {
     "@types/vscode": "^1.88.0",
     "@types/node": "^20.0.0",
     "typescript": "^5.4.0",
-    "@vscode/vsce": "^2.26.0"
+    "@vscode/vsce": "^2.26.0",
+    "esbuild": "^0.20.0"
   },
   "repository": {
     "type": "git",
