@@ -43,17 +43,21 @@ This means a fix or new feature landing in the Rust core propagates to every pla
 
 ## The sync engine
 
-`echomirror-sync` (Rust) and `BlockchainSyncClient` (Flutter) provide a resumable, real-time Stellar blockchain sync engine:
+`echomirror-sync` (Rust) and `BlockchainSyncClient` (Flutter) provide a streaming, resumable, fault-tolerant Stellar blockchain sync engine. In Rust:
 
-1. **Start from any ledger** - pass a starting sequence number, or use `SyncCursor::genesis()` to start from the tip.
-2. **Resumable cursors** - after each page, the engine saves a `SyncCursor` (ledger sequence + paging token). Restart the engine anytime and it resumes exactly where it left off - no re-scanning.
-3. **Filters** - only emit events matching your rules: specific accounts, assets (`ECHO`/`XLM`), minimum amounts, memo prefixes.
-4. **Multi-account** - watch up to 100 accounts in a single engine instance.
-5. **Event types** - `TransactionDetected`, `LedgerClosed`, `SyncStarted`, `SyncPaused`, `SyncCompleted`, `Error`.
+1. **SSE streaming** - one long-lived Horizon Server-Sent Events connection per watched account; no polling.
+2. **Resumable cursors** - the engine saves a `SyncCursor` (ledger sequence + paging token) after every processed record. Restart the engine anytime and it resumes exactly where it left off - no re-scanning.
+3. **Automatic reconnect** - dropped or idle streams reconnect with full-jitter exponential backoff, resuming from the last persisted cursor.
+4. **Gap backfill** - on every (re)connect the engine pages from the persisted cursor to the tip before attaching the live stream, so downtime never loses events; numeric paging-token dedup guarantees each record is emitted exactly once.
+5. **Filters** - only emit events matching your rules: specific accounts, assets (`ECHO`/`XLM`), minimum amounts, memo prefixes.
+6. **Multi-account** - watch many accounts in a single engine instance (one SSE connection each).
+7. **Event types** - `TransactionDetected`, `SyncStarted`, `SyncPaused`, `SyncCompleted`, `Error`, plus opt-in `LedgerClosed` via `.watch_ledgers(true)`.
+8. **Operational visibility** - `engine.metrics()` reports cursor lag, reconnects, dedup drops, backfill volume, and cursor-save failures.
 
-To persist cursors across restarts (e.g. in Redis or a database), implement the `CursorStore` trait:
+For PostgreSQL persistence, enable the crate's `postgres` feature and use the built-in `PgCursorStore` (embedded schema migrations, connection pooling, upsert saves). To persist cursors anywhere else (e.g. Redis), implement the `CursorStore` trait - both methods return `Result`, and storage failures surface as `EchoMirrorError::Sync`:
 
 ```rust
+use echomirror_core::Result;
 use echomirror_sync::{CursorStore, SyncCursor};
 use async_trait::async_trait;
 
@@ -61,10 +65,10 @@ struct RedisCursorStore { client: redis::Client }
 
 #[async_trait]
 impl CursorStore for RedisCursorStore {
-    async fn load(&self, account: &str) -> Option<SyncCursor> {
+    async fn load(&self, account: &str) -> Result<Option<SyncCursor>> {
         // load from Redis
     }
-    async fn save(&self, account: &str, cursor: &SyncCursor) {
+    async fn save(&self, account: &str, cursor: &SyncCursor) -> Result<()> {
         // save to Redis
     }
 }

@@ -31,7 +31,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ hashFiles('Cargo.lock') }}
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+      # --all-features compiles echomirror-sync's `postgres` feature too;
+      # runtime queries + embedded migrations need no live database.
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
   test:
     name: Test
@@ -43,6 +45,33 @@ jobs:
         with:
           key: ${{ hashFiles('Cargo.lock') }}
       - run: cargo test --workspace
+
+  test-sync-postgres:
+    name: Test (echomirror-sync + PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: echomirror_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/echomirror_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}-postgres
+      - run: cargo test -p echomirror-sync --features postgres
 
   wasm-build:
     name: WASM Build (@echomirror/wasm)

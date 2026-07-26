@@ -1,0 +1,27 @@
+name: Sync Live Testnet
+
+# Runs the echomirror-sync integration tests against the real public Stellar
+# Horizon testnet (SSE streaming + Friendbot funding + backfill). Kept off the
+# PR path deliberately: public testnet infrastructure can be slow or flaky.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *" # nightly, 04:00 UTC
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  live-testnet:
+    name: Live Horizon testnet
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}
+      - run: cargo test -p echomirror-sync --test testnet_live_tests -- --ignored --test-threads=1
+        env:
+          ECHOMIRROR_LIVE_TESTS: "1"

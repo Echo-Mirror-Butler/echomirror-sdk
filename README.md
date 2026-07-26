@@ -159,14 +159,14 @@ async fn main() {
     let balance = get_balance(&client, "GPUBLIC_KEY").await.unwrap();
     println!("{} XLM  •  {} ECHO", balance.xlm, balance.echo);
 
-    // Stream real-time blockchain events
+    // Stream real-time blockchain events over Horizon SSE
     let engine = SyncEngine::builder(&client)
         .watch("GPUBLIC_KEY")
         .filter(SyncFilter::new().asset("ECHO").min_amount(1.0))
         .build();
 
-    let mut stream = engine.clone().subscribe();
-    engine.start();
+    let mut stream = engine.subscribe();
+    engine.clone().start();
 
     while let Ok(event) = stream.recv().await {
         println!("{:?}", event);
@@ -302,21 +302,54 @@ let profile = try await sdk.social.profile(userId: entry.userId)
 
 ## Blockchain Sync
 
-The `echomirror-sync` Rust crate and `BlockchainSyncClient` in Flutter provide a **resumable, real-time Stellar blockchain sync engine**.
+The `echomirror-sync` Rust crate and `BlockchainSyncClient` in Flutter provide a **streaming, resumable, fault-tolerant Stellar blockchain sync engine**.
 
 ### How it works
 
-1. **Start from any ledger** — pass a starting sequence number, or use `SyncCursor::genesis()` to start from the tip
-2. **Resumable cursors** — after each page, the engine saves a `SyncCursor` (ledger sequence + paging token). Restart the engine anytime and it picks up exactly where it left off — no re-scanning
-3. **Filters** — only emit events matching your rules: specific accounts, assets (`ECHO`/`XLM`), minimum amounts, memo prefixes
-4. **Multi-account** — watch up to 100 accounts in a single engine instance
-5. **Event types** — `TransactionDetected`, `LedgerClosed`, `SyncStarted`, `SyncPaused`, `SyncCompleted`, `Error`
+1. **Server-Sent Events streaming** — one long-lived Horizon SSE connection per watched account; events arrive in real time, no polling
+2. **Resumable cursors** — the engine persists a `SyncCursor` (ledger sequence + paging token) after every processed record. Restart anytime and it picks up exactly where it left off — no re-scanning
+3. **Automatic reconnect** — dropped or idle streams reconnect with full-jitter exponential backoff (500ms–60s, configurable via `reconnect_backoff`), resuming from the last persisted cursor
+4. **Gap backfill** — on every (re)connect the engine first pages from the persisted cursor to the tip via Horizon's paginated API, then attaches the live stream at that exact point. Nothing is missed while you were down
+5. **Exactly-once emission** — paging tokens are compared numerically per account, so records seen by both backfill and the live stream are emitted once
+6. **Filters** — only emit events matching your rules: specific accounts, assets (`ECHO`/`XLM`), minimum amounts, memo prefixes
+7. **Multi-account** — watch many accounts in a single engine (one SSE connection each — mind Horizon rate limits beyond a few dozen)
+8. **Event types** — `TransactionDetected`, `SyncStarted`, `SyncPaused`, `SyncCompleted`, `Error`, plus opt-in `LedgerClosed` via `.watch_ledgers(true)`
+9. **Observability** — `engine.metrics()` exposes cursor lag, reconnect count, dedup drops, backfill volume, and cursor-save failures; internal warnings go through `tracing`
+
+Stop cleanly with `engine.stop()` and await full drain with `engine.stopped().await` — the final cursor is persisted and a `SyncCompleted` event is emitted.
 
 ### Persistence
 
-Implement `CursorStore` to persist cursors in your database:
+#### PostgreSQL (built-in)
+
+Enable the `postgres` feature to get `PgCursorStore` — schema migrations, connection pooling, and upsert-based saves included:
+
+```toml
+echomirror-sync = { version = "0.1", features = ["postgres"] }
+```
 
 ```rust
+use echomirror_sync::{PgCursorStore, SyncEngine};
+use std::sync::Arc;
+
+// Dedicated pool + automatic migrations…
+let store = PgCursorStore::connect("postgres://user:pass@localhost/echomirror").await?;
+
+// …or share your app's existing sqlx PgPool:
+// let store = PgCursorStore::new(pool); store.migrate().await?;
+
+let engine = SyncEngine::builder(&client)
+    .watch("GPUBLIC_KEY")
+    .cursor_store(Arc::new(store))
+    .build();
+```
+
+#### Custom backends
+
+Implement `CursorStore` to persist cursors anywhere else. Both methods are fallible — return `EchoMirrorError::Sync` on storage errors:
+
+```rust
+use echomirror_core::Result;
 use echomirror_sync::{CursorStore, SyncCursor};
 use async_trait::async_trait;
 
@@ -324,10 +357,10 @@ struct RedisCursorStore { client: redis::Client }
 
 #[async_trait]
 impl CursorStore for RedisCursorStore {
-    async fn load(&self, account: &str) -> Option<SyncCursor> {
+    async fn load(&self, account: &str) -> Result<Option<SyncCursor>> {
         // load from Redis
     }
-    async fn save(&self, account: &str, cursor: &SyncCursor) {
+    async fn save(&self, account: &str, cursor: &SyncCursor) -> Result<()> {
         // save to Redis
     }
 }
@@ -450,8 +483,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave po
 - [x] `echomirror-sync` — streaming ledger sync, resumable cursors
 - [x] `echomirror-ffi` — C-ABI for Flutter/Python/Swift
 - [x] `echomirror-wasm` — WASM for browser/Node.js
-- [ ] `echomirror-sync` — SSE streaming (replace polling)
-- [ ] `echomirror-sync` — PostgreSQL cursor store
+- [x] `echomirror-sync` — SSE streaming (replaced polling), reconnect + backoff, gap backfill, dedup
+- [x] `echomirror-sync` — PostgreSQL cursor store (`postgres` feature)
 
 **JS/TS packages**
 - [x] `@echomirror/core`, `mood`, `stellar`, `react`

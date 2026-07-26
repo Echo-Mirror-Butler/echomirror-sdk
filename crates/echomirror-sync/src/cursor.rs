@@ -39,10 +39,14 @@ impl SyncCursor {
 
 /// Trait for persisting sync cursors — implement this to store cursor in
 /// a database, Redis, file, or any other backend.
+///
+/// Store failures should be returned as `EchoMirrorError::Sync`. The engine
+/// treats a failed `load` as fatal for the current attempt (it retries with
+/// backoff) and counts failed `save`s in metrics without stopping the stream.
 #[async_trait::async_trait]
 pub trait CursorStore: Send + Sync {
-    async fn load(&self, account: &str) -> Option<SyncCursor>;
-    async fn save(&self, account: &str, cursor: &SyncCursor);
+    async fn load(&self, account: &str) -> echomirror_core::Result<Option<SyncCursor>>;
+    async fn save(&self, account: &str, cursor: &SyncCursor) -> echomirror_core::Result<()>;
 }
 
 /// In-memory cursor store — suitable for development and single-process use.
@@ -66,14 +70,15 @@ impl Default for InMemoryCursorStore {
 
 #[async_trait::async_trait]
 impl CursorStore for InMemoryCursorStore {
-    async fn load(&self, account: &str) -> Option<SyncCursor> {
-        self.cursors.read().await.get(account).cloned()
+    async fn load(&self, account: &str) -> echomirror_core::Result<Option<SyncCursor>> {
+        Ok(self.cursors.read().await.get(account).cloned())
     }
 
-    async fn save(&self, account: &str, cursor: &SyncCursor) {
+    async fn save(&self, account: &str, cursor: &SyncCursor) -> echomirror_core::Result<()> {
         self.cursors
             .write()
             .await
             .insert(account.to_string(), cursor.clone());
+        Ok(())
     }
 }

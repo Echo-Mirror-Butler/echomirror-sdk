@@ -28,19 +28,42 @@ async fn main() {
     let balance = get_balance(&client, "GPUBLIC_KEY").await.unwrap();
     println!("{} XLM  -  {} ECHO", balance.xlm, balance.echo);
 
-    // Stream real-time blockchain events
+    // Stream real-time blockchain events over Horizon SSE.
+    // On reconnect the engine backfills anything missed since the last
+    // persisted cursor before re-attaching the live stream.
     let engine = SyncEngine::builder(&client)
         .watch("GPUBLIC_KEY")
         .filter(SyncFilter::new().asset("ECHO").min_amount(1.0))
         .build();
 
-    let mut stream = engine.clone().subscribe();
-    engine.start();
+    let mut stream = engine.subscribe();
+    engine.clone().start();
 
     while let Ok(event) = stream.recv().await {
         println!("{:?}", event);
     }
 }
+```
+
+## Persisting cursors in PostgreSQL
+
+Enable the `postgres` feature for a production-ready cursor store with
+migrations and pooling built in:
+
+```toml
+echomirror-sync = { version = "0.1", features = ["postgres"] }
+```
+
+```rust
+use echomirror_sync::PgCursorStore;
+use std::sync::Arc;
+
+let store = PgCursorStore::connect("postgres://user:pass@localhost/echomirror").await?;
+
+let engine = SyncEngine::builder(&client)
+    .watch("GPUBLIC_KEY")
+    .cursor_store(Arc::new(store))
+    .build();
 ```
 
 ## Next steps

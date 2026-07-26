@@ -16,3 +16,6 @@ chrono.workspace = true
 sha2.workspace = true
 hex.workspace = true
 base64 = "0.22"
+
+[dev-dependencies]
+wiremock.workspace = true
