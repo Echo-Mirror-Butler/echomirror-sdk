@@ -1,0 +1,51 @@
+name: Stellar Live
+
+# Runs @echomirror/stellar's tests that need real external infrastructure: the
+# public Stellar testnet (Horizon + Friendbot) and the real Freighter browser
+# extension. Kept off the PR path deliberately, matching sync-live-testnet.yml
+# — public testnet infra can be slow or flaky, and the Freighter build is
+# fetched live from the Chrome Web Store. Lint, typecheck, unit tests, and
+# build for this package run on every PR via js-ci.yml.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 4 * * *" # nightly, 04:30 UTC
+
+jobs:
+  testnet:
+    name: Testnet integration (Horizon + Friendbot)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w packages/js/core
+      - run: npm run test:integration -w packages/js/stellar
+
+  freighter-e2e:
+    name: Freighter browser e2e (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w packages/js/core
+      - run: npx playwright install --with-deps chromium
+        working-directory: packages/js/stellar
+      # pretest:e2e fetches the current Freighter build from the Chrome Web
+      # Store. Extensions need a real Chromium head, so run under xvfb.
+      - run: xvfb-run --auto-servernum npm run test:e2e -w packages/js/stellar
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: freighter-e2e-results
+          path: packages/js/stellar/test-results/
+          retention-days: 7
