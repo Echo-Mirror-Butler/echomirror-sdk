@@ -490,7 +490,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave po
 - [x] `@echomirror/core`, `mood`, `stellar`, `react`
 - [x] Build pipeline (tsconfig, vitest)
 - [x] `@echomirror/wasm` — dual-target (browser + Node) wasm-pack build, ergonomic TS wrapper
-- [ ] `@echomirror/social`, `analytics`, `widget`
+- [x] `@echomirror/social`, `analytics`
+- [ ] `@echomirror/widget`
 - [x] npm publish pipeline (`@echomirror/wasm`)
 - [ ] npm publish pipeline (remaining packages)
 
