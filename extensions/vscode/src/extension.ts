@@ -1,6 +1,9 @@
 import * as vscode from 'vscode'
+import { EchoMirrorClient } from '@echomirror/core'
+import { logMood, getMoodStreak, MoodScore, MoodTag } from '@echomirror/mood'
 
 let statusBarItem: vscode.StatusBarItem
+let moodStatusBarItem: vscode.StatusBarItem
 let balanceInterval: ReturnType<typeof setInterval> | undefined
 
 export function activate(context: vscode.ExtensionContext) {
@@ -14,6 +17,27 @@ export function activate(context: vscode.ExtensionContext) {
   if (config.get<boolean>('showStatusBar') && config.get<string>('statusBarPublicKey')) {
     statusBarItem.show()
     startBalancePolling()
+  }
+
+  // ── Status bar — Mood ───────────────────────────────────────────────────────
+  moodStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101)
+  moodStatusBarItem.command = 'echomirror.logMood'
+  moodStatusBarItem.text = '$(pulse) Log Mood'
+  moodStatusBarItem.tooltip = 'EchoMirror SDK — click to log your mood'
+  moodStatusBarItem.show()
+  context.subscriptions.push(moodStatusBarItem)
+
+  // ── Authentication Helper ────────────────────────────────────────────────────
+  async function getClient(): Promise<EchoMirrorClient | undefined> {
+    const apiKey = await context.secrets.get('echomirror.apiKey')
+    if (!apiKey) {
+      vscode.window.showErrorMessage('Not signed in to EchoMirror. Please sign in first.')
+      vscode.commands.executeCommand('echomirror.signIn')
+      return undefined
+    }
+    const config = vscode.workspace.getConfiguration('echomirror')
+    const network = config.get<'mainnet' | 'testnet'>('network') ?? 'testnet'
+    return new EchoMirrorClient({ apiKey, network })
   }
 
   // ── Commands ─────────────────────────────────────────────────────────────────
@@ -100,6 +124,87 @@ export function activate(context: vscode.ExtensionContext) {
         { enableScripts: true },
       )
       panel.webview.html = getSyncExplorerHtml()
+    }),
+
+    vscode.commands.registerCommand('echomirror.signIn', async () => {
+      const apiKey = await vscode.window.showInputBox({
+        prompt: 'Enter your EchoMirror API Key',
+        password: true,
+        placeHolder: 'em_live_...',
+        ignoreFocusOut: true
+      })
+      if (apiKey) {
+        await context.secrets.store('echomirror.apiKey', apiKey)
+        vscode.window.showInformationMessage('Successfully signed in to EchoMirror.')
+      }
+    }),
+
+    vscode.commands.registerCommand('echomirror.signOut', async () => {
+      await context.secrets.delete('echomirror.apiKey')
+      vscode.window.showInformationMessage('Signed out of EchoMirror.')
+      moodStatusBarItem.text = '$(pulse) Log Mood'
+    }),
+
+    vscode.commands.registerCommand('echomirror.logMood', async () => {
+      const client = await getClient()
+      if (!client) return
+
+      const scoreStr = await vscode.window.showQuickPick(
+        ['10', '9', '8', '7', '6', '5', '4', '3', '2', '1'],
+        { placeHolder: 'How are you feeling today? (Score 1-10)' }
+      )
+      if (!scoreStr) return
+      const score = parseInt(scoreStr) as MoodScore
+
+      const note = await vscode.window.showInputBox({
+        prompt: 'Add an optional note about your mood',
+        placeHolder: 'Just feeling great today...'
+      })
+      if (note === undefined) return
+
+      const tagsSelection = await vscode.window.showQuickPick(
+        [
+          { label: 'work' },
+          { label: 'health' },
+          { label: 'social' },
+          { label: 'focus' },
+          { label: 'stress' }
+        ],
+        { placeHolder: 'Select tags (optional)', canPickMany: true }
+      )
+      if (tagsSelection === undefined) return
+      const tags = tagsSelection.map(t => t.label) as MoodTag[]
+
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Logging mood…' },
+        async () => {
+          try {
+            await logMood(client, { score, note: note || undefined, tags: tags.length > 0 ? tags : undefined })
+            vscode.window.showInformationMessage(`Mood logged successfully! (Score: ${score})`)
+            const color = score >= 7 ? '🟢' : score >= 4 ? '🟡' : '🔴'
+            moodStatusBarItem.text = `${color} Mood: ${score}/10`
+          } catch (e) {
+            vscode.window.showErrorMessage(`Failed to log mood: ${e}`)
+          }
+        }
+      )
+    }),
+
+    vscode.commands.registerCommand('echomirror.viewStreak', async () => {
+      const client = await getClient()
+      if (!client) return
+
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Fetching streak…' },
+        async () => {
+          try {
+            const streak = await getMoodStreak(client)
+            vscode.window.showInformationMessage(`🔥 Current Streak: ${streak.current} days | Longest: ${streak.longest} days`)
+          } catch (e) {
+            vscode.window.showErrorMessage(`Failed to fetch streak: ${e}`)
+          }
+        }
+      )
     }),
   )
 

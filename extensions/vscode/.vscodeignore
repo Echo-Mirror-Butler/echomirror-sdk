@@ -1,0 +1,10 @@
+.vscode/**
+.vscode-test/**
+src/**
+.gitignore
+yarn.lock
+package-lock.json
+vsc-extension-quickstart.md
+node_modules/**
+tsconfig.json
+esbuild.js
