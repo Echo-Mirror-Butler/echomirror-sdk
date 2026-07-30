@@ -1,0 +1,36 @@
+{
+  "name": "@echomirror/analytics",
+  "version": "0.1.0",
+  "description": "Privacy-safe emotional UX analytics for EchoMirror applications",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests"
+  },
+  "keywords": [
+    "echomirror",
+    "analytics",
+    "privacy",
+    "wellness",
+    "mood"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "*",
+    "vitest": "*"
+  }
+}
