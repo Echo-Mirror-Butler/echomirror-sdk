@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>EchoMirror — Mood Check-in</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <h1>How are you feeling?</h1>
+      <span id="streak" class="muted"></span>
+    </header>
+
+    <section id="setup" class="hidden">
+      <p class="muted">
+        Add your EchoMirror API key to start logging moods from your browser.
+      </p>
+      <button id="setup-open-options" type="button">Open settings</button>
+    </section>
+
+    <form id="checkin" class="hidden">
+      <div class="score">
+        <span id="score-emoji" class="score-emoji" aria-hidden="true">😊</span>
+        <output id="score-value" class="score-value" for="score">7 / 10</output>
+      </div>
+      <label class="sr-only" for="score">Mood score, 1 to 10</label>
+      <input id="score" type="range" min="1" max="10" step="1" value="7" />
+
+      <label for="note">Note <span class="muted">(optional)</span></label>
+      <textarea id="note" maxlength="280" placeholder="What shaped today?"></textarea>
+
+      <fieldset id="tags" class="tags">
+        <legend>Tags <span class="muted">(optional)</span></legend>
+      </fieldset>
+
+      <button id="submit" type="submit">Log mood</button>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </form>
+
+    <footer class="footer">
+      <button id="open-options" class="link" type="button">Settings</button>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

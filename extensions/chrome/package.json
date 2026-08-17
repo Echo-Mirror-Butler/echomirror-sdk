@@ -1,0 +1,27 @@
+{
+  "name": "echomirror-chrome-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "EchoMirror Chrome extension — one-click mood check-ins and daily reminders",
+  "scripts": {
+    "build": "node scripts/build.mjs --minify",
+    "dev": "node scripts/build.mjs --watch",
+    "package": "npm run build && node scripts/zip.mjs",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests"
+  },
+  "keywords": ["echomirror", "chrome-extension", "mood", "wellness"],
+  "license": "MIT",
+  "dependencies": {
+    "@echomirror/core": "*",
+    "@echomirror/mood": "*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "esbuild": "^0.20.0",
+    "typescript": "*",
+    "vitest": "*"
+  }
+}
