@@ -1,0 +1,71 @@
+body {
+  padding: 28px 20px;
+}
+
+main {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 18px;
+  margin-bottom: 18px;
+}
+
+h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.card label {
+  margin-top: 14px;
+}
+
+.card > h2 + label {
+  margin-top: 0;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row input {
+  flex: 1;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text);
+  text-transform: none;
+}
+
+.checkbox input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+.card .muted {
+  margin: 6px 0 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

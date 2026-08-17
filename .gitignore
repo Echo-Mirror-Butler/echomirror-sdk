@@ -16,6 +16,7 @@ crates/echomirror-python/.pytest_cache/
 
 # JS/TS build output
 dist/
+extensions/chrome/dist-zip/
 packages/js/*/dist/
 packages/js/*/src/*.js
 packages/js/*/src/*.d.ts

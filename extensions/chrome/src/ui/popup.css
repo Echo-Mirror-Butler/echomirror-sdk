@@ -1,0 +1,95 @@
+body {
+  width: 320px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.score-emoji {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.score-value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+form > label {
+  margin-top: 14px;
+}
+
+.tags {
+  margin: 14px 0 0;
+  padding: 0;
+  border: none;
+}
+
+.tags legend {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.tag {
+  padding: 5px 10px;
+  margin: 0 6px 6px 0;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.tag[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+#submit {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.footer {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.link {
+  padding: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+.link:hover {
+  background: none;
+  color: var(--text);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>EchoMirror — Settings</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>EchoMirror settings</h1>
+
+      <form id="settings">
+        <section class="card">
+          <h2>Account</h2>
+          <label for="api-key">API key</label>
+          <div class="row">
+            <input
+              id="api-key"
+              type="password"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="em_live_…"
+            />
+            <button id="toggle-key" class="secondary" type="button" aria-pressed="false">
+              Show
+            </button>
+          </div>
+          <p class="muted">
+            Create a key at echomirror.dev/developers. It is stored in this
+            browser profile only and sent solely to api.echomirror.dev.
+          </p>
+
+          <label for="network">Network</label>
+          <select id="network">
+            <option value="mainnet">Mainnet</option>
+            <option value="testnet">Testnet</option>
+          </select>
+        </section>
+
+        <section class="card">
+          <h2>Daily reminder</h2>
+          <label class="checkbox" for="reminders-enabled">
+            <input id="reminders-enabled" type="checkbox" />
+            Remind me if I have not checked in
+          </label>
+          <p class="muted">
+            Turn this off to opt out of all notifications. No reminder is ever
+            shown on a day you have already logged a mood.
+          </p>
+
+          <label for="reminder-time">Remind me at</label>
+          <input id="reminder-time" type="time" />
+        </section>
+
+        <div class="actions">
+          <button id="save" type="submit">Save</button>
+          <button id="test" class="secondary" type="button">Test connection</button>
+          <button id="clear" class="secondary" type="button">Clear stored data</button>
+        </div>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
