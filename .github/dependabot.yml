@@ -1,0 +1,74 @@
+version: 2
+
+updates:
+  # GitHub Actions — keeps SHA-pinned actions up to date.
+  # Dependabot opens PRs that update both the SHA and the trailing version
+  # comment, so the supply-chain benefit of SHA-pinning is preserved without
+  # manual resolutions on every release.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      # Keep first-party actions/* bumps together for low-noise review.
+      actions-first-party:
+        patterns:
+          - "actions/*"
+      # Group the Rust toolchain + cache together; they usually need to
+      # move in tandem when a new stable toolchain drops.
+      rust-toolchain:
+        patterns:
+          - "dtolnay/*"
+          - "Swatinem/*"
+
+  # npm workspaces (JS/TS packages + extensions)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - javascript
+    groups:
+      typescript-ecosystem:
+        patterns:
+          - "typescript"
+          - "@typescript-eslint/*"
+          - "eslint*"
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+
+  # Rust crates
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - rust
+
+  # Flutter / Dart (pub.dev)
+  - package-ecosystem: pub
+    directory: /packages/flutter
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - flutter
