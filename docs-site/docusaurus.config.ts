@@ -46,7 +46,11 @@ const config: Config = {
     ],
   ],
 
-  themes: ['@easyops-cn/docusaurus-search-local'],
+  markdown: {
+    mermaid: true,
+  },
+
+  themes: ['@easyops-cn/docusaurus-search-local', '@docusaurus/theme-mermaid'],
 
   presets: [
     [
@@ -97,6 +101,14 @@ const config: Config = {
             {
               label: 'Introduction',
               to: '/docs/intro',
+            },
+            {
+              label: 'Architecture',
+              to: '/docs/architecture',
+            },
+            {
+              label: 'Core Concepts',
+              to: '/docs/core-concepts',
             },
           ],
         },
