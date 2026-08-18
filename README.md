@@ -34,7 +34,7 @@ EchoMirror is a social wellness platform — users log their mood, gift ECHO tok
 
 **Language bindings on top.** Idiomatic wrappers in TypeScript (React, Node.js, vanilla JS), Dart/Flutter, Python, and Swift sit on top of the Rust core — so you get native ergonomics without reimplementing crypto in every language.
 
-**Extensions included.** A VS Code extension brings live ECHO balance, Friendbot funding, and the blockchain sync explorer directly into your editor. A Chrome/Firefox extension lets you inject the mood widget and watch Stellar transactions on any site.
+**Extensions included.** A VS Code extension brings live ECHO balance, Friendbot funding, and the blockchain sync explorer directly into your editor. A Chrome extension turns the daily mood check-in into a two-click habit, with a configurable reminder if you have not logged by your chosen time.
 
 ---
 
@@ -81,12 +81,12 @@ EchoMirror is a social wellness platform — users log their mood, gift ECHO tok
 ┌──────────────────────────────────────────────────────────────────┐
 │                         Extensions                               │
 │                                                                  │
-│  VS Code Extension          Chrome / Firefox Extension           │
-│  ─────────────────          ───────────────────────────          │
-│  • Live ECHO status bar     • Inject mood widget on any site     │
-│  • Friendbot command        • Watch Stellar TXs in background    │
-│  • Sync explorer panel      • Popup balance checker              │
-│  • Mood log snippets        • Desktop notifications on TX        │
+│  VS Code Extension          Chrome Extension (MV3)               │
+│  ─────────────────          ──────────────────────               │
+│  • Live ECHO status bar     • Two-click mood check-in popup      │
+│  • Friendbot command        • Streak in the popup + badge        │
+│  • Sync explorer panel      • Daily reminder notification        │
+│  • Mood log snippets        • Options: key, time, opt-out        │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -132,7 +132,7 @@ EchoMirror is a social wellness platform — users log their mood, gift ECHO tok
 | Extension | Description |
 |---|---|
 | [`extensions/vscode`](./extensions/vscode) | VS Code — status bar, Sync Explorer, snippets, Friendbot |
-| [`extensions/chrome`](./extensions/chrome) | Chrome/Edge/Brave — mood widget injection, TX watcher |
+| [`extensions/chrome`](./extensions/chrome) | Chrome/Edge/Brave — MV3 mood check-in popup, daily reminder, options page |
 | `extensions/firefox` *(coming)* | Firefox — same as Chrome, MV2/MV3 dual manifest |
 
 ---
@@ -392,18 +392,26 @@ code --install-extension echomirror-sdk-vscode-0.1.0.vsix
 - **Address validator** — `EchoMirror: Validate Stellar Address`
 - **Code snippets** — `em-mood`, `em-streak`, `em-balance`, `em-freighter`, `em-send`, `em-sync` for TypeScript and Dart
 
-### Chrome / Firefox Extension
+### Chrome Extension
 
 ```bash
+npm install
+npm run build -w packages/js/core -w packages/js/mood
+
 cd extensions/chrome
-npm install && npm run build
-# Load extensions/chrome/dist as unpacked extension in chrome://extensions
+npm run build      # -> dist/, load unpacked in chrome://extensions
+npm run package    # -> dist-zip/echomirror-chrome-<version>.zip
 ```
 
 **Features:**
-- **Popup** — check any account's XLM + ECHO balance on any network
-- **Inject mood widget** — adds the floating `<MoodWidget />` to any website
-- **Background watcher** — monitors an account's Stellar transactions, sends desktop notifications on new TXs
+- **Popup check-in** — score, optional note and tags, submitted through `@echomirror/core` + `@echomirror/mood`
+- **Daily reminder** — a `chrome.alarms` alarm fires one notification if you have not logged by your configured time
+- **Options page** — API key, network, reminder time, and a full reminder opt-out
+- **Manifest V3** — no remote code, no content scripts, three permissions (`storage`, `alarms`, `notifications`)
+
+See [`extensions/chrome/README.md`](./extensions/chrome/README.md) for the
+architecture and [`store/listing.md`](./extensions/chrome/store/listing.md) for
+the Web Store submission package.
 
 ---
 
@@ -505,9 +513,10 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave po
 
 **Extensions**
 - [x] VS Code — status bar, sync explorer, snippets, Friendbot, validator
-- [x] Chrome — popup, mood inject, background TX watcher
+- [x] Chrome — MV3 check-in popup, reminder service worker, options page, zip packaging
 - [ ] Firefox — MV2 manifest
 - [ ] VS Code Marketplace publish
+- [ ] Chrome Web Store publish (package and listing copy ready, needs publisher access)
 
 ---
 

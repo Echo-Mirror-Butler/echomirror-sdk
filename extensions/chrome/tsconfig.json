@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    // The build scripts are plain ESM JavaScript; tests import them directly.
+    "allowJs": true,
+    "types": ["chrome", "vitest/globals"],
+    // The bundler resolves @echomirror/* through node_modules (the published
+    // dist output). Type-checking maps them to source instead so `typecheck`
+    // never depends on the other workspaces having been built first.
+    "paths": {
+      "@echomirror/core": ["../../packages/js/core/src/index.ts"],
+      "@echomirror/mood": ["../../packages/js/mood/src/index.ts"]
+    }
+  },
+  "include": ["src", "tests", "scripts", "vitest.config.ts"]
+}
