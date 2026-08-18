@@ -520,3 +520,8 @@ MIT — see [LICENSE](./LICENSE).
 <div align="center">
   <p>Built with love by the <a href="https://github.com/Echo-Mirror-Butler">Echo Mirror Butler</a> team and contributors.</p>
 </div>
+
+
+## test(coverage): wire per-package coverage thresholds into CI and publish a contributor coverage backlog
+
+Documentation reference and guidelines for #70.
