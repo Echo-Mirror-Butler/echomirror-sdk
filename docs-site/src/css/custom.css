@@ -1,23 +1,28 @@
 /**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
+ * EchoMirror SDK docs — global styles
+ * Primary palette: teal-green (mood), with dark navy for depth.
  */
 
-/* You can override the default Infima variables here. */
+/* ─── Light mode ─────────────────────────────────────────────────────────────── */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  /* Primary: EchoMirror teal-green */
+  --ifm-color-primary: #1a9e72;
+  --ifm-color-primary-dark: #178e66;
+  --ifm-color-primary-darker: #15865f;
+  --ifm-color-primary-darkest: #106e4e;
+  --ifm-color-primary-light: #1db07f;
+  --ifm-color-primary-lighter: #20b885;
+  --ifm-color-primary-lightest: #27cc97;
+
+  --ifm-code-font-size: 92%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.07);
+
+  /* Mermaid diagram overrides */
+  --echomirror-mermaid-node-bg: #e8f8f2;
+  --echomirror-mermaid-node-border: #1a9e72;
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
+/* ─── Dark mode ──────────────────────────────────────────────────────────────── */
 [data-theme='dark'] {
   --ifm-color-primary: #25c2a0;
   --ifm-color-primary-dark: #21af90;
@@ -26,5 +31,25 @@
   --ifm-color-primary-light: #29d5b0;
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.07);
+
+  --echomirror-mermaid-node-bg: #0f2a3d;
+  --echomirror-mermaid-node-border: #25c2a0;
+}
+
+/* ─── Mermaid diagram global tweaks ──────────────────────────────────────────── */
+.docusaurus-mermaid-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ─── Inline code ────────────────────────────────────────────────────────────── */
+code {
+  border-radius: 4px;
+}
+
+/* ─── Navbar ─────────────────────────────────────────────────────────────────── */
+.navbar {
+  box-shadow: 0 1px 0 var(--ifm-toc-border-color);
 }
