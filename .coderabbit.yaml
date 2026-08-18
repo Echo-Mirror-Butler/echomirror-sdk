@@ -1,0 +1,81 @@
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!target/**"
+    - "!**/*.lock"
+    - "!Cargo.lock"
+    - "!package-lock.json"
+    - "!docs-site/build/**"
+    - "!docs-site/.docusaurus/**"
+    - "!docs-site/static/api/**"
+    - "!docs-site/versioned_docs/**"
+    - "!docs-site/versioned_sidebars/**"
+    - "!**/*.g.dart"
+    - "!**/*.freezed.dart"
+    - "!**/generated/**"
+    - "!**/*.pb.go"
+  path_instructions:
+    - path: "crates/**/*.rs"
+      instructions: >
+        This is a Rust workspace shared across native, WASM (echomirror-wasm),
+        Python bindings (echomirror-python, via PyO3), and an FFI layer
+        (echomirror-ffi) consumed by the Swift and Flutter packages. Flag any
+        change to public function signatures in echomirror-core without
+        checking whether the FFI/WASM/Python bindings need a matching update.
+        Pay close attention to unsafe blocks, panic-on-error paths that cross
+        an FFI boundary (these should return typed errors instead), and
+        anything touching Stellar transaction signing or cursor persistence
+        in echomirror-sync — mistakes there have real financial or
+        data-integrity consequences.
+    - path: "packages/js/**/*.ts"
+      instructions: >
+        Each package under packages/js/<name>/ should only export its public
+        API from src/index.ts (per CONTRIBUTING.md). Flag internal
+        implementation details leaking through index.ts, any `any` type
+        (strict mode, no any per CONTRIBUTING.md), and missing tests for new
+        exported functions.
+    - path: "packages/flutter/**/*.dart"
+      instructions: >
+        Follow flutter_lints and require /// doc comments on public APIs, per
+        CONTRIBUTING.md.
+    - path: "extensions/**"
+      instructions: >
+        Browser/editor extension code (chrome, vscode) runs with elevated
+        permissions in the user's browser or editor — flag anything that
+        reads more data than the stated feature needs, or that could leak
+        the user's EchoMirror auth token to a third-party host.
+    - path: ".github/workflows/**"
+      instructions: >
+        This repo has per-language CI (rust-ci, js-ci, flutter-ci,
+        python-ci, swift-ci), a PR size guard (pr_guard.yml), and OSV
+        dependency scanning (security.yml). Flag any workflow change that
+        would silently weaken or skip one of these gates, and flag
+        third-party GitHub Actions referenced by mutable tag instead of a
+        pinned commit SHA.
+    - path: "docs-site/**"
+      instructions: >
+        Docusaurus site. Flag broken internal links (onBrokenLinks is set to
+        throw at build time, but review can catch it earlier) and code
+        samples that don't match the actual current public API of the
+        package they're documenting.
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: "auto"
