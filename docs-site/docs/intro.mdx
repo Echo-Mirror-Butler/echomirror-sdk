@@ -1,14 +1,14 @@
-﻿---
+---
 sidebar_position: 1
 ---
 
 # Introduction
 
-EchoMirror is a social wellness platform  - users log their mood, gift ECHO tokens over Stellar, and reflect through an AI-powered mirror. The EchoMirror SDK opens this infrastructure to every developer, on every platform.
+EchoMirror is a social wellness platform — users log their mood, gift ECHO tokens over Stellar, and reflect through an AI-powered mirror. The EchoMirror SDK opens this infrastructure to every developer, on every platform.
 
 ## Built on Rust
 
-The performance-critical core  - Stellar cryptography, XDR transaction encoding, blockchain sync, and balance verification  - is written in Rust and shipped as:
+The performance-critical core — Stellar cryptography, XDR transaction encoding, blockchain sync, and balance verification — is written in Rust and shipped as:
 
 - **WebAssembly** for browsers and Node.js (`@echomirror/wasm`)
 - **C-ABI shared library** for Flutter, Swift, Python, and any FFI-capable runtime (`echomirror-ffi`)
@@ -16,11 +16,24 @@ The performance-critical core  - Stellar cryptography, XDR transaction encoding,
 
 ## Language bindings on top
 
-Idiomatic wrappers in TypeScript (React, Node.js, vanilla JS), Dart/Flutter, Python, and Swift sit on top of the Rust core  - so you get native ergonomics without reimplementing crypto in every language.
+Idiomatic wrappers in TypeScript (React, Node.js, vanilla JS), Dart/Flutter, Python, and Swift sit on top of the Rust core — so you get native ergonomics without reimplementing crypto in every language.
+
+## How the pieces fit together
+
+**Not sure which package you need?** The [Architecture](./architecture) page has a full dependency graph and a decision guide. Start there if you're new to the SDK.
+
+| Platform | Start here |
+|---|---|
+| React | [`@echomirror/react`](./quickstart/react) |
+| JavaScript / TypeScript | [`@echomirror/core`](./quickstart/javascript) |
+| Flutter / Dart | [`echomirror_sdk`](./quickstart/flutter) |
+| Swift (iOS / macOS) | [`EchoMirrorSDK`](./quickstart/swift) |
+| Python | [`echomirror-sdk`](./quickstart/python) |
+| Rust (server) | [`echomirror-core`](./quickstart/rust) |
 
 ## Where to go next
 
-- [Core Concepts](./core-concepts)  - how the pieces fit together
-- Quickstarts  - [JavaScript/TypeScript](./quickstart/javascript), [React](./quickstart/react), [Flutter](./quickstart/flutter), [Rust](./quickstart/rust)
-- [JS API Reference](./api/js)  - [Rust API Reference](pathname:///api/rust/)  - [Dart API Reference](pathname:///api/dart/)
-
+- [**Architecture**](./architecture) — full dependency graph and "which package do I need" decision guide
+- [Core Concepts](./core-concepts) — sync engine, wallet model, and how layers interact
+- Quickstarts: [JavaScript/TypeScript](./quickstart/javascript) · [React](./quickstart/react) · [Flutter](./quickstart/flutter) · [Rust](./quickstart/rust) · [Python](./quickstart/python) · [Swift](./quickstart/swift)
+- [JS API Reference](./api/js) · [Rust API Reference](pathname:///api/rust/) · [Dart API Reference](pathname:///api/dart/)

@@ -1,23 +1,176 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
+/* ─── Hero ──────────────────────────────────────────────────────────────────── */
 
-.heroBanner {
-  padding: 4rem 0;
+.hero {
+  padding: 4rem 0 3rem;
+  background: linear-gradient(
+    160deg,
+    var(--ifm-color-primary-darkest) 0%,
+    var(--ifm-color-primary-dark) 60%,
+    var(--ifm-color-primary) 100%
+  );
+  color: #fff;
   text-align: center;
-  position: relative;
-  overflow: hidden;
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
+[data-theme='dark'] .hero {
+  background: linear-gradient(
+    160deg,
+    #0c1a2e 0%,
+    #0f2a3d 60%,
+    var(--ifm-color-primary-darkest) 100%
+  );
+}
+
+.heroBadge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: 1rem;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 2rem;
+}
+
+.heroTitle {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  color: #fff !important;
+  margin-bottom: 1rem;
+  line-height: 1.15;
+}
+
+.heroSubtitle {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  opacity: 0.9;
+  max-width: 640px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+.heroCta {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 3rem;
+}
+
+.heroCta .button--outline {
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #fff;
+}
+
+.heroCta .button--outline:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/* ─── Platform quickstart tiles ─────────────────────────────────────────────── */
+
+.platformGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .platformGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.buttons {
+.platformTile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  text-decoration: none !important;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.platformTile:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.platformLabel {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.platformInstall {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.75);
+  background: transparent;
+  padding: 0;
+  border: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ─── Architecture callout ───────────────────────────────────────────────────── */
+
+.archCallout {
+  padding: 3rem 0;
+  background: var(--ifm-color-primary-lightest);
+}
+
+[data-theme='dark'] .archCallout {
+  background: var(--ifm-color-primary-darkest);
+}
+
+.archCalloutInner {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.archCalloutHeading {
+  margin-bottom: 0.5rem;
+  color: var(--ifm-color-primary-darkest);
+}
+
+[data-theme='dark'] .archCalloutHeading {
+  color: var(--ifm-color-primary-lightest);
+}
+
+.archCalloutText {
+  max-width: 540px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* ─── Feature grid ───────────────────────────────────────────────────────────── */
+
+.features {
+  padding: 4rem 0;
+}
+
+.sectionHeading {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.featureCard {
+  padding: 1.5rem 1rem 2rem;
+}
+
+.featureEmoji {
+  font-size: 2.25rem;
+  margin-bottom: 0.75rem;
+  line-height: 1;
 }
