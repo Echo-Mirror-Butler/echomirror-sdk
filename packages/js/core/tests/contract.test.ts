@@ -26,6 +26,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { EchoMirrorClient, EchoMirrorError } from '../src'
+import type { EchoMirrorClient as CoreClient } from '@echomirror/core'
 import { getMoodStreak, getMoodSummary, logMood } from '../../mood/src/index'
 import { getBalance, submitTransaction } from '../../stellar/src/echomirror'
 
@@ -52,7 +53,7 @@ const client = new EchoMirrorClient({
   baseUrl: apiBase,
   network: 'testnet',
   timeout: 5000,
-})
+}) as unknown as CoreClient
 
 function op(id: string) {
   const found = spec.operations.find((o) => o.id === id)
