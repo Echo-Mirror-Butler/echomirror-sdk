@@ -17,6 +17,7 @@ jobs:
           xcode-version: latest-stable
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
         with:
+          toolchain: stable
           targets: aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin,x86_64-apple-darwin
       - name: Check Swift toolchain
         run: |
