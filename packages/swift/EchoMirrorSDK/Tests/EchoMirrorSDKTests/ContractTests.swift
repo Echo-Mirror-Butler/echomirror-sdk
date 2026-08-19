@@ -53,10 +53,10 @@ final class ContractTests: XCTestCase {
 
     func testMoodScoreBoundsFromContract() throws {
         let spec = try Self.loadSpec()
-        let score = spec.logMoodBody["score"] as? Int ?? 8
+        let score = UInt8(spec.logMoodBody["score"] as? Int ?? 8)
         let mood = try MoodClient(config: EchoMirrorConfig(apiKey: "contract-test-key", network: .testnet))
 
-        XCTAssertTrue(mood.isValidScore(UInt8(score)))
+        XCTAssertTrue(mood.isValidScore(score))
         XCTAssertTrue(mood.isValidScore(1))
         XCTAssertTrue(mood.isValidScore(10))
         XCTAssertFalse(mood.isValidScore(0))
@@ -66,14 +66,14 @@ final class ContractTests: XCTestCase {
     func testMoodLogBridgesFromContract() async throws {
         let spec = try Self.loadSpec()
         let body = spec.logMoodBody
-        let score = body["score"] as? Int ?? 8
+        let score = UInt8(body["score"] as? Int ?? 8)
         let note = body["note"] as? String ?? "Great day"
         let tags = body["tags"] as? [String] ?? ["work", "proud"]
 
         let mood = try MoodClient(config: EchoMirrorConfig(apiKey: "contract-test-key", network: .testnet))
         let entry = try await mood.logMood(
             userId: spec.moodUserId,
-            score: UInt8(score),
+            score: score,
             note: note,
             tags: tags
         )

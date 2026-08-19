@@ -9,38 +9,17 @@ on:
 env:
   # Runners point at the shared fixture by default, but the workflow sets them
   # explicitly so a renamed port/host can never silently change what is tested.
+  # Setting ECHOMIRROR_CONTRACT_SPEC also flips every runner from self-skip
+  # into fail-if-unreachable mode — a mis-wired fixture is a red check, never
+  # a green skip.
   ECHOMIRROR_CONTRACT_SPEC: ${{ github.workspace }}/contract-tests/contract-spec.json
   ECHOMIRROR_CONTRACT_API_BASE: http://127.0.0.1:18080
   ECHOMIRROR_CONTRACT_HORIZON_BASE: http://127.0.0.1:18081
 
 jobs:
-  fixture-ready:
-    name: Start shared fixture
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Start fixture
-        run: docker compose -f contract-tests/docker-compose.yml up -d --build
-      - name: Wait for both fixture services
-        run: |
-          for i in $(seq 1 30); do
-            api_ok=$(curl -sf http://127.0.0.1:18080/mood/streak > /dev/null && echo y || echo n)
-            horiz_ok=$(curl -sf http://127.0.0.1:18081/accounts/$(python3 -c "import json;print(json.load(open('$ECHOMIRROR_CONTRACT_SPEC'))['fixture']['users']['stellar']['public_key'])") > /dev/null && echo y || echo n)
-            if [ "$api_ok" = y ] && [ "$horiz_ok" = y ]; then
-              echo "fixture ready"
-              exit 0
-            fi
-            echo "waiting for fixture ($i)…"
-            sleep 2
-          done
-          docker compose -f contract-tests/docker-compose.yml logs
-          echo "fixture did not become ready" >&2
-          exit 1
-
   rust:
     name: Rust contract
     runs-on: ubuntu-latest
-    needs: fixture-ready
     env:
       CARGO_TERM_COLOR: always
     steps:
@@ -51,13 +30,32 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           key: ${{ hashFiles('Cargo.lock') }}-contract
+      - name: Start fixture
+        run: docker compose -f contract-tests/docker-compose.yml up -d --build
+      - name: Wait for fixture (fail if it never comes up)
+        run: |
+          for i in $(seq 1 60); do
+            api_ok=$(curl -sf http://127.0.0.1:18080/mood/streak > /dev/null && echo y || echo n)
+            horiz_ok=$(curl -sf http://127.0.0.1:18081/accounts/GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD > /dev/null && echo y || echo n)
+            if [ "$api_ok" = y ] && [ "$horiz_ok" = y ]; then
+              echo "fixture ready"
+              exit 0
+            fi
+            echo "waiting for fixture ($i/60)…"
+            sleep 2
+          done
+          docker compose -f contract-tests/docker-compose.yml logs
+          echo "fixture did not become ready" >&2
+          exit 1
       - run: cargo test -p echomirror-core --test contract
       - run: cargo test -p echomirror-stellar --test contract
+      - name: Tear down fixture
+        if: always()
+        run: docker compose -f contract-tests/docker-compose.yml down --volumes
 
   js:
     name: JS contract
     runs-on: ubuntu-latest
-    needs: fixture-ready
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -65,12 +63,31 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Start fixture
+        run: docker compose -f contract-tests/docker-compose.yml up -d --build
+      - name: Wait for fixture (fail if it never comes up)
+        run: |
+          for i in $(seq 1 60); do
+            api_ok=$(curl -sf http://127.0.0.1:18080/mood/streak > /dev/null && echo y || echo n)
+            horiz_ok=$(curl -sf http://127.0.0.1:18081/accounts/GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD > /dev/null && echo y || echo n)
+            if [ "$api_ok" = y ] && [ "$horiz_ok" = y ]; then
+              echo "fixture ready"
+              exit 0
+            fi
+            echo "waiting for fixture ($i/60)…"
+            sleep 2
+          done
+          docker compose -f contract-tests/docker-compose.yml logs
+          echo "fixture did not become ready" >&2
+          exit 1
       - run: npx vitest run packages/js/core/tests/contract.test.ts
+      - name: Tear down fixture
+        if: always()
+        run: docker compose -f contract-tests/docker-compose.yml down --volumes
 
   flutter:
     name: Flutter contract
     runs-on: ubuntu-latest
-    needs: fixture-ready
     defaults:
       run:
         working-directory: packages/flutter
@@ -81,16 +98,34 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      # The runner consumes env ECHOMIRROR_CONTRACT_SPEC from the job (repo root
-      # path) but runs with cwd=packages/flutter, so point it at the repo root.
+      - name: Start fixture
+        working-directory: ${{ github.workspace }}
+        run: docker compose -f contract-tests/docker-compose.yml up -d --build
+      - name: Wait for fixture (fail if it never comes up)
+        working-directory: ${{ github.workspace }}
+        run: |
+          for i in $(seq 1 60); do
+            api_ok=$(curl -sf http://127.0.0.1:18080/mood/streak > /dev/null && echo y || echo n)
+            horiz_ok=$(curl -sf http://127.0.0.1:18081/accounts/GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD > /dev/null && echo y || echo n)
+            if [ "$api_ok" = y ] && [ "$horiz_ok" = y ]; then
+              echo "fixture ready"
+              exit 0
+            fi
+            echo "waiting for fixture ($i/60)…"
+            sleep 2
+          done
+          docker compose -f contract-tests/docker-compose.yml logs
+          echo "fixture did not become ready" >&2
+          exit 1
       - run: flutter test test/contract_test.dart
-        env:
-          ECHOMIRROR_CONTRACT_SPEC: ${{ github.workspace }}/contract-tests/contract-spec.json
+      - name: Tear down fixture
+        if: always()
+        working-directory: ${{ github.workspace }}
+        run: docker compose -f contract-tests/docker-compose.yml down --volumes
 
   swift:
     name: Swift contract
     runs-on: macos-14
-    needs: fixture-ready
     steps:
       - uses: actions/checkout@v7
       - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
@@ -102,19 +137,7 @@ jobs:
           targets: aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin,x86_64-apple-darwin
       - name: Build EchoMirrorFFI XCFramework
         run: bash packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
+      # Swift contract tests are FFI-local (no HTTP), so they do not need the
+      # docker fixture and therefore do not start one on this macOS runner.
       - name: Run Swift tests (incl. contract)
         run: swift test --package-path packages/swift/EchoMirrorSDK
-        env:
-          ECHOMIRROR_CONTRACT_SPEC: ${{ github.workspace }}/contract-tests/contract-spec.json
-      - name: Tear down fixture
-        if: always()
-        run: docker compose -f contract-tests/docker-compose.yml down --volumes
-
-  teardown:
-    name: Tear down fixture
-    runs-on: ubuntu-latest
-    needs: [fixture-ready, rust, js, flutter]
-    if: always()
-    steps:
-      - uses: actions/checkout@v7
-      - run: docker compose -f contract-tests/docker-compose.yml down --volumes

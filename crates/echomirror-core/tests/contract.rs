@@ -100,6 +100,12 @@ async fn contract_core_bindings() {
     let host = "127.0.0.1";
     let port = 18080u16;
     if !fixture_reachable(host, port) {
+        if std::env::var("ECHOMIRROR_CONTRACT_SPEC").is_ok() {
+            panic!(
+                "contract fixture not reachable at {host}:{port} — contract tests are required \
+                 because ECHOMIRROR_CONTRACT_SPEC is set"
+            );
+        }
         eprintln!(
             "skipping contract tests: fixture not reachable at {host}:{port} (run \
              `docker compose -f contract-tests/docker-compose.yml up -d` first)"

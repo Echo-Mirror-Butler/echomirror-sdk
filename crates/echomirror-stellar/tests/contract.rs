@@ -96,6 +96,12 @@ fn assert_wire(wire: &Value, assertions: &[Value], op_id: &str) {
 async fn contract_stellar_bindings() {
     for (host, port) in [("127.0.0.1", 18080u16), ("127.0.0.1", 18081u16)] {
         if !fixture_reachable(host, port) {
+            if std::env::var("ECHOMIRROR_CONTRACT_SPEC").is_ok() {
+                panic!(
+                    "contract fixture not reachable at {host}:{port} — contract tests are required \
+                     because ECHOMIRROR_CONTRACT_SPEC is set"
+                );
+            }
             eprintln!(
                 "skipping contract tests: fixture not reachable at {host}:{port} (run \
                  `docker compose -f contract-tests/docker-compose.yml up -d` first)"

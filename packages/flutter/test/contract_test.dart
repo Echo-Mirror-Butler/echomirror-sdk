@@ -51,6 +51,12 @@ void main() async {
   final apiBase = Platform.environment['ECHOMIRROR_CONTRACT_API_BASE'] ??
       'http://127.0.0.1:18080';
   final live = await _fixtureReachable(apiBase);
+  if (!live && Platform.environment['ECHOMIRROR_CONTRACT_SPEC'] != null) {
+    throw StateError(
+      'contract fixture not reachable at $apiBase — contract tests are required because '
+      'ECHOMIRROR_CONTRACT_SPEC is set',
+    );
+  }
   final skipReason = live ? false : 'fixture not reachable at $apiBase';
 
   final publicKey = ((spec['fixture']['users']['stellar']

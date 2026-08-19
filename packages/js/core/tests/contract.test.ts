@@ -83,7 +83,13 @@ const enabled = await (async () => {
   try {
     const res = await fetch(`${apiBase}/mood/streak`, { signal: AbortSignal.timeout(2000) })
     return res.ok || res.status !== 0
-  } catch {
+  } catch (err) {
+    if (process.env.ECHOMIRROR_CONTRACT_SPEC) {
+      throw new Error(
+        `contract fixture not reachable at ${apiBase} — contract tests are required because ` +
+          `ECHOMIRROR_CONTRACT_SPEC is set: ${(err as Error).message}`,
+      )
+    }
     return false
   }
 })()
