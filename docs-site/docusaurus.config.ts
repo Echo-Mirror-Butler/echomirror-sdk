@@ -34,7 +34,7 @@ const config: Config = {
           '../packages/js/react/src/index.tsx',
           '../packages/js/stellar/src/index.ts',
         ],
-        tsconfig: '../tsconfig.json',
+        tsconfig: './tsconfig.typedoc.json',
        out: 'docs/api/js',
         readme: 'none',
         validation: { notDocumented: true },
@@ -104,7 +104,7 @@ const config: Config = {
             },
             {
               label: 'Architecture',
-              to: '/docs/architecture',
+              to: '/docs/next/architecture',
             },
             {
               label: 'Core Concepts',

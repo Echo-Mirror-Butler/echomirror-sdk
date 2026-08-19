@@ -46,7 +46,7 @@ describe('AnalyticsClient batching', () => {
 
   it('keeps a failed batch queued for retry', async () => {
     const transport = vi
-      .fn<(batch: AnalyticsBatch) => Promise<void>>()
+      .fn(async (_batch: AnalyticsBatch): Promise<void> => undefined)
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValue(undefined)
     const client = new AnalyticsClient({

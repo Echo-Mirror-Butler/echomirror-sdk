@@ -141,7 +141,7 @@ function Hero() {
         </p>
 
         <div className={styles.heroCta}>
-          <Link className="button button--primary button--lg" to="/docs/architecture">
+          <Link className="button button--primary button--lg" to="/docs/next/architecture">
             How the SDK fits together →
           </Link>
           <Link className="button button--outline button--lg" to="/docs/intro">
@@ -185,7 +185,7 @@ export default function Home(): ReactNode {
                   every platform.
                 </p>
               </div>
-              <Link className="button button--primary button--lg" to="/docs/architecture">
+              <Link className="button button--primary button--lg" to="/docs/next/architecture">
                 View architecture &amp; package guide →
               </Link>
             </div>

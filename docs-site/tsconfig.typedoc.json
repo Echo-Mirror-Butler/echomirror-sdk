@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "../packages/js/core/src/**/*.ts",
+    "../packages/js/mood/src/**/*.ts",
+    "../packages/js/react/src/**/*.ts",
+    "../packages/js/react/src/**/*.tsx",
+    "../packages/js/stellar/src/**/*.ts"
+  ],
+  "exclude": [
+    "../packages/js/**/test/**",
+    "../packages/js/**/tests/**",
+    "../packages/js/**/dist/**"
+  ]
+}
