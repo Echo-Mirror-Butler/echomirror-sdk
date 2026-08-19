@@ -1,7 +1,7 @@
 {
-  "name": "@echomirror/core",
+  "name": "@echomirror/mood",
   "version": "0.1.0",
-  "description": "EchoMirror SDK core — API client, auth, and shared TypeScript types",
+  "description": "EchoMirror SDK mood tracking module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -16,12 +16,27 @@
     "build": "tsc",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "size-limit": "size-limit"
   },
-  "keywords": ["echomirror", "wellness", "sdk", "stellar", "mood"],
+  "keywords": [
+    "echomirror",
+    "mood",
+    "wellness"
+  ],
   "license": "MIT",
+  "dependencies": {
+    "@echomirror/core": "*"
+  },
   "devDependencies": {
     "typescript": "*",
     "vitest": "*"
-  }
+  },
+  "size-limit": [
+    {
+      "name": "@echomirror/mood",
+      "path": "dist/index.js",
+      "limit": "350 B"
+    }
+  ]
 }
