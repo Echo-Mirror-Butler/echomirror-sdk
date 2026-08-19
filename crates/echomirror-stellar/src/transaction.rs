@@ -13,7 +13,7 @@ pub struct EchoTransferParams {
     pub memo: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UnsignedTransaction {
     /// XDR-encoded transaction envelope — pass to Freighter (browser) or sign with secret key
     pub xdr: String,
@@ -82,7 +82,7 @@ pub async fn submit_transaction(
         .await
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TransactionHistoryPage {
     pub transactions: Vec<echomirror_core::StellarTransaction>,
     pub cursor: Option<String>,
