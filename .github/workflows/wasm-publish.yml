@@ -22,7 +22,7 @@ jobs:
       contents: read
       id-token: write # npm provenance
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
         with:
@@ -32,7 +32,7 @@ jobs:
         with:
           key: ${{ hashFiles('Cargo.lock') }}-wasm
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
