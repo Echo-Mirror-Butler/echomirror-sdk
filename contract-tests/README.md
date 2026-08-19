@@ -53,10 +53,12 @@ path is immediately diagnosable.
 
 ## Runners
 
-Each runner reads the shared spec, asserts the typed binding's output against
-it, and **self-skips when the fixture is unreachable** (so per-language CI keeps
-passing without the fixture). The contract workflow starts the fixture first and
-waits for it, so a skip there means a real failure.
+Each runner reads the shared spec and asserts the typed binding's output against
+it. When `ECHOMIRROR_CONTRACT_SPEC` is set (as in CI), a missing spec or
+unreachable fixture is a **hard failure** (panic/throw), so CI cannot pass
+vacuously by skipping. Without that env var, runners self-skip so local test
+runs stay green without the fixture. The contract workflow starts the fixture
+first and waits for it.
 
 | Binding | Runner | Exercises |
 |---|---|---|

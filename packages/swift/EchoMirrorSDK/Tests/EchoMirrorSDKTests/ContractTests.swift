@@ -13,6 +13,10 @@ import XCTest
 ///
 /// Env override: ECHOMIRROR_CONTRACT_SPEC (path to contract-spec.json).
 final class ContractTests: XCTestCase {
+    private enum ContractSpecError: Error {
+        case specNotFound
+    }
+
     private struct Spec {
         let logMoodBody: [String: Any]
         let moodUserId: String
@@ -21,11 +25,19 @@ final class ContractTests: XCTestCase {
     }
 
     private static func loadSpec() throws -> Spec {
-        let candidates = [
+        var candidates = [
             ProcessInfo.processInfo.environment["ECHOMIRROR_CONTRACT_SPEC"],
-            "../../../contract-tests/contract-spec.json", // run from packages/swift/EchoMirrorSDK
-            "../../../../contract-tests/contract-spec.json", // run from repo root
         ].compactMap { $0 }
+
+        // Walk up from the current working directory looking for the shared
+        // spec. This is robust to `swift test` being invoked from the repo
+        // root, the package directory, or anywhere in between.
+        let marker = "contract-tests/contract-spec.json"
+        var dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        for _ in 0..<6 {
+            candidates.append(dir.appendingPathComponent(marker).path)
+            dir.deleteLastPathComponent()
+        }
 
         for path in candidates {
             guard let data = FileManager.default.contents(atPath: path),
@@ -44,10 +56,13 @@ final class ContractTests: XCTestCase {
                 stellarPublicKey: stellarUser["public_key"] as? String
                     ?? "GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD",
                 stellarDestination: stellarUser["destination"] as? String
-                    ?? "GDD6NGUJ3W5OWKX4ZP3JVPQF3T7YNONI3B4QJ6WY2XQKJRBZDK7G4T5QZ"
+                    ?? "GDD6NGUJ3W5OWKX4ZP3JVPQF3T7YNONI3B4QJ6WY2XQKJRBZDK7G4T5A"
             )
         }
 
+        if ProcessInfo.processInfo.environment["ECHOMIRROR_CONTRACT_SPEC"] != nil {
+            throw ContractSpecError.specNotFound
+        }
         throw XCTSkip("contract-spec.json not found — set ECHOMIRROR_CONTRACT_SPEC")
     }
 
