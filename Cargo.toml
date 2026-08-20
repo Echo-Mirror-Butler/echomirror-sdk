@@ -44,7 +44,7 @@ uniffi = { version = "0.27" }
 pyo3 = { version = "0.22" }
 pyo3-async-runtimes = { version = "0.22" }
 # crypto
-sha2 = "0.10"
+sha2 = "0.11"
 hex = "0.4"
 # random
 rand = "0.8"
