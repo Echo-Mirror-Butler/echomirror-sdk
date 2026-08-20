@@ -104,7 +104,7 @@ const config: Config = {
             },
             {
               label: 'Architecture',
-              to: '/docs/next/architecture',
+              to: '/docs/architecture',
             },
             {
               label: 'Core Concepts',
