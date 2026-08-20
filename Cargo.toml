@@ -28,7 +28,7 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-feature
 # Stellar SDK
 stellar-sdk = { version = "0.9" }
 # error handling
-thiserror = "1.0"
+thiserror = "2.0"
 anyhow = "1.0"
 # async traits
 async-trait = "0.1"
@@ -53,6 +53,6 @@ eventsource-stream = "0.2"
 tokio-util = "0.7"
 tracing = "0.1"
 # postgres cursor store (optional feature of echomirror-sync)
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "migrate", "macros"] }
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "migrate", "macros"] }
 # testing
 wiremock = "0.6"

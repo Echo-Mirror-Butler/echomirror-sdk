@@ -1,6 +1,6 @@
 use echomirror_core::{EchoMirrorError, Result};
 use reqwest::Client;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Direct Horizon API client — bypasses EchoMirror API for raw Stellar operations.
 /// Used by the sync engine and for balance lookups.
@@ -134,11 +134,14 @@ pub struct HorizonAccount {
     pub balances: Vec<HorizonBalance>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HorizonBalance {
     pub balance: String,
     pub asset_type: String,
+    /// Absent for native (XLM) balances — real Horizon omits these keys.
+    #[serde(default)]
     pub asset_code: Option<String>,
+    #[serde(default)]
     pub asset_issuer: Option<String>,
 }
 
