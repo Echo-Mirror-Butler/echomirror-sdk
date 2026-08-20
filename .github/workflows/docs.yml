@@ -42,12 +42,21 @@ jobs:
       - name: Install workspace dependencies
         run: npm install
 
+      # The docs typecheck (docusaurus-plugin-typedoc) compiles the whole
+      # packages/js tree against the root tsconfig — including
+      # packages/js/wasm/test/wasm.test.ts, which imports the generated
+      # dist/ entry point — so build @echomirror/wasm (tsc -> dist/) first.
       - name: Build JS packages
         run: |
+          npm run build --workspace=@echomirror/wasm
+          npm run build --workspace=@echomirror/analytics
           npm run build --workspace=@echomirror/core
           npm run build --workspace=@echomirror/mood
           npm run build --workspace=@echomirror/react
           npm run build --workspace=@echomirror/stellar
+
+      - name: Verify WASM package output
+        run: test -f packages/js/wasm/dist/index.js
 
       # Rust API reference (cargo doc)
       - name: Generate Rust docs
@@ -77,6 +86,11 @@ jobs:
       - name: Install docs site dependencies
         working-directory: docs-site
         run: npm install
+
+      # Aggregate all per-package CHANGELOG.md files into docs-site/docs/changelog.md
+      # This must run before the Docusaurus build so the generated page is included.
+      - name: Aggregate changelogs
+        run: node docs-site/scripts/aggregate-changelogs.mjs
 
       - name: Build docs site
         working-directory: docs-site
