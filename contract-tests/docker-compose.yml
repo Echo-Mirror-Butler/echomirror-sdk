@@ -1,0 +1,22 @@
+name: echomirror-contract-fixture
+
+services:
+  fixture-api:
+    build: ./fixture
+    environment:
+      FIXTURE_ROLE: api
+      FIXTURE_PORT: 18080
+    ports:
+      - "18080:18080"
+    volumes:
+      - ./contract-spec.json:/fixture/contract-spec.json:ro
+
+  fixture-horizon:
+    build: ./fixture
+    environment:
+      FIXTURE_ROLE: horizon
+      FIXTURE_PORT: 18081
+    ports:
+      - "18081:18081"
+    volumes:
+      - ./contract-spec.json:/fixture/contract-spec.json:ro

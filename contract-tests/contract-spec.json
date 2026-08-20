@@ -1,0 +1,359 @@
+{
+  "version": "1.0",
+  "description": "Language-agnostic contract for EchoMirror SDK bindings. Every field below is the canonical (snake_case) wire shape served by the shared fixture; each binding runner maps these to its own naming via the per-binding field_map and asserts the same logical values.",
+  "fixture": {
+    "api": {
+      "host": "127.0.0.1",
+      "port": 18080
+    },
+    "horizon": {
+      "host": "127.0.0.1",
+      "port": 18081
+    },
+    "api_key": "contract-test-key",
+    "network": "testnet",
+    "users": {
+      "mood": {
+        "id": "user-contract-001",
+        "public_key": "GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD"
+      },
+      "stellar": {
+        "public_key": "GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD",
+        "destination": "GDD6NGUJ3W5OWKX4ZP3JVPQF3T7YNONI3B4QJ6WY2XQKJRBZDK7G4T5A"
+      }
+    }
+  },
+  "field_map": {
+    "js": {
+      "last_logged_at": "last_logged_at",
+      "is_active_today": "is_active_today",
+      "total_entries": "total_entries",
+      "created_at": "created_at",
+      "user_id": "user_id"
+    },
+    "flutter": {
+      "last_logged_at": "lastLoggedAt",
+      "is_active_today": "isActiveToday",
+      "total_entries": "totalEntries",
+      "created_at": "createdAt",
+      "user_id": "userId"
+    },
+    "swift": {
+      "last_logged_at": "lastLoggedAt",
+      "is_active_today": "isActiveToday"
+    }
+  },
+  "operations": [
+    {
+      "id": "fetch_mood_streak",
+      "binding": ["rust", "js", "flutter"],
+      "target": "api",
+      "method": "GET",
+      "path": "/mood/streak",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "current": 5,
+          "longest": 12,
+          "last_logged_at": "2026-08-17T09:30:00Z",
+          "is_active_today": true
+        }
+      },
+      "assertions": [
+        { "field": "current", "eq": 5 },
+        { "field": "longest", "eq": 12 },
+        { "field": "last_logged_at", "eq": "2026-08-17T09:30:00Z" },
+        { "field": "is_active_today", "eq": true }
+      ]
+    },
+    {
+      "id": "fetch_mood_summary",
+      "binding": ["rust", "js", "flutter"],
+      "target": "api",
+      "method": "GET",
+      "path": "/mood/summary?period=week",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "period": "week",
+          "average": 7.4,
+          "min": 2,
+          "max": 10,
+          "total_entries": 42,
+          "trend": "improving"
+        }
+      },
+      "assertions": [
+        { "field": "period", "eq": "week" },
+        { "field": "average", "eq": 7.4 },
+        { "field": "min", "eq": 2 },
+        { "field": "max", "eq": 10 },
+        { "field": "total_entries", "eq": 42 },
+        { "field": "trend", "eq": "improving" }
+      ]
+    },
+    {
+      "id": "log_mood",
+      "binding": ["rust", "js", "flutter"],
+      "target": "api",
+      "method": "POST",
+      "path": "/mood/entries",
+      "request": {
+        "body": { "score": 8, "note": "Great day", "tags": ["work", "proud"] }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "mood-contract-001",
+          "user_id": "user-contract-001",
+          "score": 8,
+          "note": "Great day",
+          "tags": ["work", "proud"],
+          "ai_reflection": null,
+          "created_at": "2026-08-17T09:31:00Z",
+          "updated_at": "2026-08-17T09:31:00Z"
+        }
+      },
+      "assertions": [
+        { "field": "id", "eq": "mood-contract-001" },
+        { "field": "user_id", "eq": "user-contract-001" },
+        { "field": "score", "eq": 8 },
+        { "field": "note", "eq": "Great day" },
+        { "field": "tags", "eq": ["work", "proud"] }
+      ]
+    },
+    {
+      "id": "get_social_feed",
+      "binding": ["rust", "js", "flutter"],
+      "target": "api",
+      "method": "GET",
+      "path": "/social/feed?limit=10",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "entries": [
+            {
+              "id": "feed-001",
+              "score": 7,
+              "tags": ["health"],
+              "country": "US",
+              "city": "New York",
+              "created_at": "2026-08-17T09:00:00Z"
+            }
+          ]
+        }
+      },
+      "assertions": [
+        { "field": "id", "eq": "feed-001", "path": "entries.0" },
+        { "field": "score", "eq": 7, "path": "entries.0" },
+        { "field": "created_at", "eq": "2026-08-17T09:00:00Z", "path": "entries.0" }
+      ]
+    },
+    {
+      "id": "get_leaderboard",
+      "binding": ["rust", "js", "flutter"],
+      "target": "api",
+      "method": "GET",
+      "path": "/social/leaderboard?limit=10",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "entries": [
+            {
+              "rank": 1,
+              "user_id": "user-contract-001",
+              "display_name": "Alice",
+              "avatar_url": null,
+              "streak": 12,
+              "total_entries": 42,
+              "echo_balance": "1250.0000000",
+              "weekly_score": 88.6
+            }
+          ]
+        }
+      },
+      "assertions": [
+        { "field": "rank", "eq": 1, "path": "entries.0" },
+        { "field": "user_id", "eq": "user-contract-001", "path": "entries.0" },
+        { "field": "display_name", "eq": "Alice", "path": "entries.0" },
+        { "field": "weekly_score", "eq": 88.6, "path": "entries.0" }
+      ]
+    },
+    {
+      "id": "build_echo_transfer",
+      "binding": ["rust", "js", "flutter"],
+      "target": "api",
+      "method": "POST",
+      "path": "/stellar/build-transfer",
+      "request": {
+        "body": {
+          "from": "GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD",
+          "to": "GDD6NGUJ3W5OWKX4ZP3JVPQF3T7YNONI3B4QJ6WY2XQKJRBZDK7G4T5A",
+          "amount": 5.0,
+          "memo": "Great energy today"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "xdr": "AAAAAAABAAEBAAAAAF9ta3l4ZHJ4c2lnbmVkdHhpZAAAAAA=",
+          "fee": 100,
+          "sequence": "103720918407102567"
+        }
+      },
+      "assertions": [
+        { "field": "xdr", "eq": "AAAAAAABAAEBAAAAAF9ta3l4ZHJ4c2lnbmVkdHhpZAAAAAA=" },
+        { "field": "fee", "eq": 100 },
+        { "field": "sequence", "eq": "103720918407102567" }
+      ]
+    },
+    {
+      "id": "submit_payment_transaction",
+      "binding": ["rust", "js"],
+      "target": "api",
+      "method": "POST",
+      "path": "/stellar/submit",
+      "request": {
+        "body": { "xdr": "AAAAAAABAAEBAAAAAF9ta3l4ZHJ4c2lnbmVkdHhpZAAAAAA=" }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "tx-contract-001",
+          "type": "send",
+          "asset": "ECHO",
+          "amount": "5.0000000",
+          "from": "GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD",
+          "to": "GDD6NGUJ3W5OWKX4ZP3JVPQF3T7YNONI3B4QJ6WY2XQKJRBZDK7G4T5A",
+          "memo": "Great energy today",
+          "created_at": "2026-08-17T09:32:00Z",
+          "stellar_tx_hash": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+          "ledger_sequence": 12345
+        }
+      },
+      "assertions": [
+        { "field": "id", "eq": "tx-contract-001" },
+        { "field": "type", "eq": "send" },
+        { "field": "asset", "eq": "ECHO" },
+        { "field": "amount", "eq": "5.0000000" },
+        { "field": "stellar_tx_hash", "eq": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08" }
+      ]
+    },
+    {
+      "id": "get_transaction_history",
+      "binding": ["rust", "js", "flutter"],
+      "target": "api",
+      "method": "GET",
+      "path": "/stellar/transactions?public_key=GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD&limit=10",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "transactions": [
+            {
+              "id": "tx-contract-001",
+              "type": "send",
+              "asset": "ECHO",
+              "amount": "5.0000000",
+              "from": "GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD",
+              "to": "GDD6NGUJ3W5OWKX4ZP3JVPQF3T7YNONI3B4QJ6WY2XQKJRBZDK7G4T5A",
+              "created_at": "2026-08-17T09:32:00Z",
+              "stellar_tx_hash": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+              "ledger_sequence": 12345
+            }
+          ],
+          "cursor": "tx-contract-001"
+        }
+      },
+      "assertions": [
+        { "field": "id", "eq": "tx-contract-001", "path": "transactions.0" },
+        { "field": "type", "eq": "send", "path": "transactions.0" },
+        { "field": "amount", "eq": "5.0000000", "path": "transactions.0" }
+      ]
+    },
+    {
+      "id": "get_stellar_balance",
+      "binding": ["rust"],
+      "target": "horizon",
+      "method": "GET",
+      "path": "/accounts/GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "balances": [
+            {
+              "balance": "100.0000000",
+              "asset_type": "native"
+            },
+            {
+              "balance": "1250.0000000",
+              "asset_type": "credit_alphanum4",
+              "asset_code": "ECHO",
+              "asset_issuer": "GDD6NGUJ3W5OWKX4ZP3JVPQF3T7YNONI3B4QJ6WY2XQKJRBZDK7G4T5A"
+            }
+          ]
+        }
+      },
+      "assertions": [
+        { "field": "balance", "eq": "100.0000000", "path": "balances.0" },
+        { "field": "asset_type", "eq": "native", "path": "balances.0" },
+        { "field": "balance", "eq": "1250.0000000", "path": "balances.1" },
+        { "field": "asset_code", "eq": "ECHO", "path": "balances.1" }
+      ]
+    },
+    {
+      "id": "get_stellar_balance_api",
+      "binding": ["js", "flutter"],
+      "target": "api",
+      "method": "GET",
+      "path": "/stellar/balance/GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "xlm": "100.0000000",
+          "echo": "1250.0000000",
+          "public_key": "GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD",
+          "network": "testnet",
+          "last_fetched": "2026-08-17T09:34:00Z"
+        }
+      },
+      "assertions": [
+        { "field": "xlm", "eq": "100.0000000" },
+        { "field": "echo", "eq": "1250.0000000" },
+        { "field": "network", "eq": "testnet" }
+      ]
+    },
+    {
+      "id": "horizon_account_not_found",
+      "binding": ["rust"],
+      "target": "horizon",
+      "method": "GET",
+      "path": "/accounts/GDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+      "request": {},
+      "response": {
+        "status": 404,
+        "body": { "title": "Resource Missing" }
+      },
+      "assertions": []
+    },
+    {
+      "id": "api_request_to_unknown_route_must_fail",
+      "binding": ["rust", "js", "flutter"],
+      "target": "api",
+      "method": "GET",
+      "path": "/stellar/transactions?public_key=GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD&limit=10&unknown=1",
+      "request": {},
+      "response": {
+        "status": 404,
+        "body": { "message": "no fixture route for query variant; bindings must surface this as an error" }
+      },
+      "assertions": []
+    }
+  ]
+}
