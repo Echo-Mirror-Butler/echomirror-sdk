@@ -87,6 +87,11 @@ jobs:
         working-directory: docs-site
         run: npm install
 
+      # Aggregate all per-package CHANGELOG.md files into docs-site/docs/changelog.md
+      # This must run before the Docusaurus build so the generated page is included.
+      - name: Aggregate changelogs
+        run: node docs-site/scripts/aggregate-changelogs.mjs
+
       - name: Build docs site
         working-directory: docs-site
         run: npm run build
