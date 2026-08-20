@@ -8,7 +8,7 @@ use pyo3::types::PyAny;
 use crate::errors::to_py_err;
 
 /// Stellar network to connect to.
-#[pyclass(name = "StellarNetwork", eq, eq_int)]
+#[pyclass(name = "StellarNetwork", eq, eq_int, from_py_object)]
 #[derive(Clone, Copy, PartialEq)]
 pub enum PyStellarNetwork {
     Mainnet,
@@ -37,7 +37,7 @@ impl From<CoreNetwork> for PyStellarNetwork {
 ///
 /// Most users should reach for the `EchoMirror` convenience class instead, which
 /// constructs one of these plus all three sub-clients together.
-#[pyclass(name = "EchoMirrorClient")]
+#[pyclass(name = "EchoMirrorClient", from_py_object)]
 #[derive(Clone)]
 pub struct PyEchoMirrorClient {
     pub(crate) inner: CoreClient,

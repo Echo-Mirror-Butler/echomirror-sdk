@@ -12,7 +12,7 @@ use crate::types::{PyGlobalFeedEntry, PyLeaderboardEntry};
 /// social = SocialClient(client)
 /// feed = await social.get_global_feed(limit=20)
 /// ```
-#[pyclass(name = "SocialClient")]
+#[pyclass(name = "SocialClient", from_py_object)]
 #[derive(Clone)]
 pub struct PySocialClient {
     client: PyEchoMirrorClient,

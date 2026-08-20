@@ -12,7 +12,7 @@ fn opt_dt(d: Option<DateTime<Utc>>) -> Option<String> {
 // ── Mood ─────────────────────────────────────────────────────────────────────
 
 /// A single mood check-in.
-#[pyclass(name = "AiReflection", get_all)]
+#[pyclass(name = "AiReflection", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyAiReflection {
     pub id: String,
@@ -47,7 +47,7 @@ impl PyAiReflection {
 }
 
 /// A single mood check-in. `created_at`/`updated_at` are ISO-8601 strings.
-#[pyclass(name = "MoodEntry", get_all)]
+#[pyclass(name = "MoodEntry", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyMoodEntry {
     pub id: String,
@@ -85,7 +85,7 @@ impl PyMoodEntry {
     }
 }
 
-#[pyclass(name = "MoodStreak", get_all)]
+#[pyclass(name = "MoodStreak", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyMoodStreak {
     pub current: u32,
@@ -115,7 +115,7 @@ impl PyMoodStreak {
     }
 }
 
-#[pyclass(name = "MoodSummary", get_all)]
+#[pyclass(name = "MoodSummary", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyMoodSummary {
     pub period: String,
@@ -163,7 +163,7 @@ pub struct PyMoodHistoryPage {
 
 // ── Stellar ───────────────────────────────────────────────────────────────────
 
-#[pyclass(name = "StellarBalance", get_all)]
+#[pyclass(name = "StellarBalance", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyStellarBalance {
     pub xlm: String,
@@ -192,7 +192,7 @@ impl PyStellarBalance {
     }
 }
 
-#[pyclass(name = "StellarTransaction", get_all)]
+#[pyclass(name = "StellarTransaction", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyStellarTransaction {
     pub id: String,
@@ -240,7 +240,7 @@ impl PyStellarTransaction {
 
 /// An unsigned transaction envelope — sign the `xdr` with the sender's
 /// keypair (or a wallet such as Freighter) before calling `submit_transaction`.
-#[pyclass(name = "UnsignedTransaction", get_all)]
+#[pyclass(name = "UnsignedTransaction", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyUnsignedTransaction {
     pub xdr: String,
@@ -277,7 +277,7 @@ pub struct PyTransactionHistoryPage {
 
 // ── Social ────────────────────────────────────────────────────────────────────
 
-#[pyclass(name = "UserProfile", get_all)]
+#[pyclass(name = "UserProfile", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyUserProfile {
     pub id: String,
@@ -312,7 +312,7 @@ impl PyUserProfile {
     }
 }
 
-#[pyclass(name = "LeaderboardEntry", get_all)]
+#[pyclass(name = "LeaderboardEntry", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyLeaderboardEntry {
     pub rank: u32,
@@ -350,7 +350,7 @@ impl PyLeaderboardEntry {
     }
 }
 
-#[pyclass(name = "GlobalFeedEntry", get_all)]
+#[pyclass(name = "GlobalFeedEntry", get_all, from_py_object)]
 #[derive(Clone)]
 pub struct PyGlobalFeedEntry {
     pub id: String,

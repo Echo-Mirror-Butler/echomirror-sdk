@@ -14,7 +14,7 @@ use crate::types::{
 /// stellar = StellarClient(client)
 /// balance = await stellar.get_balance(public_key)
 /// ```
-#[pyclass(name = "StellarClient")]
+#[pyclass(name = "StellarClient", from_py_object)]
 #[derive(Clone)]
 pub struct PyStellarClient {
     client: PyEchoMirrorClient,
