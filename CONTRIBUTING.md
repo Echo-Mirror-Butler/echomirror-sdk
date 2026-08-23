@@ -26,8 +26,8 @@ broken instead of three steps into your first change. It only warns (not
 fails) on a missing toolchain, and it's safe to re-run. Windows contributors
 should run it from WSL.
 
-If you'd rather see what it's doing or just work on one ecosystem, the
-manual steps it runs are:
+If you'd rather do it by hand, or just work on one ecosystem, the equivalent
+manual steps are:
 
 ```bash
 # JavaScript packages

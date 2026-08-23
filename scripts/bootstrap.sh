@@ -22,7 +22,8 @@
 
 set -u
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+SCRIPT_DIR=$(dirname "$0")
+ROOT_DIR=$(CDPATH= cd "$SCRIPT_DIR/.." && pwd)
 cd "$ROOT_DIR" || exit 1
 
 NODE_MIN_MAJOR=18
