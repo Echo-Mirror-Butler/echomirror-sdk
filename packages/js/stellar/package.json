@@ -1,62 +1,48 @@
 {
-  "name": "@echomirror/wasm",
-  "version": "0.1.0",
-  "description": "EchoMirror SDK compiled to WebAssembly — crypto, XDR and sync helpers for browser and Node.js",
-  "type": "module",
+  "name": "@echomirror/stellar",
+  "version": "0.2.0",
+  "description": "EchoMirror SDK Stellar integration — multi-wallet (Freighter, Albedo, xBull), transaction builders, and typed errors",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "browser": "./dist/index.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "browser": "./dist/index.js",
-      "node": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     }
   },
-  "imports": {
-    "#wasm-binding": {
-      "types": "./src/wasm-binding.d.ts",
-      "node": "./wasm-node/echomirror_wasm.cjs",
-      "browser": "./wasm-web/echomirror_wasm.js",
-      "default": "./wasm-web/echomirror_wasm.js"
-    }
-  },
-  "files": [
-    "dist",
-    "wasm-web",
-    "wasm-node",
-    "src/wasm-binding.d.ts"
-  ],
   "scripts": {
-    "build:wasm": "node scripts/build.mjs",
     "build": "tsc",
-    "size": "node scripts/report-size.mjs",
-    "size-limit": "size-limit",
-    "test": "vitest run --config vitest.config.ts --passWithNoTests",
-    "test:browser": "vitest run --config vitest.browser.config.ts --passWithNoTests",
+    "test": "vitest run",
+    "test:integration": "STELLAR_INTEGRATION=1 vitest run tests/integration --testTimeout 120000",
+    "pretest:e2e": "node e2e/scripts/fetch-freighter.mjs",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "clean": "rm -rf dist wasm-web wasm-node"
+    "lint": "eslint src"
   },
-  "keywords": ["echomirror", "wasm", "webassembly", "stellar", "mood"],
+  "keywords": [
+    "echomirror",
+    "stellar",
+    "blockchain",
+    "freighter",
+    "albedo",
+    "xbull",
+    "wallet",
+    "payments"
+  ],
   "license": "MIT",
+  "dependencies": {
+    "@albedo-link/intent": "^0.12.0",
+    "@echomirror/core": "*",
+    "@stellar/freighter-api": "^6.0.0",
+    "@stellar/stellar-sdk": "^13.0.0"
+  },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.1",
     "typescript": "*",
-    "vitest": "*",
-    "@vitest/browser": "^1.6.0",
-    "playwright": "^1.44.0",
-    "wasm-pack": "^0.15.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "size-limit": [
-    {
-      "name": "@echomirror/wasm (browser)",
-      "path": "dist/index.js",
-      "limit": "220 KB"
-    }
-  ]
+    "vitest": "*"
+  }
 }

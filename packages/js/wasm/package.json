@@ -1,82 +1,54 @@
-name: Size Limit
-
-# Budgets the client-bundled JS packages (see each package's "size-limit"
-# field in package.json) and comments the size delta on every PR that
-# touches a budgeted package. Fails the job — not just the comment — when a
-# package goes over its budget.
-#
-# @echomirror/social and @echomirror/analytics are the two packages left
-# out of packages-js below: social is a false negative avoided on purpose —
-# it ships browser React hooks (useGlobalFeed/useLeaderboard) and a
-# WebSocketTransport for a live feed/leaderboard widget, so it gets a
-# budget like core/mood/react/stellar. analytics is left unbudgeted: it has
-# no React/DOM dependency, and its two exports (a webhook transport and
-# mood-aggregation helpers) are the kind of thing that runs in a backend
-# job aggregating stored data, not something dropped into a landing page.
-# If it ever grows a browser-facing entry point, it should get a budget
-# too — see CONTRIBUTING.md.
-
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'packages/js/**'
-      - '.github/workflows/size-limit.yml'
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  size-limit-js:
-    name: Size Limit (${{ matrix.package }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package: [core, mood, react, social, stellar]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      # mood, react, social, and stellar all depend on @echomirror/core;
-      # size-limit bundles that dependency's compiled dist/ output, so it
-      # has to exist before size-limit runs against a dependent package.
-      - if: matrix.package != 'core'
-        run: npm run build -w packages/js/core
-      - name: Size Limit
-        uses: andresz1/size-limit-action@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          directory: packages/js/${{ matrix.package }}
-          skip_step: install
-          package_manager: npm
-
-  size-limit-wasm:
-    name: Size Limit (wasm)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
-        with:
-          toolchain: stable
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          key: ${{ hashFiles('Cargo.lock') }}-wasm
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build:wasm -w packages/js/wasm
-      - name: Size Limit
-        uses: andresz1/size-limit-action@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          directory: packages/js/wasm
-          skip_step: install
-          package_manager: npm
+{
+  "name": "@echomirror/wasm",
+  "version": "0.1.0",
+  "description": "EchoMirror SDK compiled to WebAssembly — crypto, XDR and sync helpers for browser and Node.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "browser": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/index.js",
+      "node": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "imports": {
+    "#wasm-binding": {
+      "types": "./src/wasm-binding.d.ts",
+      "node": "./wasm-node/echomirror_wasm.cjs",
+      "browser": "./wasm-web/echomirror_wasm.js",
+      "default": "./wasm-web/echomirror_wasm.js"
+    }
+  },
+  "files": [
+    "dist",
+    "wasm-web",
+    "wasm-node",
+    "src/wasm-binding.d.ts"
+  ],
+  "scripts": {
+    "build:wasm": "node scripts/build.mjs",
+    "build": "tsc",
+    "size": "node scripts/report-size.mjs",
+    "test": "vitest run --config vitest.config.ts --passWithNoTests",
+    "test:browser": "vitest run --config vitest.browser.config.ts --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist wasm-web wasm-node"
+  },
+  "keywords": ["echomirror", "wasm", "webassembly", "stellar", "mood"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "*",
+    "vitest": "*",
+    "@vitest/browser": "^1.6.0",
+    "playwright": "^1.44.0",
+    "wasm-pack": "^0.15.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

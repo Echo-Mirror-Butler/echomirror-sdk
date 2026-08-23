@@ -1,7 +1,7 @@
 {
-  "name": "@echomirror/social",
+  "name": "@echomirror/react",
   "version": "0.1.0",
-  "description": "EchoMirror SDK social module — global feed, leaderboard, and real-time updates",
+  "description": "EchoMirror SDK React bindings",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -16,14 +16,11 @@
     "build": "tsc",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "size-limit": "size-limit"
+    "lint": "eslint src"
   },
   "keywords": [
     "echomirror",
-    "social",
-    "feed",
-    "leaderboard",
+    "react",
     "wellness"
   ],
   "license": "MIT",
@@ -34,25 +31,10 @@
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "typescript": "*",
     "vitest": "*",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0"
-  },
-  "size-limit": [
-    {
-      "name": "@echomirror/social",
-      "path": "dist/index.js",
-      "limit": "1.7 KB"
-    }
-  ]
+  }
 }
