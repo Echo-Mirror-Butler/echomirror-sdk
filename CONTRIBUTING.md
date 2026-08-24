@@ -15,11 +15,29 @@ Welcome — we're building an open SDK for mood, wellness, and Stellar payments.
 ```bash
 git clone https://github.com/Echo-Mirror-Butler/echomirror-sdk.git
 cd echomirror-sdk
+./scripts/bootstrap.sh
+```
 
+`scripts/bootstrap.sh` is the recommended way to get set up: it checks your
+Node/Rust/Flutter/Python toolchains, installs `wasm-pack` and `maturin` when
+Rust/Python are present, installs each ecosystem's dependencies, and runs a
+fast self-check per ecosystem so you find out immediately if something's
+broken instead of three steps into your first change. It only warns (not
+fails) on a missing toolchain, and it's safe to re-run. Windows contributors
+should run it from WSL.
+
+If you'd rather do it by hand, or just work on one ecosystem, the equivalent
+manual steps are:
+
+```bash
 # JavaScript packages
 npm install
 npm run build
 npm run test
+
+# Rust workspace
+cargo build --workspace
+cargo test --workspace
 
 # Flutter package
 cd packages/flutter
