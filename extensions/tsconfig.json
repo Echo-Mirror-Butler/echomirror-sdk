@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "types": ["node"]
+  },
+  "include": ["vscode/src/**/*.ts", "chrome/src/**/*.ts"],
+  "exclude": ["node_modules", "**/out"]
+}

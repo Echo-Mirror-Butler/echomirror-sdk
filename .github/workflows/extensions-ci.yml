@@ -1,0 +1,103 @@
+# Required Secrets for Publishing:
+# - VSCE_PAT: Personal Access Token for the VS Code Marketplace
+# - CHROME_EXTENSION_ID: ID of the Chrome Extension in the Web Store
+# - CHROME_CLIENT_ID: Client ID for the Chrome Web Store API
+# - CHROME_CLIENT_SECRET: Client Secret for the Chrome Web Store API
+# - CHROME_REFRESH_TOKEN: Refresh Token for the Chrome Web Store API
+
+name: Extensions CI
+
+on:
+  pull_request:
+    paths:
+      - 'extensions/**'
+      - '.github/workflows/extensions-ci.yml'
+  push:
+    tags:
+      - 'extension-vscode-v*'
+      - 'extension-chrome-v*'
+
+jobs:
+  build-vscode:
+    name: Build & Package VS Code Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint VS Code Extension
+        run: npx eslint extensions/vscode/src
+      - name: Typecheck VS Code Extension
+        run: npx tsc -p extensions/tsconfig.json --noEmit
+      - name: Build VS Code Extension
+        run: npm run build
+        working-directory: extensions/vscode
+      - name: Package VS Code Extension
+        run: npm run package
+        working-directory: extensions/vscode
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension
+          path: extensions/vscode/*.vsix
+
+  build-chrome:
+    name: Build & Package Chrome Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint Chrome Extension
+        run: npx eslint extensions/chrome/src
+      - name: Typecheck Chrome Extension
+        run: npx tsc -p extensions/tsconfig.json --noEmit
+      - name: Package extension
+        run: |
+          cd extensions/chrome
+          zip -r ../chrome-extension.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: extensions/chrome-extension.zip
+
+  publish-vscode:
+    name: Publish VS Code Extension
+    needs: build-vscode
+    if: startsWith(github.ref, 'refs/tags/extension-vscode-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Publish Extension
+        run: npx vsce publish --pat ${{ secrets.VSCE_PAT }} --no-dependencies
+        working-directory: extensions/vscode
+
+  publish-chrome:
+    name: Publish Chrome Extension
+    needs: build-chrome
+    if: startsWith(github.ref, 'refs/tags/extension-chrome-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package extension
+        run: |
+          cd extensions/chrome
+          zip -r ../chrome-extension.zip .
+      - name: Upload to Chrome Web Store
+        uses: mnao305/chrome-extension-upload@v3.0.0
+        with:
+          file-path: extensions/chrome-extension.zip
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
