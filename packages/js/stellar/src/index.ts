@@ -2,6 +2,7 @@
 export {
   AlbedoAdapter,
   FreighterAdapter,
+  LedgerWalletAdapter,
   XBullAdapter,
   connectWallet,
   detectWallets,

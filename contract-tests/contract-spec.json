@@ -354,6 +354,61 @@
         "body": { "message": "no fixture route for query variant; bindings must surface this as an error" }
       },
       "assertions": []
+    },
+    {
+      "id": "submit_analytics_event",
+      "binding": ["js"],
+      "target": "api",
+      "method": "POST",
+      "path": "/analytics/events",
+      "request": {
+        "body": {
+          "events": [
+            {
+              "id": "evt-contract-001",
+              "name": "mood_logged",
+              "anonymous_id": "anon_contract_001",
+              "session_id": "session_contract_001",
+              "timestamp": "2026-08-24T12:00:00Z",
+              "properties": { "score": 8 }
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "accepted": 1,
+          "batch_id": "batch_contract_001"
+        }
+      },
+      "assertions": [
+        { "field": "accepted", "eq": 1 },
+        { "field": "batch_id", "eq": "batch_contract_001" }
+      ]
+    },
+    {
+      "id": "fetch_analytics_mood_aggregate",
+      "binding": ["js"],
+      "target": "api",
+      "method": "GET",
+      "path": "/analytics/mood/aggregate?period=week",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "period": "week",
+          "average": 7.4,
+          "total_events": 42,
+          "unique_users": 15
+        }
+      },
+      "assertions": [
+        { "field": "period", "eq": "week" },
+        { "field": "average", "eq": 7.4 },
+        { "field": "total_events", "eq": 42 },
+        { "field": "unique_users", "eq": 15 }
+      ]
     }
   ]
 }

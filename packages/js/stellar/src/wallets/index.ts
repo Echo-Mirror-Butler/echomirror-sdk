@@ -2,11 +2,13 @@ import { WalletNotFoundError } from '../errors'
 import type { StellarNetworkId } from '../networks'
 import { AlbedoAdapter } from './albedo'
 import { FreighterAdapter } from './freighter'
+import { LedgerWalletAdapter } from './ledger'
 import type { WalletAdapter, WalletConnection, WalletId } from './types'
 import { XBullAdapter } from './xbull'
 
 export { AlbedoAdapter } from './albedo'
 export { FreighterAdapter } from './freighter'
+export { LedgerWalletAdapter } from './ledger'
 export { XBullAdapter } from './xbull'
 export type { SignOptions, WalletAdapter, WalletConnection, WalletId } from './types'
 
@@ -23,7 +25,7 @@ export function getWalletAdapters(options: WalletOptions = {}): WalletAdapter[] 
   const network = options.network ?? 'mainnet'
   // Extensions first; Albedo last because it is always "available" in a
   // browser and acts as the universal fallback.
-  return [new FreighterAdapter(), new XBullAdapter(network), new AlbedoAdapter(network)]
+  return [new FreighterAdapter(), new XBullAdapter(network), new LedgerWalletAdapter(), new AlbedoAdapter(network)]
 }
 
 export function getWalletAdapter(id: WalletId, options: WalletOptions = {}): WalletAdapter {
@@ -64,7 +66,7 @@ export interface ConnectWalletOptions extends WalletOptions {
 export async function connectWallet(
   options: ConnectWalletOptions = {},
 ): Promise<{ adapter: WalletAdapter; connection: WalletConnection }> {
-  const order = options.preferred ?? ['freighter', 'xbull', 'albedo']
+  const order = options.preferred ?? ['freighter', 'xbull', 'ledger', 'albedo']
   const adapters = order.map((id) => getWalletAdapter(id, options))
 
   for (const adapter of adapters) {
