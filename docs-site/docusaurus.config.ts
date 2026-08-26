@@ -110,6 +110,10 @@ const config: Config = {
               label: 'Core Concepts',
               to: '/docs/core-concepts',
             },
+            {
+              label: 'Changelog',
+              to: '/docs/changelog',
+            },
           ],
         },
         {
