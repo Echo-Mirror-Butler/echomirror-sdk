@@ -1,14 +1,14 @@
 {
-  "name": "@echomirror/react",
+  "name": "@echomirror/mood",
   "version": "0.1.0",
-  "description": "EchoMirror SDK React bindings",
+  "description": "EchoMirror SDK mood tracking module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
       "require": "./dist/index.js",
+      "default": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
@@ -21,28 +21,22 @@
   },
   "keywords": [
     "echomirror",
-    "react",
+    "mood",
     "wellness"
   ],
   "license": "MIT",
   "dependencies": {
     "@echomirror/core": "*"
   },
-  "peerDependencies": {
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
-  },
   "devDependencies": {
     "typescript": "*",
-    "vitest": "*",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0"
+    "vitest": "*"
   },
   "size-limit": [
     {
-      "name": "@echomirror/react",
+      "name": "@echomirror/mood",
       "path": "dist/index.js",
-      "limit": "1.4 KB"
+      "limit": "350 B"
     }
   ]
 }
