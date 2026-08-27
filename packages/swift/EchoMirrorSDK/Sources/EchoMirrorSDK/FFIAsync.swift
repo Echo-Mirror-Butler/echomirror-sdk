@@ -40,13 +40,76 @@ private let echoMirrorCallback: EchoMirrorAsyncCallback = { userData, code, payl
     )
 }
 
+/// Handle to a cancellation token that can signal an in-flight FFI operation
+/// to abort. Wraps the C-ABI `EchoMirrorCancellationHandle`.
+public final class CancellationHandle {
+    private var pointer: UnsafeMutablePointer<EchoMirrorCancellationHandle>?
+
+    public init() {
+        pointer = echomirror_cancellation_new()
+    }
+
+    /// Signal the associated async operation to cancel.
+    public func cancel() {
+        guard let pointer else { return }
+        echomirror_cancellation_cancel(pointer)
+    }
+
+    /// Whether cancellation has been signalled.
+    public var isCancelled: Bool {
+        guard let pointer else { return false }
+        return echomirror_cancellation_is_cancelled(pointer) != 0
+    }
+
+    deinit {
+        if let pointer {
+            echomirror_cancellation_free(pointer)
+        }
+    }
+}
+
 enum FFIAsync {
+    /// Perform an FFI async call without cancellation or timeout.
     static func perform(
         _ start: (EchoMirrorAsyncCallback?, UnsafeMutableRawPointer?) -> Int32
     ) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             let box = Unmanaged.passRetained(CallbackBox(continuation)).toOpaque()
             let code = start(echoMirrorCallback, box)
+
+            if code != 0 {
+                Unmanaged<CallbackBox>.fromOpaque(box).release()
+                continuation.resume(
+                    throwing: EchoMirrorError(
+                        code: code,
+                        message: "FFI call failed before async dispatch"
+                    )
+                )
+            }
+        }
+    }
+
+    /// Perform an FFI async call with cancellation and optional timeout.
+    ///
+    /// - Parameters:
+    ///   - cancellationHandle: An optional cancellation handle. Pass `nil` for
+    ///     no cancellation support.
+    ///   - timeoutMs: Per-call timeout in milliseconds. 0 means no timeout.
+    ///   - start: The FFI function to call, receiving the callback and user data.
+    static func perform(
+        cancellationHandle: CancellationHandle? = nil,
+        timeoutMs: UInt32 = 0,
+        _ start: (
+            EchoMirrorAsyncCallback?,
+            UnsafeMutableRawPointer?,
+            UnsafePointer<EchoMirrorCancellationHandle>?,
+            UInt32
+        ) -> Int32
+    ) async throws -> String {
+        let cancellationPtr = cancellationHandle?.pointer
+        try await withCheckedThrowingContinuation { continuation in
+            let box = Unmanaged.passRetained(CallbackBox(continuation)).toOpaque()
+            let code = start(echoMirrorCallback, box, cancellationPtr, timeoutMs)
 
             if code != 0 {
                 Unmanaged<CallbackBox>.fromOpaque(box).release()

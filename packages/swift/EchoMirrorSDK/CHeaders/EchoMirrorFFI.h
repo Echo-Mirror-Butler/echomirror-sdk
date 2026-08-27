@@ -16,6 +16,8 @@ typedef enum EchoMirrorFfiErrorCode {
     ECHOMIRROR_ERROR_RUNTIME = 5,
     ECHOMIRROR_ERROR_NETWORK = 6,
     ECHOMIRROR_ERROR_SERIALIZATION = 7,
+    ECHOMIRROR_ERROR_CANCELLED = 8,
+    ECHOMIRROR_ERROR_TIMEOUT = 9,
 } EchoMirrorFfiErrorCode;
 
 typedef void (*EchoMirrorAsyncCallback)(void *user_data, int32_t code, char *payload);
@@ -23,6 +25,7 @@ typedef void (*EchoMirrorAsyncCallback)(void *user_data, int32_t code, char *pay
 typedef struct EchoMirrorMoodClient EchoMirrorMoodClient;
 typedef struct EchoMirrorStellarClient EchoMirrorStellarClient;
 typedef struct EchoMirrorSocialClient EchoMirrorSocialClient;
+typedef struct EchoMirrorCancellationHandle EchoMirrorCancellationHandle;
 
 void echomirror_free_string(char *ptr);
 char *echomirror_version(void);
@@ -35,6 +38,12 @@ char *echomirror_serialize_cursor(
     const char *paging_token,
     uint64_t total_processed
 );
+
+// Cancellation handle
+EchoMirrorCancellationHandle *echomirror_cancellation_new(void);
+void echomirror_cancellation_cancel(EchoMirrorCancellationHandle *handle);
+uint8_t echomirror_cancellation_is_cancelled(const EchoMirrorCancellationHandle *handle);
+void echomirror_cancellation_free(EchoMirrorCancellationHandle *handle);
 
 EchoMirrorMoodClient *echomirror_mood_client_new(
     const char *api_key,
@@ -49,7 +58,9 @@ int32_t echomirror_mood_log_async(
     const char *note,
     const char *tags_json,
     EchoMirrorAsyncCallback callback,
-    void *user_data
+    void *user_data,
+    const EchoMirrorCancellationHandle *cancellation_handle,
+    uint32_t timeout_ms
 );
 
 EchoMirrorStellarClient *echomirror_stellar_client_new(
@@ -62,7 +73,9 @@ int32_t echomirror_stellar_get_balance_async(
     const EchoMirrorStellarClient *client,
     const char *public_key,
     EchoMirrorAsyncCallback callback,
-    void *user_data
+    void *user_data,
+    const EchoMirrorCancellationHandle *cancellation_handle,
+    uint32_t timeout_ms
 );
 
 EchoMirrorSocialClient *echomirror_social_client_new(
@@ -75,7 +88,9 @@ int32_t echomirror_social_profile_async(
     const EchoMirrorSocialClient *client,
     const char *user_id,
     EchoMirrorAsyncCallback callback,
-    void *user_data
+    void *user_data,
+    const EchoMirrorCancellationHandle *cancellation_handle,
+    uint32_t timeout_ms
 );
 
 #ifdef __cplusplus

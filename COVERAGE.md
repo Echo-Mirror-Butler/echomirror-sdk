@@ -73,9 +73,11 @@ how safe/scoped the fix is for someone new to this codebase:
 ## Ecosystems not covered here
 
 Python (`crates/echomirror-python`, via pytest) and Flutter/Dart
-(`packages/flutter`) don't have coverage tooling wired into CI yet — that's
-tracked separately in
-[Echo-Mirror-Butler/echomirror-sdk#157](https://github.com/Echo-Mirror-Butler/echomirror-sdk/issues/157)
-rather than folded into this doc, since each needs its own per-ecosystem
-tool choice (`pytest-cov`, `flutter test --coverage`) and baseline
-measurement pass.
+(`packages/flutter`) now have coverage tooling wired into CI:
+
+- **Python**: `pytest-cov` with `--cov-fail-under=50` in `python-ci.yml`.
+  Measured via `pytest --cov=echomirror --cov-report=term-missing`.
+- **Flutter**: `flutter test --coverage` in `flutter-ci.yml`, with a 40%
+  line-coverage threshold enforced on the `lcov.info` output.
+
+See the per-ecosystem CI workflows for exact commands and thresholds.

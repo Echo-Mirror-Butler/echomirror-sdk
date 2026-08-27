@@ -1,10 +1,11 @@
+use crate::cache::ResponseCache;
 use crate::middleware::{
     MiddlewareDecision, MiddlewareOutcome, MiddlewareRequest, MiddlewareResponse,
     MAX_MIDDLEWARE_RETRIES,
 };
 use crate::circuit_breaker::CircuitBreaker;
 use crate::{ClientMetrics, EchoMirrorConfig, EchoMirrorError, MetricsSnapshot, Result};
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, IF_NONE_MATCH};
 use reqwest::{Client as HttpClient, Method, StatusCode};
 use serde::{de::DeserializeOwned, Serialize};
 use std::sync::Arc;
@@ -33,6 +34,8 @@ pub struct EchoMirrorClient {
     metrics: Arc<ClientMetrics>,
     // Circuit breaker for failing fast on sustained outages
     circuit_breaker: Arc<CircuitBreaker>,
+    // ETag/conditional-request response cache
+    cache: ResponseCache,
 }
 
 impl EchoMirrorClient {
@@ -48,6 +51,7 @@ impl EchoMirrorClient {
             config.circuit_breaker.clone(),
             metrics.clone(),
         ));
+        let cache = ResponseCache::new(config.cache.clone());
 
         Ok(Self {
             config: Arc::new(config),
@@ -56,6 +60,7 @@ impl EchoMirrorClient {
             token_refresh_attempted: Arc::new(RwLock::new(false)),
             metrics,
             circuit_breaker,
+            cache,
         })
     }
 
@@ -75,6 +80,11 @@ impl EchoMirrorClient {
     /// Get a snapshot of the current metrics
     pub fn metrics(&self) -> MetricsSnapshot {
         self.metrics.snapshot()
+    }
+
+    /// Get a reference to the response cache
+    pub fn cache(&self) -> &ResponseCache {
+        &self.cache
     }
 
     /// Reset all metrics to zero
@@ -194,11 +204,11 @@ impl EchoMirrorClient {
 
                     // Check if we should retry
                     if attempt >= max_attempts || !err.is_retryable() {
-                        let is_backend_failure = matches!(
-                            &err,
-                            EchoMirrorError::Network(_)
-                                | EchoMirrorError::Http { status, .. } if *status >= 500
-                        );
+                        let is_backend_failure = matches!(&err, EchoMirrorError::Network(_))
+                            || matches!(
+                                &err,
+                                EchoMirrorError::Http { status, .. } if *status >= 500
+                            );
                         self.circuit_breaker
                             .on_failure(is_backend_failure, was_probe)
                             .await;
@@ -306,6 +316,23 @@ impl EchoMirrorClient {
             }
         }
 
+        // For GET requests, check the cache and add If-None-Match header.
+        let is_get = method == Method::GET;
+        let cached_validator: Option<String> = if is_get {
+            if let Some((validator, _body)) = self.cache.get(&url).await {
+                self.metrics.record_cache_hit();
+                if let Ok(hv) = HeaderValue::from_str(&validator) {
+                    headers.insert(IF_NONE_MATCH, hv);
+                }
+                Some(validator)
+            } else {
+                self.metrics.record_cache_miss();
+                None
+            }
+        } else {
+            None
+        };
+
         let body_bytes = match body {
             Some(b) => match serde_json::to_vec(b) {
                 Ok(bytes) => Some(bytes),
@@ -347,6 +374,28 @@ impl EchoMirrorClient {
                 Ok(res) => {
                     let status = res.status();
                     let headers = res.headers().clone();
+
+                    // Handle 304 Not Modified: return cached body if available.
+                    if status == StatusCode::NOT_MODIFIED {
+                        if let Some(_validator) = &cached_validator {
+                            if let Some((_v, cached_body)) = self.cache.get(&mw_req.url).await {
+                                return AttemptOutcome::Success(
+                                    serde_json::from_slice(&cached_body).unwrap_or_else(|_| {
+                                        panic!(
+                                            "cached body for {} should be valid JSON",
+                                            mw_req.url
+                                        )
+                                    }),
+                                );
+                            }
+                        }
+                        // No cached body — fall through to error handling.
+                        return AttemptOutcome::Error(EchoMirrorError::Http {
+                            status: 304,
+                            message: "Not Modified but no cached body available".to_string(),
+                        });
+                    }
+
                     match res.bytes().await {
                         Ok(bytes) => Ok(MiddlewareResponse {
                             status,
@@ -403,12 +452,34 @@ impl EchoMirrorClient {
                     message: msg,
                 })
             }
-            _ => match serde_json::from_slice::<T>(&res.body) {
-                Ok(v) => AttemptOutcome::Success(v),
-                Err(e) => AttemptOutcome::Error(EchoMirrorError::InvalidResponse(format!(
-                    "Failed to parse response: {e}"
-                ))),
-            },
+            _ => {
+                // Success — check for ETag and cache GET responses.
+                if is_get {
+                    if let Some(etag) = res.headers.get("etag").and_then(|v| v.to_str().ok()) {
+                        self.cache
+                            .put(mw_req.url.clone(), etag.to_string(), res.body.clone())
+                            .await;
+                    } else if let Some(last_modified) = res
+                        .headers
+                        .get("last-modified")
+                        .and_then(|v| v.to_str().ok())
+                    {
+                        self.cache
+                            .put(
+                                mw_req.url.clone(),
+                                last_modified.to_string(),
+                                res.body.clone(),
+                            )
+                            .await;
+                    }
+                }
+                match serde_json::from_slice::<T>(&res.body) {
+                    Ok(v) => AttemptOutcome::Success(v),
+                    Err(e) => AttemptOutcome::Error(EchoMirrorError::InvalidResponse(format!(
+                        "Failed to parse response: {e}"
+                    ))),
+                }
+            }
         }
     }
 }

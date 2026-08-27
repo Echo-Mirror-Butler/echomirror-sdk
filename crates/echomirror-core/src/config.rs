@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::cache::CacheConfig;
 use crate::middleware::RequestMiddleware;
 
 /// Callback type for token refresh
@@ -40,6 +41,8 @@ pub struct EchoMirrorConfig {
     pub middlewares: Vec<Arc<dyn RequestMiddleware>>,
     /// Circuit breaker configuration for HTTP client
     pub circuit_breaker: CircuitBreakerConfig,
+    /// ETag/conditional-request response cache (opt-in, disabled by default).
+    pub cache: CacheConfig,
 }
 
 impl Clone for EchoMirrorConfig {
@@ -55,6 +58,7 @@ impl Clone for EchoMirrorConfig {
             token_refresh_callback: self.token_refresh_callback.clone(),
             middlewares: self.middlewares.clone(),
             circuit_breaker: self.circuit_breaker.clone(),
+            cache: self.cache.clone(),
         }
     }
 }
@@ -75,6 +79,7 @@ impl std::fmt::Debug for EchoMirrorConfig {
             )
             .field("middlewares", &self.middlewares.len())
             .field("circuit_breaker", &self.circuit_breaker)
+            .field("cache", &self.cache)
             .finish()
     }
 }
@@ -158,6 +163,7 @@ impl EchoMirrorConfig {
             token_refresh_callback: None,
             middlewares: Vec::new(),
             circuit_breaker: CircuitBreakerConfig::default(),
+            cache: CacheConfig::default(),
         }
     }
 
@@ -218,6 +224,40 @@ impl EchoMirrorConfig {
 
     pub fn with_circuit_breaker_enabled(mut self, enabled: bool) -> Self {
         self.circuit_breaker.enabled = enabled;
+        self
+    }
+
+    /// Enable the ETag/conditional-request response cache.
+    pub fn with_cache(mut self, config: CacheConfig) -> Self {
+        self.cache = config;
+        self
+    }
+
+    /// Enable caching with default settings (256 entries, 5 min TTL).
+    pub fn with_cache_default(self) -> Self {
+        self.with_cache(CacheConfig {
+            enabled: true,
+            ..Default::default()
+        })
+    }
+
+    /// Set a custom cache TTL.
+    pub fn with_cache_ttl(mut self, ttl: Duration) -> Self {
+        self.cache.ttl = ttl;
+        self.cache.enabled = true;
+        self
+    }
+
+    /// Set the maximum number of cached entries.
+    pub fn with_cache_max_entries(mut self, max_entries: usize) -> Self {
+        self.cache.max_entries = max_entries;
+        self.cache.enabled = true;
+        self
+    }
+
+    /// Register a request middleware that runs around every HTTP attempt.
+    pub fn with_middleware(mut self, middleware: impl RequestMiddleware + 'static) -> Self {
+        self.middlewares.push(Arc::new(middleware));
         self
     }
 
