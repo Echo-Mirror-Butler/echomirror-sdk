@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::middleware::RequestMiddleware;
+
 /// Callback type for token refresh
 pub type TokenRefreshCallback =
     Arc<dyn Fn() -> Result<String, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>;
@@ -31,6 +33,11 @@ pub struct EchoMirrorConfig {
 
     /// Optional callback to refresh the auth token when it expires
     pub token_refresh_callback: Option<TokenRefreshCallback>,
+
+    /// Request/response middleware pipeline, run in registration order
+    /// around every HTTP attempt. See [`crate::middleware`] for the ordering
+    /// contract and how this composes with retry/backoff.
+    pub middlewares: Vec<Arc<dyn RequestMiddleware>>,
 }
 
 impl Clone for EchoMirrorConfig {
@@ -44,6 +51,7 @@ impl Clone for EchoMirrorConfig {
             horizon_url: self.horizon_url.clone(),
             friendbot_url: self.friendbot_url.clone(),
             token_refresh_callback: self.token_refresh_callback.clone(),
+            middlewares: self.middlewares.clone(),
         }
     }
 }
@@ -62,6 +70,7 @@ impl std::fmt::Debug for EchoMirrorConfig {
                 "token_refresh_callback",
                 &self.token_refresh_callback.as_ref().map(|_| "<callback>"),
             )
+            .field("middlewares", &self.middlewares.len())
             .finish()
     }
 }
@@ -107,6 +116,7 @@ impl EchoMirrorConfig {
             horizon_url: None,
             friendbot_url: None,
             token_refresh_callback: None,
+            middlewares: Vec::new(),
         }
     }
 
@@ -147,6 +157,13 @@ impl EchoMirrorConfig {
         F: Fn() -> Result<String, Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,
     {
         self.token_refresh_callback = Some(Arc::new(callback));
+        self
+    }
+
+    /// Register a middleware. Middlewares run in registration order — see
+    /// [`crate::middleware`] for the full ordering contract.
+    pub fn with_middleware(mut self, middleware: impl RequestMiddleware + 'static) -> Self {
+        self.middlewares.push(Arc::new(middleware));
         self
     }
 
