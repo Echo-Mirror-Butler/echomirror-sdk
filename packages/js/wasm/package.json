@@ -36,6 +36,8 @@
     "size-limit": "size-limit",
     "test": "vitest run --config vitest.config.ts --passWithNoTests",
     "test:browser": "vitest run --config vitest.browser.config.ts --passWithNoTests",
+    "test:bun": "bun test test/wasm.test.ts",
+    "test:deno": "deno run -A npm:vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "clean": "rm -rf dist wasm-web wasm-node"

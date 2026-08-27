@@ -107,3 +107,16 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - run: npm run test:browser -w packages/js/wasm
+      # @echomirror/wasm is the one package where WASM loading makes
+      # cross-runtime differences most likely to bite (Deno's stricter
+      # ESM/permissions model, Bun's own WASM-loading quirks) — see
+      # packages/js/wasm/README.md#runtime-compatibility for what's verified
+      # and why each runtime needs the flags/invocation it does below.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+      - run: npm run test:bun -w packages/js/wasm
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.x
+      - run: npm run test:deno -w packages/js/wasm
