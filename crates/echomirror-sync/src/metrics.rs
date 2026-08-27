@@ -24,6 +24,10 @@ pub struct SyncMetrics {
     pub parse_errors: AtomicU64,
     /// Operations skipped because they carry no amount (e.g. account_merge)
     pub skipped_ops: AtomicU64,
+    /// Number of times subscribers lagged behind the broadcast channel
+    pub lag_events: AtomicU64,
+    /// Total number of events lost due to subscriber lag
+    pub events_lost: AtomicU64,
     /// Unix timestamp (seconds) of the most recently processed record's
     /// `created_at` — compare with now() for cursor lag. 0 = no events yet.
     pub last_event_unix: AtomicI64,
@@ -71,6 +75,11 @@ impl SyncMetrics {
         self.skipped_ops.fetch_add(1, Ordering::Relaxed);
     }
 
+    pub fn record_lag(&self, missed: u64) {
+        self.lag_events.fetch_add(1, Ordering::Relaxed);
+        self.events_lost.fetch_add(missed, Ordering::Relaxed);
+    }
+
     pub fn record_event_time(&self, unix_seconds: i64) {
         self.last_event_unix.store(unix_seconds, Ordering::Relaxed);
     }
@@ -87,6 +96,8 @@ impl SyncMetrics {
             cursor_save_failures: self.cursor_save_failures.load(Ordering::Relaxed),
             parse_errors: self.parse_errors.load(Ordering::Relaxed),
             skipped_ops: self.skipped_ops.load(Ordering::Relaxed),
+            lag_events: self.lag_events.load(Ordering::Relaxed),
+            events_lost: self.events_lost.load(Ordering::Relaxed),
             last_event_unix: self.last_event_unix.load(Ordering::Relaxed),
         }
     }
@@ -105,6 +116,8 @@ pub struct SyncMetricsSnapshot {
     pub cursor_save_failures: u64,
     pub parse_errors: u64,
     pub skipped_ops: u64,
+    pub lag_events: u64,
+    pub events_lost: u64,
     pub last_event_unix: i64,
 }
 
@@ -137,6 +150,8 @@ mod tests {
         m.record_cursor_save_failure();
         m.record_parse_error();
         m.record_skipped_op();
+        m.record_lag(10);
+        m.record_lag(5);
 
         let s = m.snapshot();
         assert_eq!(s.events_emitted, 2);
@@ -148,6 +163,8 @@ mod tests {
         assert_eq!(s.cursor_save_failures, 1);
         assert_eq!(s.parse_errors, 1);
         assert_eq!(s.skipped_ops, 1);
+        assert_eq!(s.lag_events, 2);
+        assert_eq!(s.events_lost, 15);
     }
 
     #[test]

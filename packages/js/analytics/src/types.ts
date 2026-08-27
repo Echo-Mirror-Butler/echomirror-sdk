@@ -111,6 +111,29 @@ export interface AnalyticsConfig {
   generateId?: () => string
 }
 
+export interface DifferentialPrivacyOptions {
+  /**
+   * Privacy budget epsilon (ε). Smaller values provide stronger privacy (more noise),
+   * while larger values provide higher accuracy (less noise).
+   * Default: 1.0.
+   */
+  epsilon?: number
+  /**
+   * Minimum cohort size threshold below which aggregate results are suppressed.
+   * Protects small cohorts against re-identification where noise alone is insufficient.
+   * Default: 5.
+   */
+  minCohortSize?: number
+  /**
+   * Whether differential privacy is enabled. Set to false to disable noise injection.
+   */
+  enabled?: boolean
+  /**
+   * Optional custom RNG for deterministic testing. Returns a float in [0, 1).
+   */
+  random?: () => number
+}
+
 export interface MoodAggregateInput {
   score: number
   /** Tags are processed locally and are never sent by the helper. */
@@ -125,16 +148,34 @@ export interface MoodTagCount {
 
 export interface MoodRollup {
   averageScore: number | null
-  entryCount: number
+  entryCount: number | null
   mostCommonTags: MoodTagCount[]
   from: string
   to: string
+  /** True when the aggregate was suppressed due to cohort size below minCohortSize */
+  suppressed?: boolean
 }
 
 export interface MoodRollupOptions {
   from: string | number | Date
   to: string | number | Date
   tagLimit?: number
+  /**
+   * Differential privacy options for noise injection and cohort suppression.
+   */
+  privacy?: DifferentialPrivacyOptions | boolean
+  /**
+   * Shorthand for privacy budget epsilon (ε).
+   */
+  epsilon?: number
+  /**
+   * Shorthand for minimum cohort size suppression threshold.
+   */
+  minCohortSize?: number
+  /**
+   * Set to true to disable privacy noise and suppression and return exact raw metrics.
+   */
+  raw?: boolean
 }
 
 export interface PurgeAuditRecord {
