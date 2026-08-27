@@ -117,13 +117,86 @@ export function activate(context: vscode.ExtensionContext) {
     }),
 
     vscode.commands.registerCommand('echomirror.openSyncExplorer', () => {
+      const config = vscode.workspace.getConfiguration('echomirror')
+      const network = config.get<string>('network') ?? 'testnet'
+      const configuredKey = config.get<string>('statusBarPublicKey') ?? ''
+
       const panel = vscode.window.createWebviewPanel(
         'echomirrorSync',
         'EchoMirror Sync Explorer',
         vscode.ViewColumn.Beside,
         { enableScripts: true },
       )
-      panel.webview.html = getSyncExplorerHtml()
+      panel.webview.html = getSyncExplorerHtml(configuredKey, network)
+
+      // Wire real Horizon polling from the extension side
+      let cursor = 'now'
+      let totalSeen = 0
+      let polling: ReturnType<typeof setInterval> | undefined
+      let watching = false
+
+      async function poll(publicKey: string) {
+        if (!watching) return
+        const horizon = network === 'testnet'
+          ? 'https://horizon-testnet.stellar.org'
+          : 'https://horizon.stellar.org'
+        try {
+          const res = await fetch(
+            `${horizon}/accounts/${publicKey}/transactions?limit=10&order=asc&cursor=${cursor}`,
+          )
+          if (!res.ok) return
+          const data = (await res.json()) as {
+            _embedded?: { records?: Array<{
+              hash: string
+              ledger: number
+              paging_token: string
+              created_at: string
+              memo?: string
+            }> }
+          }
+          const records = data._embedded?.records ?? []
+          for (const r of records) {
+            totalSeen++
+            cursor = r.paging_token
+            panel.webview.postMessage({
+              type: 'sync-event',
+              kind: 'tx',
+              ledger: r.ledger,
+              hash: r.hash,
+              time: r.created_at,
+              memo: r.memo,
+            })
+          }
+          panel.webview.postMessage({ type: 'sync-status', totalSeen, watching: true })
+        } catch (e) {
+          panel.webview.postMessage({ type: 'sync-event', kind: 'error', message: String(e) })
+        }
+      }
+
+      // Listen for messages from the webview
+      panel.webview.onDidReceiveMessage((msg) => {
+        if (msg.type === 'start-watch') {
+          const addr = msg.publicKey as string
+          if (!addr || !addr.startsWith('G') || addr.length !== 56) {
+            panel.webview.postMessage({ type: 'sync-status', message: 'Invalid Stellar address', watching: false })
+            return
+          }
+          watching = true
+          cursor = 'now'
+          totalSeen = 0
+          poll(addr)
+          polling = setInterval(() => poll(addr), 5_000)
+        } else if (msg.type === 'stop-watch') {
+          watching = false
+          if (polling) { clearInterval(polling); polling = undefined }
+          panel.webview.postMessage({ type: 'sync-status', totalSeen, watching: false })
+        }
+      })
+
+      panel.onDidDispose(() => {
+        watching = false
+        if (polling) { clearInterval(polling); polling = undefined }
+      })
     }),
 
     vscode.commands.registerCommand('echomirror.signIn', async () => {
@@ -273,7 +346,7 @@ function startBalancePolling() {
   balanceInterval = setInterval(() => showBalance(key), 60_000)
 }
 
-function getSyncExplorerHtml(): string {
+function getSyncExplorerHtml(configuredKey: string, network: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -291,72 +364,79 @@ function getSyncExplorerHtml(): string {
     button:hover { background: #4f46e5; }
     #events { margin-top: 16px; max-height: 400px; overflow-y: auto; }
     .status { font-size: 11px; color: var(--vscode-descriptionForeground); margin-top: 8px; }
+    .network-badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; background: #6366f1; color: white; margin-left: 8px; }
   </style>
 </head>
 <body>
-  <h2>Blockchain Sync Explorer</h2>
+  <h2>Blockchain Sync Explorer <span class="network-badge">${network}</span></h2>
   <p style="font-size:13px">Watch real-time Stellar transactions for any account.</p>
-  <input id="address" placeholder="Stellar public key (G...)" />
+  <input id="address" placeholder="Stellar public key (G...)" value="${configuredKey}" />
   <button id="watch-btn">Watch Account</button>
   <button id="stop-btn" style="background:#6b7280;display:none">Stop</button>
-  <p class="status" id="status">Not watching</p>
+  <p class="status" id="status">${configuredKey ? 'Ready to watch ' + configuredKey.slice(0, 8) + '…' : 'Enter a Stellar public key to begin'}</p>
   <div id="events"></div>
 
   <script>
-    let intervalId = null
-    let cursor = 'now'
-    let totalSeen = 0
-
     const addressEl = document.getElementById('address')
     const watchBtn = document.getElementById('watch-btn')
     const stopBtn = document.getElementById('stop-btn')
     const statusEl = document.getElementById('status')
     const eventsEl = document.getElementById('events')
+    const vscode = acquireVsCodeApi()
 
     watchBtn.addEventListener('click', () => {
       const addr = addressEl.value.trim()
       if (!addr.startsWith('G') || addr.length !== 56) {
-        statusEl.textContent = '❌ Invalid Stellar address'
+        statusEl.textContent = 'Invalid Stellar address — must start with G and be 56 characters'
         return
       }
-      cursor = 'now'
-      totalSeen = 0
       eventsEl.innerHTML = ''
       watchBtn.style.display = 'none'
       stopBtn.style.display = ''
-      statusEl.textContent = 'Watching ' + addr.slice(0, 8) + '...'
-      poll(addr)
-      intervalId = setInterval(() => poll(addr), 5000)
+      statusEl.textContent = 'Starting…'
+      vscode.postMessage({ type: 'start-watch', publicKey: addr })
     })
 
     stopBtn.addEventListener('click', () => {
-      clearInterval(intervalId)
+      vscode.postMessage({ type: 'stop-watch' })
       watchBtn.style.display = ''
       stopBtn.style.display = 'none'
-      statusEl.textContent = 'Stopped. Saw ' + totalSeen + ' ledger records.'
     })
 
-    async function poll(addr) {
-      try {
-        const url = 'https://horizon-testnet.stellar.org/accounts/' + addr + '/transactions?limit=10&order=asc&cursor=' + cursor
-        const res = await fetch(url)
-        const data = await res.json()
-        const records = data._embedded?.records ?? []
-        for (const r of records) {
-          totalSeen++
-          cursor = r.paging_token
-          const div = document.createElement('div')
-          div.className = 'event ledger'
-          div.textContent = '📦 Ledger ' + r.ledger + '  •  ' + r.hash.slice(0, 16) + '…  •  ' + new Date(r.created_at).toLocaleTimeString()
-          eventsEl.prepend(div)
-        }
-        statusEl.textContent = 'Watching • ' + totalSeen + ' records seen'
-      } catch (e) {
+    window.addEventListener('message', (event) => {
+      const msg = event.data
+      if (msg.type === 'sync-event') {
         const div = document.createElement('div')
-        div.className = 'event error'
-        div.textContent = '⚠️ ' + e.toString()
+        if (msg.kind === 'tx') {
+          div.className = 'event tx'
+          const time = new Date(msg.time).toLocaleTimeString()
+          div.textContent = 'Ledger ' + msg.ledger + '  \\u2022  ' + msg.hash.slice(0, 16) + '\\u2026  \\u2022  ' + time + (msg.memo ? '  \\u2022  ' + msg.memo : '')
+        } else if (msg.kind === 'error') {
+          div.className = 'event error'
+          div.textContent = 'Error: ' + msg.message
+        } else {
+          div.className = 'event ledger'
+          div.textContent = JSON.stringify(msg)
+        }
         eventsEl.prepend(div)
+      } else if (msg.type === 'sync-status') {
+        if (msg.watching) {
+          statusEl.textContent = 'Watching \\u2022 ' + msg.totalSeen + ' records seen'
+        } else if (msg.totalSeen !== undefined) {
+          statusEl.textContent = 'Stopped. Saw ' + msg.totalSeen + ' records.'
+          watchBtn.style.display = ''
+          stopBtn.style.display = 'none'
+        } else if (msg.message) {
+          statusEl.textContent = msg.message
+          watchBtn.style.display = ''
+          stopBtn.style.display = 'none'
+        }
       }
+    })
+
+    // Auto-start if a key is pre-filled
+    if (addressEl.value.trim()) {
+      watchBtn.click()
     }
   </script>
 </body>

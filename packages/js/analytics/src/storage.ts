@@ -1,6 +1,7 @@
-import type { AnalyticsEvent, AnalyticsStorage } from './types.js'
+import type { AnalyticsEvent, AnalyticsStorage, PurgeAuditRecord } from './types.js'
 
 export const DEFAULT_STORAGE_KEY = 'echomirror.analytics.v1'
+export const DEFAULT_AUDIT_KEY = 'echomirror.analytics.audit.v1'
 
 export interface PersistedAnalyticsState {
   version: 1
@@ -86,4 +87,97 @@ export function readState(
   } catch {
     return undefined
   }
+}
+
+export function writeAuditRecord(
+  storage: AnalyticsStorage,
+  auditKey: string,
+  record: PurgeAuditRecord,
+): void {
+  const existing = readAuditRecords(storage, auditKey)
+  existing.push(record)
+  try {
+    storage.setItem(auditKey, JSON.stringify(existing))
+  } catch {
+    // Best-effort; audit failure should not block purge.
+  }
+}
+
+export function readAuditRecords(
+  storage: AnalyticsStorage,
+  auditKey: string,
+): PurgeAuditRecord[] {
+  const value = storage.getItem(auditKey)
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (r): r is PurgeAuditRecord =>
+        r !== null &&
+        typeof r === 'object' &&
+        typeof (r as PurgeAuditRecord).purgedAt === 'string' &&
+        typeof (r as PurgeAuditRecord).userHash === 'string' &&
+        typeof (r as PurgeAuditRecord).eventsRemoved === 'number',
+    )
+  } catch {
+    return []
+  }
+}
+
+export function purgeEventsByUserId(
+  storage: AnalyticsStorage,
+  storageKey: string,
+  userId: string,
+): { eventsRemoved: number; state: PersistedAnalyticsState } {
+  const state = readState(storage, storageKey)
+  if (!state) {
+    return {
+      eventsRemoved: 0,
+      state: { version: 1, anonymousId: '', sessionId: '', queue: [] },
+    }
+  }
+
+  const before = state.queue.length
+  state.queue = state.queue.filter((event) => event.userId !== userId)
+  const eventsRemoved = before - state.queue.length
+
+  // Also strip userId from the state if it matches
+  if (state.userId === userId) {
+    delete state.userId
+  }
+
+  try {
+    storage.setItem(storageKey, JSON.stringify(state))
+  } catch {
+    // Storage failure — still return the count so caller knows what happened.
+  }
+
+  return { eventsRemoved, state }
+}
+
+export function purgeEventsByAnonymousId(
+  storage: AnalyticsStorage,
+  storageKey: string,
+  anonymousId: string,
+): { eventsRemoved: number; state: PersistedAnalyticsState } {
+  const state = readState(storage, storageKey)
+  if (!state) {
+    return {
+      eventsRemoved: 0,
+      state: { version: 1, anonymousId: '', sessionId: '', queue: [] },
+    }
+  }
+
+  const before = state.queue.length
+  state.queue = state.queue.filter((event) => event.anonymousId !== anonymousId)
+  const eventsRemoved = before - state.queue.length
+
+  try {
+    storage.setItem(storageKey, JSON.stringify(state))
+  } catch {
+    // Storage failure — still return the count so caller knows what happened.
+  }
+
+  return { eventsRemoved, state }
 }
