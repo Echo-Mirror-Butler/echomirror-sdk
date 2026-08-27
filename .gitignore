@@ -45,3 +45,6 @@ packages/js/stellar/e2e/.freighter/
 packages/js/stellar/e2e/app/bundle.js
 packages/js/stellar/test-results/
 packages/js/stellar/playwright-report/
+
+# VS Code extension build output
+extensions/vscode/out/
