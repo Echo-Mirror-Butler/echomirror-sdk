@@ -25,7 +25,12 @@ export function getWalletAdapters(options: WalletOptions = {}): WalletAdapter[] 
   const network = options.network ?? 'mainnet'
   // Extensions first; Albedo last because it is always "available" in a
   // browser and acts as the universal fallback.
-  return [new FreighterAdapter(), new XBullAdapter(network), new LedgerWalletAdapter(), new AlbedoAdapter(network)]
+  return [
+    new FreighterAdapter(),
+    new XBullAdapter(network),
+    new LedgerWalletAdapter(network),
+    new AlbedoAdapter(network),
+  ]
 }
 
 export function getWalletAdapter(id: WalletId, options: WalletOptions = {}): WalletAdapter {
