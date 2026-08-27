@@ -66,6 +66,23 @@ export { fromStroops, normalizeAmount, toStroops } from './amounts'
 // ─── Re-exports from @stellar/stellar-sdk for server-side signing ─────────────
 export { Asset, FeeBumpTransaction, Keypair, Memo, Transaction, TransactionBuilder } from '@stellar/stellar-sdk'
 
+// ─── Soroban contract events ───────────────────────────────────────────────────
+export {
+  getContractEvents,
+  getSorobanEvents,
+  subscribeContractEvents,
+  subscribeSorobanEvents,
+  sorobanServerForNetwork,
+  topicToXdr,
+} from './soroban-events'
+export type {
+  GetContractEventsOptions,
+  GetContractEventsResult,
+  SorobanEvent,
+  SorobanSubscription,
+  SubscribeContractEventsOptions,
+} from './soroban-events'
+
 // ─── EchoMirror API helpers (backwards-compatible surface) ────────────────────
 export {
   connectFreighter,

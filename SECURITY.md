@@ -1,5 +1,10 @@
 # Security Policy
 
+> **Key custody & threat model:** before embedding this SDK, read the
+> [Key Custody & Security Model](docs-site/docs/security-model.md). It audits,
+> per language binding and wallet adapter, whether raw secret material ever
+> enters the process and what the SDK does and does not protect against.
+
 ## Supported Versions
 
 Only the latest published release of each SDK component receives security fixes.

@@ -15,18 +15,25 @@ name: Size Limit
 # check can run. Its raw .wasm binary size is also tracked separately via
 # scripts/report-size.mjs.
 #
-# Runs on push to main as well as on PRs: size-limit-action compares each
-# PR's size against a previously recorded baseline for the base branch
-# (fetched via the commit status API) rather than checking out and
-# rebuilding main itself, so without this workflow running on main too
-# there is no baseline yet for a PR to diff against.
+# This workflow only runs on `pull_request`, *not* on `push` to main.
+# `andresz1/size-limit-action` only operates inside a `pull_request` event —
+# it reads `github.context.payload.pull_request` to compute the diff and
+# errors with "No PR found. Only pull_request workflows are supported." when
+# invoked from a plain `push`. The earlier design tried to record a baseline
+# from push-to-main runs, but the action has no code path that can do that,
+# so every push-triggered run failed immediately and no baseline was ever
+# established. The push trigger is removed entirely below.
+#
+# Baseline mechanism: on each PR the action compares the measured size
+# against the base branch's most recent size-limit commit status (the status
+# it recorded on the previous PR run). The very first PR opened against a
+# base branch that has never run this workflow shows a first-run snapshot
+# rather than a delta; subsequent PRs then show a real, meaningful delta.
+# To bootstrap an initial baseline for `main`, open and merge any trivial PR
+# that touches a budgeted package — its size-limit status becomes the
+# baseline that later PRs diff against.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'packages/js/**'
-      - '.github/workflows/size-limit.yml'
   pull_request:
     branches: [main]
     paths:
