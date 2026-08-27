@@ -34,10 +34,19 @@ export interface LeaderboardFetchOptions {
 
 /**
  * Social-specific events emitted by the real-time subscription.
+ *
+ * `connection:gap` fires after a reconnect when the client cannot guarantee
+ * it received every event that occurred while disconnected: either no
+ * `feedClient` was configured for backfill, or the backfill request itself
+ * failed. `since` is the id of the last `feed:new_entry` this client
+ * processed before the disconnect, or `null` if it never received one.
+ * Consumers should treat this as "state may be stale" (e.g. prompt a
+ * refresh) rather than silently rendering as if nothing happened.
  */
 export type SocialLiveEvent =
   | { type: 'feed:new_entry'; entry: GlobalFeedEntry }
   | { type: 'leaderboard:updated'; window: LeaderboardWindow; entries: LeaderboardEntry[] }
+  | { type: 'connection:gap'; since: string | null }
 
 /**
  * Configuration for the cache layer.

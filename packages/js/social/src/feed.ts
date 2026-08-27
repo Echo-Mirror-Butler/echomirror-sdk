@@ -58,6 +58,22 @@ export class GlobalFeedClient {
   }
 
   /**
+   * Fetch every feed entry newer than `sinceId`, oldest-first.
+   *
+   * Used by {@link SocialSubscription} to backfill entries missed while a
+   * real-time connection was down. Bypasses the cache: this is always meant
+   * to return fresh data for a specific gap, not a page a hook would re-render.
+   */
+  async fetchSince(sinceId: string, options?: { limit?: number }): Promise<FeedResponse> {
+    const limit = options?.limit ?? 50
+    const params = new URLSearchParams()
+    params.set('since_id', sinceId)
+    params.set('limit', String(limit))
+
+    return this._client.request<FeedResponse>('GET', `${this._basePath}?${params}`)
+  }
+
+  /**
    * Clear all cached feed pages. Useful after a mutation or when the user
    * explicitly requests a refresh.
    */

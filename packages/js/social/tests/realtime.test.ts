@@ -87,14 +87,17 @@ describe('WebSocketTransport', () => {
         const firstWs = ws
         ws!.simulateClose(1006, 'Abnormal')
 
-        // After reconnect delay, a new WebSocket should be created
+        // After reconnect delay, a new WebSocket should be created.
+        // Margin must exceed reconnectDelay + max jitter (200ms) — a tighter
+        // margin here was flaky under load since jitter is 0-200ms regardless
+        // of reconnectDelay.
         setTimeout(() => {
           const ws2 = (transport as unknown as { _ws: MockWebSocket | null })._ws
           expect(ws2).not.toBe(firstWs)
           expect(ws2).not.toBeNull()
           transport.disconnect()
           done()
-        }, 200)
+        }, 350)
       }, 50)
     })
   })
@@ -199,5 +202,94 @@ describe('SocialSubscription', () => {
     sub.subscribe(handler2)
     expect(handler2).toBeDefined()
     sub.disconnect()
+  })
+
+  it('backfills missed feed entries via feedClient after a reconnect', () => {
+    return new Promise<void>((done) => {
+      const fetchSince = vi.fn().mockResolvedValue({
+        entries: [
+          { id: '2', score: 6, tags: [], createdAt: '2026-01-01T00:01:00Z' },
+          { id: '3', score: 9, tags: [], createdAt: '2026-01-01T00:02:00Z' },
+        ],
+        nextCursor: null,
+      })
+      const feedClient = { fetchSince } as unknown as import('../src/feed').GlobalFeedClient
+      const transport = new WebSocketTransport({ maxReconnectAttempts: 3, reconnectDelay: 20 })
+
+      const sub = new SocialSubscription({ transport, feedClient })
+      const events: SocialLiveEvent[] = []
+      sub.subscribe((e) => events.push(e))
+
+      setTimeout(() => {
+        const ws = (transport as unknown as { _ws: MockWebSocket | null })._ws
+        // First event establishes the backfill anchor.
+        const first: SocialLiveEvent = { type: 'feed:new_entry', entry: { id: '1', score: 5, tags: [], createdAt: '2026-01-01T00:00:00Z' } }
+        ws!.simulateMessage(JSON.stringify(first))
+
+        // Simulate a drop and reconnect.
+        ws!.simulateClose(1006, 'Abnormal')
+
+        setTimeout(() => {
+          expect(fetchSince).toHaveBeenCalledWith('1')
+          setTimeout(() => {
+            expect(events).toContainEqual({ type: 'feed:new_entry', entry: { id: '2', score: 6, tags: [], createdAt: '2026-01-01T00:01:00Z' } })
+            expect(events).toContainEqual({ type: 'feed:new_entry', entry: { id: '3', score: 9, tags: [], createdAt: '2026-01-01T00:02:00Z' } })
+            expect(events.some((e) => e.type === 'connection:gap')).toBe(false)
+            sub.disconnect()
+            done()
+          }, 20)
+        }, 350)
+      }, 30)
+    })
+  })
+
+  it('emits connection:gap when backfill is unavailable after a reconnect', () => {
+    return new Promise<void>((done) => {
+      const transport = new WebSocketTransport({ maxReconnectAttempts: 3, reconnectDelay: 20 })
+      const sub = new SocialSubscription({ transport })
+      const events: SocialLiveEvent[] = []
+      sub.subscribe((e) => events.push(e))
+
+      setTimeout(() => {
+        const ws = (transport as unknown as { _ws: MockWebSocket | null })._ws
+        const first: SocialLiveEvent = { type: 'feed:new_entry', entry: { id: '1', score: 5, tags: [], createdAt: '2026-01-01T00:00:00Z' } }
+        ws!.simulateMessage(JSON.stringify(first))
+        ws!.simulateClose(1006, 'Abnormal')
+
+        setTimeout(() => {
+          const gap = events.find((e) => e.type === 'connection:gap')
+          expect(gap).toEqual({ type: 'connection:gap', since: '1' })
+          sub.disconnect()
+          done()
+        }, 350)
+      }, 30)
+    })
+  })
+
+  it('emits connection:gap when backfill fails', () => {
+    return new Promise<void>((done) => {
+      const fetchSince = vi.fn().mockRejectedValue(new Error('network error'))
+      const feedClient = { fetchSince } as unknown as import('../src/feed').GlobalFeedClient
+      const transport = new WebSocketTransport({ maxReconnectAttempts: 3, reconnectDelay: 20 })
+      const sub = new SocialSubscription({ transport, feedClient })
+      const events: SocialLiveEvent[] = []
+      sub.subscribe((e) => events.push(e))
+
+      setTimeout(() => {
+        const ws = (transport as unknown as { _ws: MockWebSocket | null })._ws
+        const first: SocialLiveEvent = { type: 'feed:new_entry', entry: { id: '1', score: 5, tags: [], createdAt: '2026-01-01T00:00:00Z' } }
+        ws!.simulateMessage(JSON.stringify(first))
+        ws!.simulateClose(1006, 'Abnormal')
+
+        setTimeout(() => {
+          setTimeout(() => {
+            const gap = events.find((e) => e.type === 'connection:gap')
+            expect(gap).toEqual({ type: 'connection:gap', since: '1' })
+            sub.disconnect()
+            done()
+          }, 20)
+        }, 350)
+      }, 30)
+    })
   })
 })
