@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod circuit_breaker;
 pub mod client;
 pub mod config;
@@ -8,6 +9,7 @@ pub mod mood;
 pub mod social;
 pub mod types;
 
+pub use cache::{CacheConfig, ResponseCache};
 pub use circuit_breaker::CircuitBreaker;
 pub use client::EchoMirrorClient;
 pub use config::{CircuitBreakerConfig, CircuitState, EchoMirrorConfig, StellarNetwork};

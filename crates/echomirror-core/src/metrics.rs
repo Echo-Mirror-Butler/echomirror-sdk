@@ -37,6 +37,12 @@ pub struct ClientMetrics {
     pub circuit_trips: AtomicU64,
     /// Number of requests rejected immediately because circuit was Open or HalfOpen probing
     pub circuit_open_rejections: AtomicU64,
+    /// Number of cache hits (served from cache)
+    pub cache_hits: AtomicU64,
+    /// Number of cache misses (fetched from network)
+    pub cache_misses: AtomicU64,
+    /// Number of cache entries evicted
+    pub cache_evictions: AtomicU64,
 }
 
 impl Clone for ClientMetrics {
@@ -66,6 +72,9 @@ impl Clone for ClientMetrics {
             circuit_open_rejections: AtomicU64::new(
                 self.circuit_open_rejections.load(Ordering::Relaxed),
             ),
+            cache_hits: AtomicU64::new(self.cache_hits.load(Ordering::Relaxed)),
+            cache_misses: AtomicU64::new(self.cache_misses.load(Ordering::Relaxed)),
+            cache_evictions: AtomicU64::new(self.cache_evictions.load(Ordering::Relaxed)),
         }
     }
 }
@@ -162,6 +171,21 @@ impl ClientMetrics {
         self.circuit_open_rejections.fetch_add(1, Ordering::Relaxed);
     }
 
+    /// Record a cache hit
+    pub fn record_cache_hit(&self) {
+        self.cache_hits.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Record a cache miss
+    pub fn record_cache_miss(&self) {
+        self.cache_misses.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Record a cache eviction
+    pub fn record_cache_eviction(&self) {
+        self.cache_evictions.fetch_add(1, Ordering::Relaxed);
+    }
+
     /// Get current circuit breaker state
     pub fn circuit_state(&self) -> CircuitState {
         match self.circuit_state_code.load(Ordering::Relaxed) {
@@ -190,6 +214,9 @@ impl ClientMetrics {
             circuit_state: self.circuit_state(),
             circuit_trips: self.circuit_trips.load(Ordering::Relaxed),
             circuit_open_rejections: self.circuit_open_rejections.load(Ordering::Relaxed),
+            cache_hits: self.cache_hits.load(Ordering::Relaxed),
+            cache_misses: self.cache_misses.load(Ordering::Relaxed),
+            cache_evictions: self.cache_evictions.load(Ordering::Relaxed),
         }
     }
 
@@ -211,6 +238,9 @@ impl ClientMetrics {
         self.circuit_state_code.store(0, Ordering::Relaxed);
         self.circuit_trips.store(0, Ordering::Relaxed);
         self.circuit_open_rejections.store(0, Ordering::Relaxed);
+        self.cache_hits.store(0, Ordering::Relaxed);
+        self.cache_misses.store(0, Ordering::Relaxed);
+        self.cache_evictions.store(0, Ordering::Relaxed);
     }
 }
 
@@ -233,6 +263,9 @@ pub struct MetricsSnapshot {
     pub circuit_state: CircuitState,
     pub circuit_trips: u64,
     pub circuit_open_rejections: u64,
+    pub cache_hits: u64,
+    pub cache_misses: u64,
+    pub cache_evictions: u64,
 }
 
 impl MetricsSnapshot {
@@ -347,6 +380,9 @@ mod tests {
             circuit_state: CircuitState::Closed,
             circuit_trips: 0,
             circuit_open_rejections: 0,
+            cache_hits: 0,
+            cache_misses: 0,
+            cache_evictions: 0,
         };
 
         assert_eq!(snapshot.success_rate(), 95.0);

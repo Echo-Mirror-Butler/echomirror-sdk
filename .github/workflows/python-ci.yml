@@ -50,7 +50,7 @@ jobs:
           else
             source ../../.venv/bin/activate
           fi
-          pip install maturin pytest pytest-asyncio
+          pip install maturin pytest pytest-asyncio pytest-cov
           maturin develop --release
 
       - name: Run tests
@@ -62,4 +62,12 @@ jobs:
           else
             source ../../.venv/bin/activate
           fi
-          pytest -v
+          pytest -v --cov=echomirror --cov-report=term-missing --cov-fail-under=50
+
+      - name: Upload coverage artifact
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage
+          path: crates/echomirror-python/htmlcov/
+          retention-days: 7

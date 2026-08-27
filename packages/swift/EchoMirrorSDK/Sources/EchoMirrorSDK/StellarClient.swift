@@ -32,18 +32,27 @@ public final class StellarClient {
         }
     }
 
-    public func getBalance(publicKey: String) async throws -> StellarBalance {
+    public func getBalance(
+        publicKey: String,
+        cancellationHandle: CancellationHandle? = nil,
+        timeoutMs: UInt32 = 0
+    ) async throws -> StellarBalance {
         guard isValidAddress(publicKey) else {
             throw EchoMirrorError.invalidInput("Expected a Stellar public G-address")
         }
 
-        let payload = try await FFIAsync.perform { callback, userData in
+        let payload = try await FFIAsync.perform(
+            cancellationHandle: cancellationHandle,
+            timeoutMs: timeoutMs
+        ) { callback, userData, cancelPtr, timeout in
             publicKey.withCString { publicKeyCString in
                 echomirror_stellar_get_balance_async(
                     handle,
                     publicKeyCString,
                     callback,
-                    userData
+                    userData,
+                    cancelPtr,
+                    timeout
                 )
             }
         }
