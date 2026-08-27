@@ -15,6 +15,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "test:integration": "STELLAR_INTEGRATION=1 vitest run tests/integration --testTimeout 120000",
     "pretest:e2e": "node e2e/scripts/fetch-freighter.mjs",
     "test:e2e": "playwright test",
@@ -46,7 +47,8 @@
     "@types/node": "^22.0.0",
     "esbuild": "^0.28.1",
     "typescript": "*",
-    "vitest": "*"
+    "vitest": "*",
+    "@vitest/coverage-v8": "*"
   },
   "size-limit": [
     {

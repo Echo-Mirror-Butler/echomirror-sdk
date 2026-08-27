@@ -1,3 +1,4 @@
+import type { GlobalFeedClient } from './feed'
 import type { SocialLiveEvent } from './types'
 
 /**
@@ -11,6 +12,15 @@ export interface RealtimeTransport {
   connect(url: string): void
   disconnect(): void
   onMessage(handler: (event: SocialLiveEvent) => void): void
+  /**
+   * Optional: called every time the transport establishes an open
+   * connection. `isReconnect` is `true` when this is not the first open for
+   * the current `connect()` call — i.e. the connection dropped and came back,
+   * which is exactly when events may have been missed. Transports that can't
+   * distinguish first-open from reconnect may omit this; callers then have
+   * no way to detect gaps for that transport.
+   */
+  onOpen?(handler: (info: { isReconnect: boolean }) => void): void
 }
 
 /**
@@ -32,6 +42,8 @@ export class WebSocketTransport implements RealtimeTransport {
   private _ws: WebSocket | null = null
   private _url: string = ''
   private _handler: ((event: SocialLiveEvent) => void) | null = null
+  private _openHandler: ((info: { isReconnect: boolean }) => void) | null = null
+  private _hasOpenedOnce = false
   private _reconnectAttempts = 0
   private _maxReconnectAttempts: number
   private _reconnectDelay: number
@@ -46,6 +58,7 @@ export class WebSocketTransport implements RealtimeTransport {
   connect(url: string): void {
     this._url = url
     this._disposed = false
+    this._hasOpenedOnce = false
     this._openConnection()
   }
 
@@ -60,6 +73,10 @@ export class WebSocketTransport implements RealtimeTransport {
     this._handler = handler
   }
 
+  onOpen(handler: (info: { isReconnect: boolean }) => void): void {
+    this._openHandler = handler
+  }
+
   private _openConnection(): void {
     if (this._disposed) return
 
@@ -72,6 +89,8 @@ export class WebSocketTransport implements RealtimeTransport {
 
     this._ws.onopen = () => {
       this._reconnectAttempts = 0
+      this._openHandler?.({ isReconnect: this._hasOpenedOnce })
+      this._hasOpenedOnce = true
     }
 
     this._ws.onmessage = (msg: MessageEvent) => {
@@ -127,24 +146,41 @@ export class SocialSubscription {
   private _handlers = new Set<(event: SocialLiveEvent) => void>()
   private _connected = false
   private _url: string
+  private _feedClient: GlobalFeedClient | undefined
+  private _lastFeedEntryId: string | null = null
 
   /**
-   * @param options.baseUrl   API base URL. Defaults to 'wss://api.echomirror.dev/v1'
-   *                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   *                          ASSUMPTION — NOT CONFIRMED (see WebSocketTransport docs)
-   * @param options.transport RealtimeTransport implementation. Defaults to WebSocketTransport.
+   * @param options.baseUrl    API base URL. Defaults to 'wss://api.echomirror.dev/v1'
+   *                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   *                           ASSUMPTION — NOT CONFIRMED (see WebSocketTransport docs)
+   * @param options.transport  RealtimeTransport implementation. Defaults to WebSocketTransport.
+   * @param options.feedClient When provided, a reconnect after a genuine disconnect
+   *                           (not the initial connect) triggers `feedClient.fetchSince()`
+   *                           to backfill any `feed:new_entry` events missed while down.
+   *                           If omitted, or the backfill request fails, subscribers get
+   *                           a `connection:gap` event instead so they know to treat their
+   *                           state as possibly stale.
    */
   constructor(options?: {
     baseUrl?: string
     transport?: RealtimeTransport
+    feedClient?: GlobalFeedClient
   }) {
     // ASSUMPTION — NOT CONFIRMED: path /social/ws and protocol wss://
     this._url = options?.baseUrl ?? 'wss://api.echomirror.dev/v1/social/ws'
     this._transport = options?.transport ?? new WebSocketTransport()
+    this._feedClient = options?.feedClient
 
     this._transport.onMessage((event) => {
-      for (const handler of this._handlers) {
-        handler(event)
+      if (event.type === 'feed:new_entry') {
+        this._lastFeedEntryId = event.entry.id
+      }
+      this._emit(event)
+    })
+
+    this._transport.onOpen?.(({ isReconnect }) => {
+      if (isReconnect) {
+        void this._handleReconnect()
       }
     })
   }
@@ -178,5 +214,34 @@ export class SocialSubscription {
     this._transport.disconnect()
     this._connected = false
     this._handlers.clear()
+  }
+
+  private _emit(event: SocialLiveEvent): void {
+    for (const handler of this._handlers) {
+      handler(event)
+    }
+  }
+
+  /**
+   * Runs after a reconnect (as opposed to the initial connect). Tries to
+   * backfill missed `feed:new_entry` events via `feedClient.fetchSince()`;
+   * falls back to an explicit `connection:gap` event when backfill isn't
+   * configured, has no anchor to backfill from, or fails.
+   */
+  private async _handleReconnect(): Promise<void> {
+    if (!this._feedClient || !this._lastFeedEntryId) {
+      this._emit({ type: 'connection:gap', since: this._lastFeedEntryId })
+      return
+    }
+
+    try {
+      const { entries } = await this._feedClient.fetchSince(this._lastFeedEntryId)
+      for (const entry of entries) {
+        this._lastFeedEntryId = entry.id
+        this._emit({ type: 'feed:new_entry', entry })
+      }
+    } catch {
+      this._emit({ type: 'connection:gap', since: this._lastFeedEntryId })
+    }
   }
 }

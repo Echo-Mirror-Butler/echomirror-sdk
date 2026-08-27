@@ -4,6 +4,8 @@ description = "EchoMirror blockchain sync engine — real-time Stellar SSE strea
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+# benches/support.rs is shared helper code (via #[path]), not a bench target.
+autobenches = false
 
 [features]
 default = []
@@ -29,3 +31,12 @@ sqlx = { workspace = true, optional = true }
 
 [dev-dependencies]
 wiremock.workspace = true
+criterion = { version = "0.5", features = ["async_tokio"] }
+
+[[bench]]
+name = "pipeline_bench"
+harness = false
+
+[[bench]]
+name = "cursor_store_bench"
+harness = false
