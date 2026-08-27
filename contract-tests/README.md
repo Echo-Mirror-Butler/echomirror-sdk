@@ -66,6 +66,7 @@ first and waits for it.
 | JS | `packages/js/core/tests/contract.test.ts` | `EchoMirrorClient` transport + spec-compliant mood/stellar wrappers |
 | Flutter | `packages/flutter/test/contract_test.dart` | `EchoMirror.initialize` + Mood/Social/Stellar clients |
 | Swift | `packages/swift/EchoMirrorSDK/Tests/EchoMirrorSDKTests/ContractTests.swift` | FFI validation/bridging semantics (no HTTP) |
+| Python | `contract-tests/runners/python/test_contract.py` | PyO3 async bindings — mood streak/summary/log, social feed/leaderboard, Stellar build-transfer/submit/history/balance |
 
 Environment overrides (all default to the CI values):
 
@@ -90,3 +91,43 @@ generated inside `echomirror-ffi` rather than fetched over HTTP, and
 `echomirror_stellar_get_balance_async` targets the real testnet Horizon because
 there is no FFI hook to override the Horizon base URL. That op is documented as
 out of scope until an FFI `horizon_url` override exists.
+
+### Python drift (surfaced by #148 — first pass)
+
+Four divergences were found between the Python bindings and the canonical spec.
+None break the tests in their current form — each is documented and observable
+rather than silently hidden.
+
+**DRIFT-PY-1 · `get_global_feed` query string under observation**
+
+The spec's `get_social_feed` op expects `GET /social/feed?limit=10`. The
+Python binding's `SocialClient.get_global_feed(limit=n)` should forward the
+limit as a query parameter. The contract test exercises the exact spec path; if
+the binding sends a different `limit` value (e.g. the default `?limit=50`) the
+fixture will 404 and the test will fail, surfacing the drift automatically.
+
+**DRIFT-PY-2 · `StellarTransaction` field names are renamed from wire format**
+
+The wire format (and all other language bindings) uses `type`, `from`, `to`.
+Python renames these because `from` and `type` are reserved keywords:
+- wire `type`  → Python `tx_type`
+- wire `from`  → Python `from_address`
+- wire `to`    → Python `to_address`
+
+This is intentional and correct for Python ergonomics, but means Python
+consumers must use the renamed attributes. The contract test asserts Python
+attribute names with inline comments marking each renamed field.
+
+**DRIFT-PY-3 · `get_stellar_balance` binding list doesn't include Python**
+
+The spec's `get_stellar_balance` op (Horizon direct) lists `binding: ["rust"]`.
+Python's `StellarClient` also calls Horizon directly (same code path as Rust),
+but was never added to the binding list. The Python runner tests this op anyway.
+Follow-up: update `contract-spec.json` `get_stellar_balance.binding` to
+`["rust", "python"]`.
+
+**DRIFT-PY-4 · `submit_payment_transaction` binding list doesn't include Python**
+
+The spec lists `binding: ["rust", "js"]`. Python has `submit_transaction` which
+exercises the same endpoint. Same fix: add `"python"` to the binding list.
+Follow-up: update `contract-spec.json`.

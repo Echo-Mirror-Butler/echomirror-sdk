@@ -123,6 +123,70 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: docker compose -f contract-tests/docker-compose.yml down --volumes
 
+  python:
+    name: Python contract
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}-contract-python-${{ matrix.python-version }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create virtualenv and install tooling
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install maturin pytest pytest-asyncio
+
+      - name: Build and install echomirror-python (develop mode)
+        working-directory: crates/echomirror-python
+        run: |
+          source ../../.venv/bin/activate
+          maturin develop --release
+
+      - name: Start fixture
+        run: docker compose -f contract-tests/docker-compose.yml up -d --build
+
+      - name: Wait for fixture (fail if it never comes up)
+        run: |
+          for i in $(seq 1 60); do
+            api_ok=$(curl -sf http://127.0.0.1:18080/mood/streak > /dev/null && echo y || echo n)
+            horiz_ok=$(curl -sf http://127.0.0.1:18081/accounts/GDKUJHNOCQ6NOFJCSPE5IZMFFRZ6U4VO3EEFJQKJSDK5B4VZTH4XKSKD > /dev/null && echo y || echo n)
+            if [ "$api_ok" = y ] && [ "$horiz_ok" = y ]; then
+              echo "fixture ready"
+              exit 0
+            fi
+            echo "waiting for fixture ($i/60)…"
+            sleep 2
+          done
+          docker compose -f contract-tests/docker-compose.yml logs
+          echo "fixture did not become ready" >&2
+          exit 1
+
+      - name: Run Python contract tests
+        run: |
+          source .venv/bin/activate
+          pytest contract-tests/runners/python/ -v
+
+      - name: Tear down fixture
+        if: always()
+        run: docker compose -f contract-tests/docker-compose.yml down --volumes
+
   swift:
     name: Swift contract
     runs-on: macos-14
