@@ -89,7 +89,7 @@ pub enum TransactionType {
 // ── Blockchain sync ───────────────────────────────────────────────────────────
 
 /// Represents one confirmed block/ledger from the Stellar network
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LedgerRecord {
     pub sequence: u32,
     pub hash: String,
@@ -99,7 +99,7 @@ pub struct LedgerRecord {
 }
 
 /// Cursor position for resumable blockchain sync
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SyncCursor {
     pub ledger_sequence: u32,
     pub paging_token: String,
@@ -107,7 +107,7 @@ pub struct SyncCursor {
 }
 
 /// Event emitted during blockchain sync
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SyncEvent {
     TransactionDetected { tx: StellarTransaction },
@@ -115,6 +115,7 @@ pub enum SyncEvent {
     SyncStarted { from_ledger: u32 },
     SyncPaused { cursor: SyncCursor },
     SyncCompleted { total_processed: u64 },
+    GapDetected { missed_count: u64 },
     Error { message: String },
 }
 

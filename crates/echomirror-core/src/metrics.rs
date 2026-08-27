@@ -1,4 +1,5 @@
-use std::sync::atomic::{AtomicU64, Ordering};
+use crate::config::CircuitState;
+use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::time::Duration;
 
 /// Metrics collected by the EchoMirrorClient for observability
@@ -30,6 +31,12 @@ pub struct ClientMetrics {
     pub client_errors: AtomicU64,
     /// Number of auth expired errors encountered
     pub auth_expired_errors: AtomicU64,
+    /// Current circuit breaker state (0 = Closed, 1 = Open, 2 = HalfOpen)
+    pub circuit_state_code: AtomicU8,
+    /// Total number of times the circuit breaker tripped to Open
+    pub circuit_trips: AtomicU64,
+    /// Number of requests rejected immediately because circuit was Open or HalfOpen probing
+    pub circuit_open_rejections: AtomicU64,
 }
 
 impl Clone for ClientMetrics {
@@ -54,6 +61,11 @@ impl Clone for ClientMetrics {
             server_errors: AtomicU64::new(self.server_errors.load(Ordering::Relaxed)),
             client_errors: AtomicU64::new(self.client_errors.load(Ordering::Relaxed)),
             auth_expired_errors: AtomicU64::new(self.auth_expired_errors.load(Ordering::Relaxed)),
+            circuit_state_code: AtomicU8::new(self.circuit_state_code.load(Ordering::Relaxed)),
+            circuit_trips: AtomicU64::new(self.circuit_trips.load(Ordering::Relaxed)),
+            circuit_open_rejections: AtomicU64::new(
+                self.circuit_open_rejections.load(Ordering::Relaxed),
+            ),
         }
     }
 }
@@ -130,6 +142,35 @@ impl ClientMetrics {
         self.auth_expired_errors.fetch_add(1, Ordering::Relaxed);
     }
 
+    /// Record circuit breaker state change
+    pub fn record_circuit_state(&self, state: CircuitState) {
+        let code = match state {
+            CircuitState::Closed => 0,
+            CircuitState::Open => 1,
+            CircuitState::HalfOpen => 2,
+        };
+        self.circuit_state_code.store(code, Ordering::Relaxed);
+    }
+
+    /// Record a circuit breaker trip to Open
+    pub fn record_circuit_trip(&self) {
+        self.circuit_trips.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Record a rejected request due to open circuit breaker
+    pub fn record_circuit_open_rejection(&self) {
+        self.circuit_open_rejections.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Get current circuit breaker state
+    pub fn circuit_state(&self) -> CircuitState {
+        match self.circuit_state_code.load(Ordering::Relaxed) {
+            1 => CircuitState::Open,
+            2 => CircuitState::HalfOpen,
+            _ => CircuitState::Closed,
+        }
+    }
+
     /// Get a snapshot of all metrics
     pub fn snapshot(&self) -> MetricsSnapshot {
         MetricsSnapshot {
@@ -146,6 +187,9 @@ impl ClientMetrics {
             server_errors: self.server_errors.load(Ordering::Relaxed),
             client_errors: self.client_errors.load(Ordering::Relaxed),
             auth_expired_errors: self.auth_expired_errors.load(Ordering::Relaxed),
+            circuit_state: self.circuit_state(),
+            circuit_trips: self.circuit_trips.load(Ordering::Relaxed),
+            circuit_open_rejections: self.circuit_open_rejections.load(Ordering::Relaxed),
         }
     }
 
@@ -164,6 +208,9 @@ impl ClientMetrics {
         self.server_errors.store(0, Ordering::Relaxed);
         self.client_errors.store(0, Ordering::Relaxed);
         self.auth_expired_errors.store(0, Ordering::Relaxed);
+        self.circuit_state_code.store(0, Ordering::Relaxed);
+        self.circuit_trips.store(0, Ordering::Relaxed);
+        self.circuit_open_rejections.store(0, Ordering::Relaxed);
     }
 }
 
@@ -183,6 +230,9 @@ pub struct MetricsSnapshot {
     pub server_errors: u64,
     pub client_errors: u64,
     pub auth_expired_errors: u64,
+    pub circuit_state: CircuitState,
+    pub circuit_trips: u64,
+    pub circuit_open_rejections: u64,
 }
 
 impl MetricsSnapshot {
@@ -248,6 +298,13 @@ mod tests {
         metrics.record_backoff(Duration::from_millis(100));
         metrics.record_backoff(Duration::from_millis(200));
         assert_eq!(metrics.total_backoff_ms.load(Ordering::Relaxed), 300);
+
+        metrics.record_circuit_trip();
+        metrics.record_circuit_open_rejection();
+        metrics.record_circuit_state(CircuitState::Open);
+        assert_eq!(metrics.circuit_trips.load(Ordering::Relaxed), 1);
+        assert_eq!(metrics.circuit_open_rejections.load(Ordering::Relaxed), 1);
+        assert_eq!(metrics.circuit_state(), CircuitState::Open);
     }
 
     #[test]
@@ -259,12 +316,16 @@ mod tests {
         metrics.record_success();
         metrics.record_retry();
         metrics.record_backoff(Duration::from_millis(100));
+        metrics.record_circuit_trip();
+        metrics.record_circuit_state(CircuitState::HalfOpen);
 
         let snapshot = metrics.snapshot();
         assert_eq!(snapshot.total_requests, 2);
         assert_eq!(snapshot.successful_requests, 1);
         assert_eq!(snapshot.total_retries, 1);
         assert_eq!(snapshot.total_backoff_ms, 100);
+        assert_eq!(snapshot.circuit_trips, 1);
+        assert_eq!(snapshot.circuit_state, CircuitState::HalfOpen);
     }
 
     #[test]
@@ -283,6 +344,9 @@ mod tests {
             server_errors: 3,
             client_errors: 2,
             auth_expired_errors: 2,
+            circuit_state: CircuitState::Closed,
+            circuit_trips: 0,
+            circuit_open_rejections: 0,
         };
 
         assert_eq!(snapshot.success_rate(), 95.0);
@@ -298,6 +362,8 @@ mod tests {
         metrics.record_request();
         metrics.record_success();
         metrics.record_retry();
+        metrics.record_circuit_trip();
+        metrics.record_circuit_state(CircuitState::Open);
 
         metrics.reset();
 
@@ -305,6 +371,8 @@ mod tests {
         assert_eq!(snapshot.total_requests, 0);
         assert_eq!(snapshot.successful_requests, 0);
         assert_eq!(snapshot.total_retries, 0);
+        assert_eq!(snapshot.circuit_trips, 0);
+        assert_eq!(snapshot.circuit_state, CircuitState::Closed);
     }
 
     #[test]

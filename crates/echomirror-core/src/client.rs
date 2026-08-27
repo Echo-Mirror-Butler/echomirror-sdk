@@ -2,6 +2,7 @@ use crate::middleware::{
     MiddlewareDecision, MiddlewareOutcome, MiddlewareRequest, MiddlewareResponse,
     MAX_MIDDLEWARE_RETRIES,
 };
+use crate::circuit_breaker::CircuitBreaker;
 use crate::{ClientMetrics, EchoMirrorConfig, EchoMirrorError, MetricsSnapshot, Result};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use reqwest::{Client as HttpClient, Method, StatusCode};
@@ -30,6 +31,8 @@ pub struct EchoMirrorClient {
     token_refresh_attempted: Arc<RwLock<bool>>,
     // Metrics for observability
     metrics: Arc<ClientMetrics>,
+    // Circuit breaker for failing fast on sustained outages
+    circuit_breaker: Arc<CircuitBreaker>,
 }
 
 impl EchoMirrorClient {
@@ -40,12 +43,19 @@ impl EchoMirrorClient {
             .build()
             .map_err(EchoMirrorError::Network)?;
 
+        let metrics = Arc::new(ClientMetrics::new());
+        let circuit_breaker = Arc::new(CircuitBreaker::new(
+            config.circuit_breaker.clone(),
+            metrics.clone(),
+        ));
+
         Ok(Self {
             config: Arc::new(config),
             http,
             auth_token: Arc::new(RwLock::new(None)),
             token_refresh_attempted: Arc::new(RwLock::new(false)),
-            metrics: Arc::new(ClientMetrics::new()),
+            metrics,
+            circuit_breaker,
         })
     }
 
@@ -55,6 +65,11 @@ impl EchoMirrorClient {
 
     pub fn config(&self) -> &EchoMirrorConfig {
         &self.config
+    }
+
+    /// Get a reference to the client's circuit breaker
+    pub fn circuit_breaker(&self) -> &Arc<CircuitBreaker> {
+        &self.circuit_breaker
     }
 
     /// Get a snapshot of the current metrics
@@ -111,6 +126,8 @@ impl EchoMirrorClient {
         body: Option<&B>,
         timeout_override: Option<Duration>,
     ) -> Result<T> {
+        let was_probe = self.circuit_breaker.before_request().await?;
+
         let mut attempt = 0;
         let max_attempts = self.config.max_retries + 1;
         let mut middleware_retries = 0;
@@ -177,6 +194,14 @@ impl EchoMirrorClient {
 
                     // Check if we should retry
                     if attempt >= max_attempts || !err.is_retryable() {
+                        let is_backend_failure = matches!(
+                            &err,
+                            EchoMirrorError::Network(_)
+                                | EchoMirrorError::Http { status, .. } if *status >= 500
+                        );
+                        self.circuit_breaker
+                            .on_failure(is_backend_failure, was_probe)
+                            .await;
                         self.metrics.record_failure();
                         // Reset token refresh flag on final failure
                         *self.token_refresh_attempted.write().await = false;

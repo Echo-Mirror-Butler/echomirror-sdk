@@ -37,6 +37,9 @@ pub enum EchoMirrorError {
     #[error("Not found: {0}")]
     NotFound(String),
 
+    #[error("Circuit breaker open: {0}")]
+    CircuitOpen(String),
+
     #[error("{0}")]
     Other(String),
 }
@@ -45,6 +48,8 @@ impl EchoMirrorError {
     /// Returns true if this error is retryable (transient failures)
     pub fn is_retryable(&self) -> bool {
         match self {
+            // Circuit breaker open is NOT retryable (fail fast)
+            EchoMirrorError::CircuitOpen(_) => false,
             // Network errors are retryable (connection issues, timeouts, etc.)
             EchoMirrorError::Network(_) => true,
             // 5xx server errors are retryable
@@ -58,6 +63,11 @@ impl EchoMirrorError {
             // Other errors are not retryable
             _ => false,
         }
+    }
+
+    /// Returns true if this error indicates the circuit breaker is open
+    pub fn is_circuit_open(&self) -> bool {
+        matches!(self, EchoMirrorError::CircuitOpen(_))
     }
 
     /// Returns true if this error indicates the auth token should be refreshed
