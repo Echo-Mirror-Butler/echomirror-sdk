@@ -2,6 +2,7 @@ export { AnalyticsClient } from './client.js'
 export { aggregateMood, aggregateMoodThisWeek } from './aggregate.js'
 export { createWebhookTransport } from './transport.js'
 export { MemoryStorage } from './storage.js'
+export { readAuditRecords } from './storage.js'
 export type {
   AIReflectionViewedProperties,
   AnalyticsBatch,
@@ -25,6 +26,8 @@ export type {
   MoodScore,
   MoodTagCount,
   PrivacyOptions,
+  PurgeAuditRecord,
+  PurgeResult,
   StreakMilestoneReachedProperties,
   WalletConnectedProperties,
 } from './types.js'

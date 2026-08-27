@@ -3,6 +3,11 @@ import {
   DEFAULT_STORAGE_KEY,
   defaultStorage,
   readState,
+  writeAuditRecord,
+  readAuditRecords,
+  purgeEventsByUserId,
+  purgeEventsByAnonymousId,
+  DEFAULT_AUDIT_KEY,
   type PersistedAnalyticsState,
 } from './storage.js'
 import type {
@@ -18,6 +23,8 @@ import type {
   GiftSentProperties,
   LeaderboardViewedProperties,
   MoodLoggedProperties,
+  PurgeAuditRecord,
+  PurgeResult,
   StreakMilestoneReachedProperties,
   WalletConnectedProperties,
 } from './types.js'
@@ -179,6 +186,82 @@ export class AnalyticsClient {
       sessionId: this.state.sessionId,
       ...(this.state.userId ? { userId: this.state.userId } : {}),
     }
+  }
+
+  /**
+   * Purges all stored events for a given user identifier (right-to-erasure).
+   *
+   * Matches on both `userId` and `anonymousId` fields. Events in the local queue
+   * that match the identifier are permanently removed. The persisted state is
+   * rewritten without those events.
+   *
+   * **Aggregate rollups are not affected.** The `aggregateMood` and
+   * `aggregateMoodThisWeek` functions operate on caller-provided arrays, not on
+   * stored events. Historical aggregates that were computed before this purge
+   * will retain the deleted user's contribution. Only future aggregates computed
+   * from the remaining data will exclude them.
+   *
+   * @param identifier - The user ID or anonymous ID to purge. Must be a non-empty string.
+   * @returns A result indicating how many events were removed and an audit record.
+   */
+  purgeUser(identifier: string): PurgeResult {
+    const id = identifier.trim()
+    if (!id) throw new TypeError('purgeUser identifier must be a non-empty string')
+
+    const auditKey = this.config.auditStorageKey ?? DEFAULT_AUDIT_KEY
+    const storage = this.storage
+
+    // Purge by userId
+    const userIdResult = purgeEventsByUserId(storage, this.storageKey, id)
+    // Purge by anonymousId
+    const anonResult = purgeEventsByAnonymousId(storage, this.storageKey, id)
+
+    const eventsRemoved = userIdResult.eventsRemoved + anonResult.eventsRemoved
+
+    // Merge the state — take the more "complete" one (whichever had more events removed)
+    const finalState = userIdResult.eventsRemoved >= anonResult.eventsRemoved
+      ? userIdResult.state
+      : anonResult.state
+
+    // If the current in-memory state matches, update it
+    if (this.state.anonymousId === finalState.anonymousId || this.state.sessionId === finalState.sessionId) {
+      this.state = finalState
+    }
+
+    // Build an opaque user hash — never store the raw identifier in the audit log
+    const userHash = this.hashIdentifier(id)
+
+    const audit: PurgeAuditRecord = {
+      purgedAt: this.now().toISOString(),
+      userHash,
+      eventsRemoved,
+      storageKey: this.storageKey,
+    }
+
+    writeAuditRecord(storage, auditKey, audit)
+
+    return { purged: eventsRemoved > 0, eventsRemoved, audit }
+  }
+
+  /**
+   * Returns the audit log of all purge requests executed on this storage.
+   * Records contain NO PII — only an opaque hash of the purged identifier,
+   * the timestamp, and the count of events removed.
+   */
+  getPurgeAuditLog(): PurgeAuditRecord[] {
+    const auditKey = this.config.auditStorageKey ?? DEFAULT_AUDIT_KEY
+    return readAuditRecords(this.storage, auditKey)
+  }
+
+  private hashIdentifier(value: string): string {
+    // Simple deterministic hash for audit purposes. Not cryptographic —
+    // the goal is an opaque, stable identifier, not collision resistance.
+    let hash = 0
+    for (let i = 0; i < value.length; i++) {
+      const char = value.charCodeAt(i)
+      hash = ((hash << 5) - hash + char) | 0
+    }
+    return `hash_${(hash >>> 0).toString(36)}`
   }
 
   private enqueue(eventName: string, properties: Record<string, unknown>): AnalyticsEvent {

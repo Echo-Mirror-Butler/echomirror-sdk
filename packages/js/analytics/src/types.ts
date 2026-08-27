@@ -98,6 +98,8 @@ export interface AnalyticsConfig {
   transport: AnalyticsTransport
   storage?: AnalyticsStorage
   storageKey?: string
+  /** Storage key for the purge audit log. Defaults to `'echomirror.analytics.audit.v1'`. */
+  auditStorageKey?: string
   batchSize?: number
   /** Set to 0 to disable timed flushing. Defaults to 10 seconds. */
   flushIntervalMs?: number
@@ -133,4 +135,27 @@ export interface MoodRollupOptions {
   from: string | number | Date
   to: string | number | Date
   tagLimit?: number
+}
+
+export interface PurgeAuditRecord {
+  /** ISO-8601 timestamp of when the purge was executed. */
+  purgedAt: string
+  /**
+   * Opaque identifier for the purged user.
+   * Contains NO PII — this is a stable hash or opaque ID, not an email, name, or address.
+   */
+  userHash: string
+  /** Number of raw events removed. */
+  eventsRemoved: number
+  /** The storage key the events were purged from. */
+  storageKey: string
+}
+
+export interface PurgeResult {
+  /** True if events were found and removed; false if no matching events existed. */
+  purged: boolean
+  /** Number of raw events removed from storage. */
+  eventsRemoved: number
+  /** Audit record written to the audit log for this purge. */
+  audit: PurgeAuditRecord
 }
