@@ -32,7 +32,9 @@ impl RequestMiddleware for AuthRefreshMiddleware {
     ) -> MiddlewareDecision {
         if outcome.status() == Some(StatusCode::UNAUTHORIZED) {
             self.refreshed.fetch_add(1, Ordering::SeqCst);
-            client.set_auth_token(Some("refreshed-token".to_string())).await;
+            client
+                .set_auth_token(Some("refreshed-token".to_string()))
+                .await;
             return MiddlewareDecision::RetryNow;
         }
         MiddlewareDecision::Continue
@@ -107,7 +109,10 @@ async fn middleware_retry_loop_is_bounded() {
     let client = EchoMirrorClient::new(config).unwrap();
 
     let result = client.get::<TestResponse>("/test").await;
-    assert!(result.is_err(), "an always-retrying middleware must eventually give up");
+    assert!(
+        result.is_err(),
+        "an always-retrying middleware must eventually give up"
+    );
 }
 
 /// Multiple middlewares run in registration order for both hooks.

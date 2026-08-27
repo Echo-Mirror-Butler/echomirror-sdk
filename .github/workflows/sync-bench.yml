@@ -1,0 +1,80 @@
+name: Sync Benchmarks
+
+# criterion.rs benchmarks for echomirror-sync's SSE ingest pipeline
+# (crates/echomirror-sync/benches/, baseline documented in
+# crates/echomirror-sync/benches/BASELINE.md). Kept off the PR path
+# deliberately: criterion needs a stable, dedicated environment to produce
+# meaningful numbers, which a shared PR runner isn't — so this runs on a
+# schedule instead and flags regressions against the previous scheduled run.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * *" # nightly, 05:00 UTC
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  bench:
+    name: Criterion benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: echomirror_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/echomirror_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}-bench
+
+      # criterion's own on-disk history (target/criterion) is the regression
+      # baseline: restoring it before the run and saving it after means each
+      # scheduled run compares against the *previous* scheduled run, and
+      # `criterion` prints "regressed"/"improved" per benchmark on its own.
+      - name: Restore criterion history
+        uses: actions/cache@v4
+        with:
+          path: target/criterion
+          key: sync-criterion-history-${{ github.run_id }}
+          restore-keys: sync-criterion-history-
+
+      - run: cargo bench -p echomirror-sync --features postgres
+
+      - name: Save criterion history
+        uses: actions/cache@v4
+        with:
+          path: target/criterion
+          key: sync-criterion-history-${{ github.run_id }}
+
+      - name: Flag regressions
+        if: always()
+        run: |
+          if grep -rl "Performance has regressed" target/criterion --include="*.html" 2>/dev/null | grep -q .; then
+            echo "::error::One or more echomirror-sync benchmarks regressed against the previous scheduled run — see target/criterion reports."
+            exit 1
+          fi
+
+      - name: Upload criterion report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sync-criterion-report
+          path: target/criterion
+          retention-days: 30
