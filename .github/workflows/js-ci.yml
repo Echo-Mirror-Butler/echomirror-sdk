@@ -28,4 +28,5 @@ jobs:
       # import resolves against its own ambient .d.ts for type-checking,
       # with no dependency on the wasm-pack artifacts existing.
       - run: npm run test --if-present --workspace=packages/js/core --workspace=packages/js/mood --workspace=packages/js/react --workspace=packages/js/stellar
+      - run: npm run test --if-present --workspace=extensions/chrome
       - run: npm run build --workspaces --if-present
