@@ -8,6 +8,10 @@ license.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bench]]
+name = "crypto_xdr"
+harness = false
+
 [dependencies]
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
@@ -17,13 +21,31 @@ serde_json.workspace = true
 sha2.workspace = true
 hex.workspace = true
 
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+wasm-bindgen-test = "0.3"
+# getrandom with js feature is needed when running wasm-bindgen-test in a
+# browser/Node environment and any transitive dep pulls in getrandom.
+getrandom = { version = "0.2", features = ["js"] }
+# web-sys console::log used in wasm_bench timed loops.
+web-sys = { version = "0.3", features = ["console"] }
+
 [features]
 default = ["console_error_panic_hook"]
 console_error_panic_hook = ["dep:console_error_panic_hook"]
+# Enable WASM SIMD128 intrinsics. Activated automatically when wasm-pack
+# passes RUSTFLAGS="-C target-feature=+simd128" — see scripts/build.mjs.
+# Has no effect on non-wasm32 targets (the feature gate is always present,
+# but the actual simd128 intrinsics are behind #[cfg(target_feature = "simd128")]).
+simd = []
 
 [dependencies.console_error_panic_hook]
 version = "0.1"
 optional = true
+
+# ── wasm-opt / wasm-pack profile ─────────────────────────────────────────────
+# The release profile is shared by both the scalar and SIMD builds. The
+# SIMD build additionally passes --enable-simd to wasm-opt in build.mjs.
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-O4"]
