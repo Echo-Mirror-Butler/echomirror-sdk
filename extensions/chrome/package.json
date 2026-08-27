@@ -8,10 +8,8 @@
     "test:watch": "vitest watch --config vitest.config.ts",
     "typecheck": "tsc --noEmit --project tsconfig.json"
   },
-  "dependencies": {
-    "vitest": "^1.6.0"
-  },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
   }
 }
