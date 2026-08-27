@@ -31,6 +31,9 @@ pub struct EchoMirrorConfig {
 
     /// Optional callback to refresh the auth token when it expires
     pub token_refresh_callback: Option<TokenRefreshCallback>,
+
+    /// Circuit breaker configuration for HTTP client
+    pub circuit_breaker: CircuitBreakerConfig,
 }
 
 impl Clone for EchoMirrorConfig {
@@ -44,6 +47,7 @@ impl Clone for EchoMirrorConfig {
             horizon_url: self.horizon_url.clone(),
             friendbot_url: self.friendbot_url.clone(),
             token_refresh_callback: self.token_refresh_callback.clone(),
+            circuit_breaker: self.circuit_breaker.clone(),
         }
     }
 }
@@ -62,7 +66,44 @@ impl std::fmt::Debug for EchoMirrorConfig {
                 "token_refresh_callback",
                 &self.token_refresh_callback.as_ref().map(|_| "<callback>"),
             )
+            .field("circuit_breaker", &self.circuit_breaker)
             .finish()
+    }
+}
+
+/// State of the HTTP client's circuit breaker
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CircuitState {
+    Closed,
+    Open,
+    HalfOpen,
+}
+
+impl Default for CircuitState {
+    fn default() -> Self {
+        CircuitState::Closed
+    }
+}
+
+/// Configuration for the HTTP client circuit breaker
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CircuitBreakerConfig {
+    /// Number of consecutive backend failures required to trip the circuit (default: 5)
+    pub failure_threshold: u32,
+    /// Cooldown duration before transitioning from Open to HalfOpen (default: 30s)
+    pub cooldown: Duration,
+    /// Whether the circuit breaker is enabled (default: true)
+    pub enabled: bool,
+}
+
+impl Default for CircuitBreakerConfig {
+    fn default() -> Self {
+        Self {
+            failure_threshold: 5,
+            cooldown: Duration::from_secs(30),
+            enabled: true,
+        }
     }
 }
 
@@ -107,6 +148,7 @@ impl EchoMirrorConfig {
             horizon_url: None,
             friendbot_url: None,
             token_refresh_callback: None,
+            circuit_breaker: CircuitBreakerConfig::default(),
         }
     }
 
@@ -147,6 +189,26 @@ impl EchoMirrorConfig {
         F: Fn() -> Result<String, Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,
     {
         self.token_refresh_callback = Some(Arc::new(callback));
+        self
+    }
+
+    pub fn with_circuit_breaker(mut self, config: CircuitBreakerConfig) -> Self {
+        self.circuit_breaker = config;
+        self
+    }
+
+    pub fn with_circuit_breaker_threshold(mut self, threshold: u32) -> Self {
+        self.circuit_breaker.failure_threshold = threshold.max(1);
+        self
+    }
+
+    pub fn with_circuit_breaker_cooldown(mut self, cooldown: Duration) -> Self {
+        self.circuit_breaker.cooldown = cooldown;
+        self
+    }
+
+    pub fn with_circuit_breaker_enabled(mut self, enabled: bool) -> Self {
+        self.circuit_breaker.enabled = enabled;
         self
     }
 

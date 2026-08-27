@@ -5,6 +5,7 @@ use crate::{
     metrics::{SyncMetrics, SyncMetricsSnapshot},
     record::{ledger_from_token, map_payment, parse_paging_token, MapOutcome},
     sse::{ledgers_url, open_sse_stream, payments_url, sse_http_client},
+    stream::SyncEventStream,
 };
 use echomirror_core::{EchoMirrorClient, SyncEvent};
 use echomirror_stellar::horizon::{HorizonLedgerRecord, HorizonPaymentRecord};
@@ -114,12 +115,18 @@ impl SyncEngine {
         }
     }
 
-    /// Subscribe to the event stream. Call before `start()`.
+    /// Subscribe to the raw broadcast event stream. Call before `start()`.
     ///
     /// Slow subscribers may observe `RecvError::Lagged` if they fall more than
     /// the channel capacity behind (see `SyncEngineBuilder::channel_capacity`).
     pub fn subscribe(&self) -> broadcast::Receiver<SyncEvent> {
         self.tx.subscribe()
+    }
+
+    /// Subscribe to a managed `SyncEventStream` that automatically detects lag gaps,
+    /// emits `SyncEvent::GapDetected`, and tracks loss metrics.
+    pub fn subscribe_stream(&self) -> SyncEventStream {
+        SyncEventStream::new_with_metrics(self.tx.subscribe(), self.metrics.clone())
     }
 
     /// Start syncing in background Tokio tasks (one per watched account).
@@ -582,6 +589,12 @@ impl SyncEngineBuilder {
 
     /// Capacity of the broadcast channel delivered to subscribers
     /// (default 1024). Slow subscribers lag rather than block the engine.
+    ///
+    /// ## Sizing Guidance
+    /// Choose a capacity proportional to your expected event throughput and consumer latency:
+    /// `capacity >= expected_events_per_sec * max_consumer_processing_pause_secs`.
+    /// For high-volume networks or consumers performing synchronous I/O / DB transactions,
+    /// consider 2048–8192 to prevent lag events during burst traffic.
     pub fn channel_capacity(mut self, capacity: usize) -> Self {
         self.channel_capacity = capacity.max(1);
         self
