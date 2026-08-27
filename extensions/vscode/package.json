@@ -119,6 +119,7 @@
     "build": "npm run esbuild-base -- --sourcemap",
     "watch": "npm run esbuild-base -- --sourcemap --watch",
     "package": "vsce package --no-dependencies",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src"
   },
   "dependencies": {

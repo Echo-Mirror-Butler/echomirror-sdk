@@ -21,49 +21,58 @@ jobs:
   build-vscode:
     name: Build & Package VS Code Extension
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extensions/vscode
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - name: Lint VS Code Extension
-        run: npx eslint extensions/vscode/src
-      - name: Typecheck VS Code Extension
-        run: npx tsc -p extensions/tsconfig.json --noEmit
-      - name: Build VS Code Extension
+          cache-dependency-path: extensions/vscode/package-lock.json
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
         run: npm run build
-        working-directory: extensions/vscode
-      - name: Package VS Code Extension
+      - name: Package (.vsix dry-run)
         run: npm run package
-        working-directory: extensions/vscode
-      - uses: actions/upload-artifact@v4
+      - name: Upload .vsix artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: vscode-extension
+          name: vscode-extension-${{ github.sha }}
           path: extensions/vscode/*.vsix
 
   build-chrome:
     name: Build & Package Chrome Extension
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extensions/chrome
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - name: Lint Chrome Extension
-        run: npx eslint extensions/chrome/src
-      - name: Typecheck Chrome Extension
-        run: npx tsc -p extensions/tsconfig.json --noEmit
-      - name: Package extension
-        run: |
-          cd extensions/chrome
-          zip -r ../chrome-extension.zip .
-      - uses: actions/upload-artifact@v4
+          cache-dependency-path: extensions/chrome/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Package extension (.zip)
+        working-directory: ${{ github.workspace }}/extensions/chrome
+        run: zip -r ../chrome-extension.zip .
+      - name: Upload .zip artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: chrome-extension
+          name: chrome-extension-${{ github.sha }}
           path: extensions/chrome-extension.zip
 
   publish-vscode:
@@ -71,16 +80,22 @@ jobs:
     needs: build-vscode
     if: startsWith(github.ref, 'refs/tags/extension-vscode-v')
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extensions/vscode
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - name: Publish Extension
+          cache-dependency-path: extensions/vscode/package-lock.json
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Build (minified)
+        run: npm run vscode:prepublish
+      - name: Publish to VS Code Marketplace
         run: npx vsce publish --pat ${{ secrets.VSCE_PAT }} --no-dependencies
-        working-directory: extensions/vscode
 
   publish-chrome:
     name: Publish Chrome Extension
@@ -89,15 +104,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Package extension
+      - name: Package extension (.zip)
         run: |
           cd extensions/chrome
           zip -r ../chrome-extension.zip .
       - name: Upload to Chrome Web Store
-        uses: mnao305/chrome-extension-upload@v3.0.0
+        uses: mnao305/chrome-extension-upload@v4.0.1
         with:
           file-path: extensions/chrome-extension.zip
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+

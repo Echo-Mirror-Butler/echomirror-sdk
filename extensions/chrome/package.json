@@ -1,0 +1,19 @@
+{
+  "name": "@echomirror/extension-chrome",
+  "version": "0.1.0",
+  "description": "EchoMirror SDK Chrome extension — Stellar transaction monitor, mood widget injector, and SDK integration preview",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.295",
+    "typescript": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Echo-Mirror-Butler/echomirror-sdk"
+  },
+  "license": "MIT"
+}
