@@ -15,6 +15,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "size-limit": "size-limit"
@@ -29,7 +30,8 @@
   "license": "MIT",
   "devDependencies": {
     "typescript": "*",
-    "vitest": "*"
+    "vitest": "*",
+    "@vitest/coverage-v8": "*"
   },
   "size-limit": [
     {

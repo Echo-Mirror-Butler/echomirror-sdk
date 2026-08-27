@@ -50,6 +50,35 @@ jobs:
           key: ${{ hashFiles('Cargo.lock') }}
       - run: cargo test --workspace
 
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}-coverage
+      - uses: taiki-e/install-action@fcf5432d9f50d67e37ee6e29bdb7a224ff67b4a7 # v2.86.8
+        with:
+          tool: cargo-llvm-cov
+      # Per-crate floors set from each crate's current measured baseline
+      # (docs/COVERAGE.md has the full backlog + rationale). Only the crates
+      # actually exercised by `cargo test` are gated here:
+      # echomirror-ffi is tested via Swift XCTest and echomirror-python via
+      # pytest, neither of which cargo-llvm-cov sees — gating them on a
+      # cargo-only number would be misleading, not a real signal. Each
+      # invocation is separate (not one `--workspace` run) because
+      # `--fail-under-lines` applies to the whole invocation, and a
+      # meaningful per-package floor needs a per-package invocation.
+      - run: cargo llvm-cov -p echomirror-core --fail-under-lines 55
+      - run: cargo llvm-cov -p echomirror-stellar --fail-under-lines 15
+      - run: cargo llvm-cov -p echomirror-sync --fail-under-lines 70
+      - run: cargo llvm-cov -p echomirror-wasm --fail-under-lines 55
+
   test-sync-postgres:
     name: Test (echomirror-sync + PostgreSQL)
     runs-on: ubuntu-latest

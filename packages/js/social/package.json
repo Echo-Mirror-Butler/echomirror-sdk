@@ -15,6 +15,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "size-limit": "size-limit"
@@ -45,6 +46,7 @@
   "devDependencies": {
     "typescript": "*",
     "vitest": "*",
+    "@vitest/coverage-v8": "*",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0"
   },

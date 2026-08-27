@@ -21,6 +21,9 @@ packages/js/*/src/*.js
 packages/js/*/src/*.d.ts
 !packages/js/*/src/*.test.js
 
+# vitest --coverage output
+packages/js/*/coverage/
+
 # wasm-pack build output (packages/js/wasm), via `npm run build:wasm`
 packages/js/wasm/wasm-web/
 packages/js/wasm/wasm-node/

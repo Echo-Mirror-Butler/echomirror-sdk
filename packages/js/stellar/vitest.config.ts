@@ -5,5 +5,13 @@ export default defineConfig({
     // Playwright owns e2e/ — keep vitest out of it. tests/integration/ is
     // included but self-skips unless STELLAR_INTEGRATION=1 is set.
     exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**'],
+      thresholds: {
+        lines: 70,
+        statements: 70,
+      },
+    },
   },
 })
