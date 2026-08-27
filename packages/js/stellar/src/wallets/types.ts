@@ -1,6 +1,6 @@
 import type { StellarNetworkId } from '../networks'
 
-export type WalletId = 'freighter' | 'albedo' | 'xbull'
+export type WalletId = 'freighter' | 'albedo' | 'xbull' | 'ledger'
 
 export interface WalletConnection {
   walletId: WalletId
