@@ -1,7 +1,7 @@
 {
-  "name": "@echomirror/stellar",
-  "version": "0.2.0",
-  "description": "EchoMirror SDK Stellar integration — multi-wallet (Freighter, Albedo, xBull), transaction builders, and typed errors",
+  "name": "@echomirror/social",
+  "version": "0.1.0",
+  "description": "EchoMirror SDK social module — global feed, leaderboard, and real-time updates",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -14,43 +14,47 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
-    "test:integration": "STELLAR_INTEGRATION=1 vitest run tests/integration --testTimeout 120000",
-    "pretest:e2e": "node e2e/scripts/fetch-freighter.mjs",
-    "test:e2e": "playwright test",
+    "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "size-limit": "size-limit"
   },
   "keywords": [
     "echomirror",
-    "stellar",
-    "blockchain",
-    "freighter",
-    "albedo",
-    "xbull",
-    "wallet",
-    "payments"
+    "social",
+    "feed",
+    "leaderboard",
+    "wellness"
   ],
   "license": "MIT",
   "dependencies": {
-    "@albedo-link/intent": "^0.12.0",
-    "@echomirror/core": "*",
-    "@stellar/freighter-api": "^6.0.0",
-    "@stellar/stellar-sdk": "^13.0.0"
+    "@echomirror/core": "*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@playwright/test": "1.61.1",
-    "@types/node": "^22.0.0",
-    "esbuild": "^0.28.1",
     "typescript": "*",
-    "vitest": "*"
+    "vitest": "*",
+    "@vitest/coverage-v8": "*",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
   },
   "size-limit": [
     {
-      "name": "@echomirror/stellar",
+      "name": "@echomirror/social",
       "path": "dist/index.js",
-      "limit": "220 KB"
+      "limit": "1.7 KB"
     }
   ]
 }

@@ -29,6 +29,7 @@ import { EchoMirrorClient, EchoMirrorError } from '../src'
 import type { EchoMirrorClient as CoreClient } from '@echomirror/core'
 import { getMoodStreak, getMoodSummary, logMood } from '../../mood/src/index'
 import { getBalance, submitTransaction } from '../../stellar/src/echomirror'
+import { GlobalFeedClient } from '../../social/src/feed'
 
 type Spec = {
   operations: Array<{
@@ -114,6 +115,12 @@ describe.skipIf(!enabled)('EchoMirror contract (JS binding)', () => {
   it('get_social_feed matches the contract', async () => {
     const feed = await client.request('GET', '/social/feed?limit=10')
     assertWire(feed, op('get_social_feed').assertions, 'get_social_feed')
+  })
+
+  it('get_social_feed_since matches the contract (backfill after a WS gap)', async () => {
+    const feedClient = new GlobalFeedClient(client)
+    const feed = await feedClient.fetchSince('feed-001', { limit: 50 })
+    assertWire(feed, op('get_social_feed_since').assertions, 'get_social_feed_since')
   })
 
   it('get_leaderboard matches the contract at the transport level', async () => {

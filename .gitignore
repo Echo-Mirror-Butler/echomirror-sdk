@@ -8,12 +8,25 @@ npm-debug.log*
 /target/
 Cargo.lock
 
+# Python (crates/echomirror-python), created by scripts/bootstrap.sh
+crates/echomirror-python/.venv/
+crates/echomirror-python/**/__pycache__/
+crates/echomirror-python/**/*.so
+crates/echomirror-python/.pytest_cache/
+
 # JS/TS build output
 dist/
 packages/js/*/dist/
 packages/js/*/src/*.js
 packages/js/*/src/*.d.ts
 !packages/js/*/src/*.test.js
+
+# vitest --coverage output
+packages/js/*/coverage/
+
+# wasm-pack build output (packages/js/wasm), via `npm run build:wasm`
+packages/js/wasm/wasm-web/
+packages/js/wasm/wasm-node/
 
 # Flutter/Dart
 packages/flutter/.dart_tool/
@@ -39,3 +52,7 @@ packages/js/stellar/e2e/.freighter/
 packages/js/stellar/e2e/app/bundle.js
 packages/js/stellar/test-results/
 packages/js/stellar/playwright-report/
+
+# VS Code extension build output
+extensions/vscode/out/
+contract-tests/runners/**/__pycache__/

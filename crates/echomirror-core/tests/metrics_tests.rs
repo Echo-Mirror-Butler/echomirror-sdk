@@ -259,6 +259,12 @@ async fn test_metrics_snapshot_calculations() {
         server_errors: 3,
         client_errors: 2,
         auth_expired_errors: 2,
+        circuit_state: Default::default(),
+        circuit_trips: 0,
+        circuit_open_rejections: 0,
+        cache_hits: 0,
+        cache_misses: 0,
+        cache_evictions: 0,
     };
 
     assert_eq!(snapshot.success_rate(), 95.0);

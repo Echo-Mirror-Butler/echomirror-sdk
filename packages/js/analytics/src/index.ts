@@ -1,7 +1,14 @@
 export { AnalyticsClient } from './client.js'
-export { aggregateMood, aggregateMoodThisWeek } from './aggregate.js'
+export {
+  DEFAULT_EPSILON,
+  DEFAULT_MIN_COHORT_SIZE,
+  aggregateMood,
+  aggregateMoodThisWeek,
+  sampleLaplaceNoise,
+} from './aggregate.js'
 export { createWebhookTransport } from './transport.js'
 export { MemoryStorage } from './storage.js'
+export { readAuditRecords } from './storage.js'
 export type {
   AIReflectionViewedProperties,
   AnalyticsBatch,
@@ -11,6 +18,7 @@ export type {
   AnalyticsEventName,
   AnalyticsStorage,
   AnalyticsTransport,
+  DifferentialPrivacyOptions,
   EventProperties,
   FriendFollowedProperties,
   GiftSentProperties,
@@ -25,7 +33,10 @@ export type {
   MoodScore,
   MoodTagCount,
   PrivacyOptions,
+  PurgeAuditRecord,
+  PurgeResult,
   StreakMilestoneReachedProperties,
   WalletConnectedProperties,
 } from './types.js'
 export type { WebhookTransportOptions } from './transport.js'
+

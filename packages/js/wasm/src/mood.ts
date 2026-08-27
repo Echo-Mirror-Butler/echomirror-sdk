@@ -1,4 +1,5 @@
 import { assertReady, raw } from './load.js'
+import type { MoodBuffer as RawMoodBuffer } from '#wasm-binding'
 import { toWasmError } from './errors.js'
 
 /**
@@ -29,7 +30,7 @@ export function verifyMoodScore(score: number): boolean {
  * // freed automatically at the end of this scope
  */
 export class MoodBuffer implements Disposable {
-  #inner: raw.MoodBuffer
+  #inner: RawMoodBuffer
 
   constructor() {
     assertReady('MoodBuffer')

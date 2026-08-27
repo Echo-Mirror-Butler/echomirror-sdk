@@ -1,0 +1,39 @@
+name: VS Code Extension CI
+
+# Exercises the VS Code extension's command logic against a mocked VS Code /
+# SDK API. See extensions/vscode/src/test/extension.test.ts and issue #137.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'extensions/vscode/**'
+      - '.github/workflows/vscode-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'extensions/vscode/**'
+      - '.github/workflows/vscode-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  vscode-checks:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        working-directory: extensions/vscode
+        run: npm run lint
+      - name: Test
+        working-directory: extensions/vscode
+        run: npm run test
+      - name: Build
+        working-directory: extensions/vscode
+        run: npm run build

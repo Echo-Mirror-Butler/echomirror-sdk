@@ -1,4 +1,5 @@
 import { assertReady, raw } from './load.js'
+import type { StellarTxBytes as RawStellarTxBytes } from '#wasm-binding'
 import { toWasmError } from './errors.js'
 
 /** SHA-256 hash of a Stellar public key, as lowercase hex — never store the raw key. */
@@ -39,7 +40,7 @@ export function encodeMemo(text: string): string {
  * const hash = tx.sha256()
  */
 export class StellarTxBytes implements Disposable {
-  #inner: raw.StellarTxBytes
+  #inner: RawStellarTxBytes
 
   constructor(xdrBase64: string) {
     assertReady('StellarTxBytes')
