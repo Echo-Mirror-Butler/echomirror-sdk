@@ -1,0 +1,42 @@
+.section { padding: 6rem 0; background: var(--echo-surface-soft); }
+.heading { max-width: 680px; margin-bottom: 2rem; }
+.heading h2 { margin: .45rem 0 .75rem; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.04em; }
+.heading p { margin: 0; color: var(--echo-muted); font-size: 1.08rem; }
+.eyebrow { color: var(--ifm-color-primary); font: 700 .75rem/1 var(--echo-mono); letter-spacing: .12em; text-transform: uppercase; }
+.playground { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); border: 1px solid var(--echo-border); border-radius: 20px; overflow: hidden; background: var(--echo-surface); box-shadow: 0 24px 70px rgba(20, 40, 60, .10); }
+.editorPanel, .previewPanel { min-width: 0; }
+.editorPanel { padding: 1.5rem; border-right: 1px solid var(--echo-border); }
+.panelHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--echo-ink); font: 700 .78rem/1 var(--echo-mono); letter-spacing: .04em; text-transform: uppercase; }
+.liveLabel, .previewDot { color: var(--echo-muted); font-size: .68rem; }
+.liveLabel span { display: inline-block; width: .5rem; height: .5rem; margin-right: .35rem; border-radius: 50%; background: #43c77b; box-shadow: 0 0 0 4px rgba(67,199,123,.14); }
+.tabs { display: flex; gap: .3rem; margin: 1.6rem 0 .75rem; border-bottom: 1px solid var(--echo-border); }
+.tab { border: 0; border-bottom: 2px solid transparent; padding: .6rem .8rem; background: transparent; color: var(--echo-muted); font: 700 .78rem var(--echo-mono); cursor: pointer; }
+.tab[aria-selected='true'] { border-bottom-color: var(--ifm-color-primary); color: var(--ifm-color-primary); }
+.command { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1rem; border: 1px solid var(--echo-border); border-radius: 10px; background: var(--echo-code); color: var(--echo-code-ink); }
+.command code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: transparent; color: inherit; }
+.copyButton { border: 1px solid color-mix(in srgb, var(--echo-code-ink) 35%, transparent); border-radius: 6px; padding: .3rem .55rem; background: transparent; color: inherit; font-size: .7rem; cursor: pointer; }
+.editorLabel { display: block; margin: 1.5rem 0 .55rem; color: var(--echo-muted); font-size: .78rem; font-weight: 700; }
+.editor { display: block; width: 100%; min-height: 190px; resize: vertical; border: 1px solid var(--echo-border); border-radius: 10px; padding: 1rem; background: var(--echo-editor); color: var(--echo-editor-ink); font: .82rem/1.6 var(--echo-mono); }
+.editor:focus, .tab:focus-visible, .copyButton:focus-visible { outline: 3px solid var(--ifm-color-primary-light); outline-offset: 2px; }
+.hint { margin: .65rem 0 0; color: var(--echo-muted); font-size: .76rem; line-height: 1.5; }
+.previewPanel { display: flex; flex-direction: column; background: var(--echo-preview); }
+.previewPanel > .panelHeader { padding: 1.5rem 1.5rem 0; }
+.previewStage { display: grid; flex: 1; place-items: center; min-height: 390px; padding: 2rem; }
+.mockApp { position: relative; width: min(100%, 370px); min-height: 270px; overflow: hidden; border: 1px solid var(--echo-border); border-radius: 14px; background: var(--echo-surface); box-shadow: 0 15px 40px rgba(20, 40, 60, .13); }
+.mockNav { display: flex; align-items: center; gap: .55rem; padding: .85rem 1rem; border-bottom: 1px solid var(--echo-border); color: var(--echo-muted); font-size: .7rem; }
+.mockMark { display: grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 5px; background: var(--ifm-color-primary); color: white; font: 700 .75rem var(--echo-mono); }
+.mockAvatar { margin-left: auto; padding: .25rem .35rem; border-radius: 50%; background: var(--echo-accent); color: var(--echo-accent-ink); font-size: .6rem; }
+.mockContent { display: grid; gap: .5rem; padding: 2rem 1.2rem; color: var(--echo-ink); }
+.mockKicker { color: var(--ifm-color-primary); font: 700 .6rem var(--echo-mono); letter-spacing: .1em; }
+.mockContent strong { font-size: 1.35rem; }
+.moodOptions { font-size: 1.5rem; letter-spacing: .1rem; }
+.widget { position: absolute; right: 1rem; bottom: 1rem; width: 190px; padding: .9rem; border: 1px solid color-mix(in srgb, var(--ifm-color-primary) 35%, var(--echo-border)); border-radius: 12px; background: var(--echo-widget); box-shadow: 0 12px 30px rgba(20, 40, 60, .17); color: var(--echo-ink); }
+.widgetTop { display: flex; align-items: center; gap: .35rem; margin-bottom: .8rem; color: var(--echo-muted); font: 700 .58rem var(--echo-mono); text-transform: uppercase; }
+.widgetTop span:last-child { margin-left: auto; font-size: .9rem; font-weight: 400; }
+.widgetIcon { color: var(--ifm-color-primary); font-size: 1rem; }
+.widget strong { font-size: .9rem; }
+.widget p { margin: .25rem 0 .7rem; color: var(--echo-muted); font-size: .7rem; }
+.widget button { width: 100%; border: 0; border-radius: 6px; padding: .5rem; background: var(--ifm-color-primary); color: #fff; font-size: .68rem; font-weight: 700; cursor: pointer; }
+.previewFooter { display: flex; flex-wrap: wrap; gap: .8rem; padding: 1rem 1.5rem; border-top: 1px solid var(--echo-border); color: var(--echo-muted); font: .65rem var(--echo-mono); }
+@media (max-width: 800px) { .playground { grid-template-columns: 1fr; } .editorPanel { border-right: 0; border-bottom: 1px solid var(--echo-border); } }
+@media (max-width: 480px) { .section { padding: 4rem 0; } .editorPanel { padding: 1rem; } .previewStage { padding: 1rem; } .widget { right: .65rem; bottom: .65rem; } }
