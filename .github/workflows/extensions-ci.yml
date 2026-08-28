@@ -12,6 +12,9 @@ on:
     paths:
       - 'extensions/**'
       - '.github/workflows/extensions-ci.yml'
+      - '.github/workflows/vscode-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
   push:
     tags:
       - 'extension-vscode-v*'
@@ -21,26 +24,25 @@ jobs:
   build-vscode:
     name: Build & Package VS Code Extension
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: extensions/vscode
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: extensions/vscode/package-lock.json
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts
+      # The extension imports @echomirror/core and @echomirror/mood, whose
+      # `exports` point at built dist/ output — build them before typechecking,
+      # bundling, and packaging the extension.
+      - run: npm run build --workspace=packages/js/core --workspace=packages/js/mood
       - name: Lint
-        run: npm run lint
+        run: npm run lint -w extensions/vscode
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck -w extensions/vscode
       - name: Build
-        run: npm run build
+        run: npm run build -w extensions/vscode
       - name: Package (.vsix dry-run)
-        run: npm run package
+        run: npm run package -w extensions/vscode
       - name: Upload .vsix artifact
         uses: actions/upload-artifact@v4
         with:
@@ -50,22 +52,17 @@ jobs:
   build-chrome:
     name: Build & Package Chrome Extension
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: extensions/chrome
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: extensions/chrome/package-lock.json
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
       - name: Lint
-        run: npm run lint
+        run: npm run lint -w extensions/chrome
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck -w extensions/chrome
       - name: Package extension (.zip)
         working-directory: ${{ github.workspace }}/extensions/chrome
         run: zip -r ../chrome-extension.zip .
@@ -80,22 +77,19 @@ jobs:
     needs: build-vscode
     if: startsWith(github.ref, 'refs/tags/extension-vscode-v')
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: extensions/vscode
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: extensions/vscode/package-lock.json
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts
+      - run: npm run build --workspace=packages/js/core --workspace=packages/js/mood
       - name: Build (minified)
-        run: npm run vscode:prepublish
+        run: npm run vscode:prepublish -w extensions/vscode
       - name: Publish to VS Code Marketplace
         run: npx vsce publish --pat ${{ secrets.VSCE_PAT }} --no-dependencies
+        working-directory: extensions/vscode
 
   publish-chrome:
     name: Publish Chrome Extension
@@ -116,4 +110,3 @@ jobs:
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
-

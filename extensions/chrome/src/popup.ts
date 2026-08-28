@@ -141,7 +141,7 @@ function injectMoodWidget() {
   })
 
   form.querySelector('#em-log')!.addEventListener('click', () => {
-    ;(form.querySelector('#em-result') as HTMLElement).textContent = '✅ Mood logged!'
+    (form.querySelector('#em-result') as HTMLElement).textContent = '✅ Mood logged!'
     setTimeout(() => { form.style.display = 'none' }, 1200)
   })
 

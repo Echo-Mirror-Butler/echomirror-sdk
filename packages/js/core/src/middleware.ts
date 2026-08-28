@@ -108,7 +108,7 @@ function calculateBackoff(attempt: number, baseMs: number, maxMs: number): numbe
   return Math.max(0, cappedDelay + jitter)
 }
 
-function sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 

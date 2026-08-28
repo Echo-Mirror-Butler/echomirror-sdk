@@ -11,7 +11,7 @@
     "outDir": "out",
     "sourceMap": true,
     "declaration": false,
-    "composite": true
+    "composite": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "out"]

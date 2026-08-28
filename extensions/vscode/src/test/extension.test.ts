@@ -19,13 +19,13 @@ const mocks = vi.hoisted(() => {
   }
   const secrets = {
     store: vi.fn(async () => {}),
-    get: vi.fn(async () => undefined),
+    get: vi.fn(async () => undefined as unknown),
     delete: vi.fn(async () => {}),
   }
   const configGet = vi.fn()
   const withProgress = vi.fn(async (_opts: unknown, task: (...a: unknown[]) => unknown) => task())
-  const showInputBox = vi.fn(async () => undefined)
-  const showQuickPick = vi.fn(async () => undefined)
+  const showInputBox = vi.fn(async () => undefined as unknown)
+  const showQuickPick = vi.fn(async () => undefined as unknown)
   const showInformationMessage = vi.fn()
   const showErrorMessage = vi.fn()
   const executeCommand = vi.fn(async () => undefined)
@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => {
     onDidDispose: vi.fn(),
   }))
   const onDidChangeConfiguration = vi.fn()
+  const statusBarCalls = { count: 0 }
   class SnippetString {
     value: string
     constructor(value: string) {
@@ -64,15 +65,17 @@ const mocks = vi.hoisted(() => {
     webview,
     createWebviewPanel,
     onDidChangeConfiguration,
+    statusBarCalls,
     SnippetString,
   }
 })
 
 vi.mock('vscode', () => {
-  let statusBarCalls = 0
   return {
     window: {
-      createStatusBarItem: vi.fn(() => (statusBarCalls++ === 0 ? mocks.statusBar : mocks.moodStatusBar)),
+      createStatusBarItem: vi.fn(() =>
+        mocks.statusBarCalls.count++ === 0 ? mocks.statusBar : mocks.moodStatusBar,
+      ),
       showInputBox: mocks.showInputBox,
       showQuickPick: mocks.showQuickPick,
       showInformationMessage: mocks.showInformationMessage,
@@ -122,6 +125,7 @@ function makeContext(): any {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.statusBarCalls.count = 0
   setConfig({ network: 'testnet', statusBarPublicKey: '', showStatusBar: false })
   mocks.secrets.get.mockResolvedValue(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -188,6 +192,7 @@ describe('fundTestnetCommand', () => {
 
 describe('checkBalanceCommand', () => {
   it('prompts for a key when none is configured, then shows balance', async () => {
+    ext.activate(makeContext())
     setConfig({ statusBarPublicKey: '' })
     mocks.showInputBox.mockResolvedValue('G'.padEnd(56, 'A'))
     await ext.checkBalanceCommand()
@@ -196,6 +201,7 @@ describe('checkBalanceCommand', () => {
   })
 
   it('uses the configured key directly', async () => {
+    ext.activate(makeContext())
     setConfig({ statusBarPublicKey: 'G'.padEnd(56, 'B'), network: 'testnet' })
     await ext.checkBalanceCommand()
     expect(mocks.showInputBox).not.toHaveBeenCalled()

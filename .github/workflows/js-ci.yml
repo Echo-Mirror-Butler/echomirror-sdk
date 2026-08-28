@@ -18,7 +18,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint --workspaces --if-present
-      - run: npm run build -w packages/js/core
+      - run: npm run build --workspace=packages/js/core --workspace=packages/js/mood
       - run: npm run typecheck --workspaces --if-present
       # @echomirror/wasm's test suite runs against its compiled wasm-pack
       # output (wasm-web/, wasm-node/), which needs a Rust toolchain to
