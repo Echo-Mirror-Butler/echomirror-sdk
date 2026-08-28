@@ -10,6 +10,7 @@ autobenches = false
 [features]
 default = []
 postgres = ["dep:sqlx"]
+redis = ["dep:redis"]
 
 [dependencies]
 echomirror-core = { path = "../echomirror-core" }
@@ -28,6 +29,7 @@ eventsource-stream.workspace = true
 tokio-util.workspace = true
 tracing.workspace = true
 sqlx = { workspace = true, optional = true }
+redis = { workspace = true, optional = true }
 
 [dev-dependencies]
 wiremock.workspace = true

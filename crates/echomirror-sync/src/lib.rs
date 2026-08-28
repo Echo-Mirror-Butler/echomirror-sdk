@@ -10,6 +10,9 @@ pub mod stream;
 #[cfg(feature = "postgres")]
 pub mod postgres;
 
+#[cfg(feature = "redis")]
+pub mod redis;
+
 pub use backoff::Backoff;
 pub use cursor::{CursorStore, InMemoryCursorStore, SyncCursor};
 pub use engine::{SyncEngine, SyncEngineBuilder};
@@ -19,3 +22,6 @@ pub use stream::SyncEventStream;
 
 #[cfg(feature = "postgres")]
 pub use postgres::PgCursorStore;
+
+#[cfg(feature = "redis")]
+pub use redis::RedisCursorStore;

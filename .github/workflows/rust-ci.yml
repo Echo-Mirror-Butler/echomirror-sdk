@@ -108,6 +108,31 @@ jobs:
           key: ${{ hashFiles('Cargo.lock') }}-postgres
       - run: cargo test -p echomirror-sync --features postgres
 
+  test-sync-redis:
+    name: Test (echomirror-sync + Redis)
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      REDIS_URL: redis://127.0.0.1:6379
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}-redis
+      - run: cargo test -p echomirror-sync --features redis
+
   wasm-build:
     name: WASM Build (@echomirror/wasm)
     runs-on: ubuntu-latest
