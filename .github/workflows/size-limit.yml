@@ -1,48 +1,21 @@
 name: Size Limit
 
-# Budgets the client-bundled JS packages (see each package's "size-limit"
-# field in package.json) and comments the size delta on every PR that
-# touches a budgeted package. Fails the job — not just the comment — when a
-# package goes over its budget.
-#
-# @echomirror/analytics is left unbudgeted: it has no React/DOM dependency,
-# and its exports (a webhook transport and mood-aggregation helpers) run in
-# backend jobs, not browser pages. If it ever grows a browser-facing entry
-# point, it should get a budget too — see CONTRIBUTING.md.
-#
-# @echomirror/wasm has its own dedicated size-limit-wasm job below because
-# it requires a Rust/wasm-pack build step before the standard JS size-limit
-# check can run. Its raw .wasm binary size is also tracked separately via
-# scripts/report-size.mjs.
-#
-# This workflow only runs on `pull_request`, *not* on `push` to main.
-# `andresz1/size-limit-action` only operates inside a `pull_request` event —
-# it reads `github.context.payload.pull_request` to compute the diff and
-# errors with "No PR found. Only pull_request workflows are supported." when
-# invoked from a plain `push`. The earlier design tried to record a baseline
-# from push-to-main runs, but the action has no code path that can do that,
-# so every push-triggered run failed immediately and no baseline was ever
-# established. The push trigger is removed entirely below.
-#
-# Baseline mechanism: on each PR the action compares the measured size
-# against the base branch's most recent size-limit commit status (the status
-# it recorded on the previous PR run). The very first PR opened against a
-# base branch that has never run this workflow shows a first-run snapshot
-# rather than a delta; subsequent PRs then show a real, meaningful delta.
-# To bootstrap an initial baseline for `main`, open and merge any trivial PR
-# that touches a budgeted package — its size-limit status becomes the
-# baseline that later PRs diff against.
+# Enforces the gzip transfer budgets declared in each package's `size-limit`
+# configuration. The prior third-party action checked out and rebuilt the PR
+# base branch from inside an npm workspace package, so unrelated base-branch
+# failures made every size check red. Build the PR head once and inspect the
+# generated artifacts directly instead.
 
 on:
   pull_request:
     branches: [main]
     paths:
       - 'packages/js/**'
+      - 'scripts/check-size-limit.mjs'
       - '.github/workflows/size-limit.yml'
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   size-limit-js:
@@ -59,27 +32,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      # mood, react, social, and stellar all depend on @echomirror/core;
-      # size-limit bundles that dependency's compiled dist/ output, so it
-      # has to exist before size-limit runs against a dependent package.
-      #
-      # We build every package ourselves (rather than letting
-      # size-limit-action's own build step run) because that action
-      # auto-detects npm workspaces and invokes
-      # `npm run build --workspace=@echomirror/<name>` from inside
-      # `directory:`, which fails with "No workspaces found" — that flag
-      # only resolves from the workspace root. skip_step: build sidesteps
-      # it entirely; we hand it an already-built dist/.
       - run: npm run build -w packages/js/core
       - if: matrix.package != 'core'
         run: npm run build -w packages/js/${{ matrix.package }}
-      - name: Size Limit
-        uses: andresz1/size-limit-action@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          directory: packages/js/${{ matrix.package }}
-          skip_step: build
-          package_manager: npm
+      - name: Enforce gzip size budget
+        run: node scripts/check-size-limit.mjs packages/js/${{ matrix.package }}
 
   size-limit-wasm:
     name: Size Limit (wasm)
@@ -99,14 +56,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:wasm -w packages/js/wasm
-      # build:wasm only compiles the Rust/wasm-pack side; dist/index.js
-      # (what size-limit actually measures) comes from the separate tsc
-      # build step, same as every other JS package.
       - run: npm run build -w packages/js/wasm
-      - name: Size Limit
-        uses: andresz1/size-limit-action@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          directory: packages/js/wasm
-          skip_step: build
-          package_manager: npm
+      - name: Enforce gzip size budget
+        run: node scripts/check-size-limit.mjs packages/js/wasm

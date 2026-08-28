@@ -90,8 +90,11 @@ for (const { wasmPackTarget, outDir, simd } of variants) {
       outDir,
       '--out-name',
       'echomirror_wasm',
-      ...(simd ? ['--features', 'simd'] : []),
+      // wasm-pack 0.15 parses the variadic --features option greedily when
+      // it comes before --release, forwarding --release to cargo twice.
+      // Put profile flags first so Cargo receives each flag exactly once.
       ...profileArgs,
+      ...(simd ? ['--features', 'simd'] : []),
     ],
     { stdio: 'inherit', env },
   )

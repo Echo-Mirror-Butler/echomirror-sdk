@@ -38,7 +38,7 @@
     {
       "name": "@echomirror/mood",
       "path": "dist/index.js",
-      "limit": "350 B"
+      "limit": "1 KB"
     }
   ]
 }

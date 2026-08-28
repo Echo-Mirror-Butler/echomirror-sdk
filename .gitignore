@@ -1,4 +1,4 @@
-﻿# Node
+# Node
 node_modules/
 package-lock.json
 npm-debug.log*
@@ -27,6 +27,8 @@ packages/js/*/coverage/
 # wasm-pack build output (packages/js/wasm), via `npm run build:wasm`
 packages/js/wasm/wasm-web/
 packages/js/wasm/wasm-node/
+packages/js/wasm/wasm-web-simd/
+packages/js/wasm/wasm-node-simd/
 
 # Flutter/Dart
 packages/flutter/.dart_tool/
