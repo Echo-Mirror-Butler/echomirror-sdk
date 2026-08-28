@@ -23,8 +23,8 @@ function makeRawEvent(overrides: Record<string, unknown> = {}): rpc.EventRespons
     ledger: 100,
     id: 'evt-1',
     pagingToken: 'tok-1',
-    topic: 'dG9waWM=',
-    value: 'dmFsdWU=',
+    topic: [{ toXDR: () => 'dG9waWM=' }],
+    value: { toXDR: () => 'dmFsdWU=' },
     ...overrides,
   } as unknown as rpc.EventResponse
 }
@@ -51,8 +51,10 @@ describe('getContractEvents', () => {
     expect(result.events).toHaveLength(1)
     const evt = result.events[0]
     expect(evt.contractId).toBe('C CONTRACT')
-    expect(evt.topicScVal).toEqual({ decoded: 'dG9waWM=' })
-    expect(evt.valueScVal).toEqual({ decoded: 'dmFsdWU=' })
+    expect(evt.topic).toBe('dG9waWM=')
+    expect(evt.topicScVal).toEqual({ toXDR: expect.any(Function) })
+    expect(evt.value).toBe('dmFsdWU=')
+    expect(evt.valueScVal).toEqual({ toXDR: expect.any(Function) })
     expect(result.cursor).toBe('tok-1')
     expect(result.latestLedger).toBe(200)
   })
@@ -73,7 +75,7 @@ describe('getContractEvents', () => {
 
     expect(server.getEvents).toHaveBeenCalledWith({
       startLedger: 42,
-      startCursor: 'tok-prev',
+      cursor: 'tok-prev',
       limit: 25,
       filters: [{ contractIds: ['C X'], topics: [['ABC']] }],
     })

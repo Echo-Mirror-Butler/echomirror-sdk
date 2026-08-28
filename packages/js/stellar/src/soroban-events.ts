@@ -67,26 +67,22 @@ export interface GetContractEventsResult {
   latestLedger: number
 }
 
-function decodeScVal(raw: string): xdr.ScVal | null {
-  try {
-    return xdr.ScVal.fromXDR(raw, 'base64')
-  } catch {
-    return null
-  }
+function scValToBase64(v: xdr.ScVal): string {
+  return v.toXDR('base64')
 }
 
-function mapEvent(ev: rpc.EventResponse): SorobanEvent {
+function mapEvent(ev: rpc.Api.EventResponse): SorobanEvent {
   return {
     type: ev.type,
-    contractId: ev.contractId ?? '',
+    contractId: ev.contractId?.toString() ?? '',
     ledger: ev.ledger,
     ledgerClosedAt: ev.ledgerClosedAt,
     id: ev.id,
     pagingToken: ev.pagingToken,
-    topic: ev.topic,
-    topicScVal: decodeScVal(ev.topic),
-    value: ev.value,
-    valueScVal: decodeScVal(ev.value),
+    topic: ev.topic.map(scValToBase64).join(','),
+    topicScVal: ev.topic[0] ?? null,
+    value: ev.value.toXDR('base64'),
+    valueScVal: ev.value,
   }
 }
 
@@ -108,7 +104,7 @@ export async function getContractEvents(
 
   const response = await server.getEvents({
     startLedger: options.startLedger,
-    startCursor: options.cursor,
+    cursor: options.cursor,
     limit: options.limit,
     filters: [
       {
@@ -133,6 +129,8 @@ export interface SubscribeContractEventsOptions {
   topic?: string | string[]
   /** Ledger to begin scanning from the first time the subscription polls. */
   startLedger?: number
+  /** Resume token from a previous query/subscription; poll continues after it. */
+  cursor?: string
   /** Milliseconds between polls. Defaults to 5000. */
   pollIntervalMs?: number
   /** Called once per newly-seen event, in ledger order. */
