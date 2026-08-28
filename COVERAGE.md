@@ -78,7 +78,8 @@ Python (`crates/echomirror-python`, via pytest) and Flutter/Dart
 - **Python**: `pytest-cov` with `--cov-fail-under=50` in `python-ci.yml`.
   Measured via `pytest --cov=echomirror --cov-report=term-missing`, with an
   HTML report uploaded from `htmlcov/`.
-- **Flutter**: `flutter test --coverage` in `flutter-ci.yml`, with a 40%
-  line-coverage threshold enforced on the `lcov.info` output.
+- **Flutter**: `flutter test --coverage` in `flutter-ci.yml`, with an 8%
+  line-coverage threshold enforced on the aggregate `lcov.info` output. This
+  is the current measured baseline (15 covered lines out of 178).
 
 See the per-ecosystem CI workflows for exact commands and thresholds.
