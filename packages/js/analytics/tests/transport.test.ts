@@ -4,13 +4,11 @@ import type { AnalyticsBatch } from '../src'
 
 describe('createWebhookTransport', () => {
   it('exports the documented vendor-neutral batch JSON', async () => {
-    const fetch = vi
-      .fn<Parameters<typeof globalThis.fetch>, ReturnType<typeof globalThis.fetch>>()
-      .mockResolvedValue(new Response(null, { status: 202 }))
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 202 }))
     const transport = createWebhookTransport({
       url: 'https://analytics.example.test/events',
       headers: { authorization: 'Bearer test' },
-      fetch,
+      fetch: fetchMock as unknown as typeof globalThis.fetch,
     })
     const batch: AnalyticsBatch = {
       schemaVersion: 1,
@@ -21,7 +19,7 @@ describe('createWebhookTransport', () => {
 
     await transport(batch)
 
-    expect(fetch).toHaveBeenCalledWith('https://analytics.example.test/events', {
+    expect(fetchMock).toHaveBeenCalledWith('https://analytics.example.test/events', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

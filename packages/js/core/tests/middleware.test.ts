@@ -28,8 +28,7 @@ describe('EchoMirrorClient middleware', () => {
         return 'continue'
       },
     }
-    const fetch = vi
-      .fn<Parameters<typeof globalThis.fetch>, ReturnType<typeof globalThis.fetch>>()
+    const fetch = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ message: 'temporarily unavailable' }), { status: 503 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
     vi.stubGlobal('fetch', fetch)
@@ -50,8 +49,7 @@ describe('EchoMirrorClient middleware', () => {
         return calls === 1 ? 'retry-now' : 'continue'
       },
     }
-    const fetch = vi
-      .fn<Parameters<typeof globalThis.fetch>, ReturnType<typeof globalThis.fetch>>()
+    const fetch = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ message: 'unauthorized' }), { status: 401 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
     vi.stubGlobal('fetch', fetch)
@@ -63,8 +61,7 @@ describe('EchoMirrorClient middleware', () => {
   })
 
   it('returns undefined for a successful 204 response', async () => {
-    const fetch = vi
-      .fn<Parameters<typeof globalThis.fetch>, ReturnType<typeof globalThis.fetch>>()
+    const fetch = vi.fn()
       .mockResolvedValue(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetch)
 
