@@ -8,7 +8,7 @@ let storedValues: StoredValues = {}
 export const chromeMock = {
   runtime: {
     onMessage: {
-      addListener: vi.fn<[listener: MessageListener], void>(),
+      addListener: vi.fn<(listener: MessageListener) => void>(),
     },
     sendMessage: vi.fn(),
   },

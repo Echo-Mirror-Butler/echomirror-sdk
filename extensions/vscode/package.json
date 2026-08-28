@@ -131,9 +131,9 @@
     "@types/vscode": "^1.88.0",
     "@types/node": "^20.0.0",
     "typescript": "^5.4.0",
-    "@vscode/vsce": "^2.26.0",
-    "esbuild": "^0.20.0",
-    "vitest": "^1.6.0"
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.2",
+    "vitest": "^3.2.7"
   },
   "repository": {
     "type": "git",

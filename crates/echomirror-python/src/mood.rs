@@ -13,7 +13,7 @@ use crate::types::{PyAiReflection, PyMoodEntry, PyMoodHistoryPage, PyMoodStreak,
 /// mood = MoodClient(client)
 /// entry = await mood.log(score=8, note="Great day", tags=["work"])
 /// ```
-#[pyclass(name = "MoodClient")]
+#[pyclass(name = "MoodClient", skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyMoodClient {
     client: PyEchoMirrorClient,

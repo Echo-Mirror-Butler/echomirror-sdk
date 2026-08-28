@@ -16,7 +16,7 @@ use crate::stellar::PyStellarClient;
 /// balance = await app.stellar.get_balance(public_key)
 /// feed = await app.social.get_global_feed()
 /// ```
-#[pyclass(name = "EchoMirror")]
+#[pyclass(name = "EchoMirror", skip_from_py_object)]
 pub struct PyEchoMirror {
     #[pyo3(get)]
     pub mood: Py<PyMoodClient>,
