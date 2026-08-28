@@ -347,7 +347,7 @@ pub mod bench {
     /// Encode a memo of exactly `len` bytes.
     #[inline]
     pub fn bench_memo_encode(len: usize) -> String {
-        let text: String = std::iter::repeat('x').take(len.min(28)).collect();
+        let text = "x".repeat(len.min(28));
         base64_encode(text.as_bytes())
     }
 
@@ -582,5 +582,41 @@ mod tests {
         assert_eq!(a, b);
         assert_eq!(a.len(), 64);
         assert!(a.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn wasm_export_helpers_delegate_to_the_pure_logic() {
+        assert!(verify_mood_score(7));
+        assert!(!verify_mood_score(0));
+        assert_eq!(
+            hash_public_key("GPUBLIC_KEY_TEST"),
+            sha256_hex(b"GPUBLIC_KEY_TEST")
+        );
+
+        let valid_address = format!("G{}", "A".repeat(55));
+        assert!(is_valid_stellar_address(&valid_address));
+        assert!(!is_valid_stellar_address("SNOTPUBLIC"));
+
+        assert_eq!(encode_memo("memo").unwrap(), base64_encode(b"memo"));
+        let cursor = serialize_cursor(123, "page-1", 42.9);
+        assert_eq!(
+            parse_cursor_paging_token(&cursor).as_deref(),
+            Some("page-1")
+        );
+        assert_eq!(parse_cursor_paging_token("not-json"), None);
+    }
+
+    #[test]
+    fn wasm_export_struct_apis_work_on_valid_input() {
+        let mut moods = MoodBuffer::new();
+        assert!(moods.is_empty());
+        moods.push(4).unwrap();
+        moods.push(8).unwrap();
+        assert_eq!(moods.len(), 2);
+        assert_eq!(moods.to_bytes(), vec![4, 8]);
+
+        let tx = StellarTxBytes::new(&base64_encode(b"xdr")).unwrap();
+        assert!(!tx.is_empty());
+        assert_eq!(tx.sha256(), sha256_hex(b"xdr"));
     }
 }

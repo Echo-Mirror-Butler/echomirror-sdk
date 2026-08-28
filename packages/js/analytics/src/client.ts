@@ -5,8 +5,6 @@ import {
   readState,
   writeAuditRecord,
   readAuditRecords,
-  purgeEventsByUserId,
-  purgeEventsByAnonymousId,
   DEFAULT_AUDIT_KEY,
   type PersistedAnalyticsState,
 } from './storage.js'
@@ -130,10 +128,12 @@ export class AnalyticsClient {
 
     const previousAnonymousId = this.state.anonymousId
     this.state.userId = normalizedUserId
-    this.state.queue = this.state.queue.map((event) => ({
-      ...event,
-      userId: normalizedUserId,
-    }))
+    // Stitch only the events that are still anonymous. Re-identifying a
+    // shared client must not rewrite events already attributed to another
+    // authenticated user.
+    this.state.queue = this.state.queue.map((event) =>
+      event.userId ? event : { ...event, userId: normalizedUserId },
+    )
     this.persist()
     this.enqueue('identity_stitched', { previousAnonymousId })
   }
@@ -210,22 +210,34 @@ export class AnalyticsClient {
 
     const auditKey = this.config.auditStorageKey ?? DEFAULT_AUDIT_KEY
     const storage = this.storage
+    const stored = readState(storage, this.storageKey)
+    let eventsRemoved = 0
 
-    // Purge by userId
-    const userIdResult = purgeEventsByUserId(storage, this.storageKey, id)
-    // Purge by anonymousId
-    const anonResult = purgeEventsByAnonymousId(storage, this.storageKey, id)
+    if (stored) {
+      const before = stored.queue.length
+      // Match both identifiers in one state transition. Doing two independent
+      // read-modify-write passes can make the in-memory state stale and can
+      // resurrect events when an identifier matches both fields.
+      stored.queue = stored.queue.filter(
+        (event) => event.userId !== id && event.anonymousId !== id,
+      )
+      eventsRemoved = before - stored.queue.length
+      if (stored.userId === id) delete stored.userId
 
-    const eventsRemoved = userIdResult.eventsRemoved + anonResult.eventsRemoved
+      try {
+        storage.setItem(this.storageKey, JSON.stringify(stored))
+      } catch (error) {
+        this.reportError(error)
+      }
 
-    // Merge the state — take the more "complete" one (whichever had more events removed)
-    const finalState = userIdResult.eventsRemoved >= anonResult.eventsRemoved
-      ? userIdResult.state
-      : anonResult.state
-
-    // If the current in-memory state matches, update it
-    if (this.state.anonymousId === finalState.anonymousId || this.state.sessionId === finalState.sessionId) {
-      this.state = finalState
+      // Keep this client aligned with the just-persisted state, but do not
+      // overwrite a different logical session that shares the same storage.
+      if (
+        this.state.anonymousId === stored.anonymousId &&
+        this.state.sessionId === stored.sessionId
+      ) {
+        this.state = stored
+      }
     }
 
     // Build an opaque user hash — never store the raw identifier in the audit log

@@ -28,6 +28,13 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Workspaces are linked by npm, but their package entry points live in
+      # ignored dist/ directories. Build the extension's SDK dependencies in
+      # this isolated workflow before Vitest/esbuild resolve those packages.
+      - name: Build SDK dependencies
+        run: |
+          npm run build -w packages/js/core
+          npm run build -w packages/js/mood
       - name: Lint
         working-directory: extensions/vscode
         run: npm run lint

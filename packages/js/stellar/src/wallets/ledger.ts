@@ -21,7 +21,7 @@ const LEDGER_STELLAR_PATH = "44'/148'/0'"
  * Like xBull/Albedo, the device itself doesn't report which network it's
  * on, so the adapter is constructed with the network your app targets.
  *
- * @note Requires the Stellar app to be open on the Ledger device.
+ * Note: Requires the Stellar app to be open on the Ledger device.
  * Hardware wallets cannot be present in CI — tests mock the transport layer.
  */
 

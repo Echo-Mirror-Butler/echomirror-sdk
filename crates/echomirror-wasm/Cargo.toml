@@ -38,6 +38,8 @@ console_error_panic_hook = ["dep:console_error_panic_hook"]
 # Has no effect on non-wasm32 targets (the feature gate is always present,
 # but the actual simd128 intrinsics are behind #[cfg(target_feature = "simd128")]).
 simd = []
+# Compile native benchmark helpers into wasm32 test/benchmark builds only.
+bench-helpers = []
 
 [dependencies.console_error_panic_hook]
 version = "0.1"

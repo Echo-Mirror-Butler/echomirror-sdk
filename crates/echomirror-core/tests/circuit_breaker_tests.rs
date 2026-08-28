@@ -1,4 +1,6 @@
-use echomirror_core::{CircuitBreakerConfig, CircuitState, EchoMirrorClient, EchoMirrorConfig, EchoMirrorError};
+use echomirror_core::{
+    CircuitBreakerConfig, CircuitState, EchoMirrorClient, EchoMirrorConfig, EchoMirrorError,
+};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use wiremock::{matchers, Mock, MockServer, ResponseTemplate};
@@ -33,13 +35,19 @@ async fn test_circuit_breaker_trips_after_threshold_and_fails_fast() {
     // Request 1: fails with 503
     let res1: Result<TestResponse, EchoMirrorError> = client.get("/endpoint").await;
     assert!(res1.is_err());
-    assert!(matches!(res1.unwrap_err(), EchoMirrorError::Http { status: 503, .. }));
+    assert!(matches!(
+        res1.unwrap_err(),
+        EchoMirrorError::Http { status: 503, .. }
+    ));
     assert_eq!(client.circuit_breaker().state().await, CircuitState::Closed);
 
     // Request 2: fails with 503, reaching threshold = 2 and tripping circuit to Open
     let res2: Result<TestResponse, EchoMirrorError> = client.get("/endpoint").await;
     assert!(res2.is_err());
-    assert!(matches!(res2.unwrap_err(), EchoMirrorError::Http { status: 503, .. }));
+    assert!(matches!(
+        res2.unwrap_err(),
+        EchoMirrorError::Http { status: 503, .. }
+    ));
     assert_eq!(client.circuit_breaker().state().await, CircuitState::Open);
 
     // Request 3: fails immediately with CircuitOpen without contacting server
@@ -175,7 +183,10 @@ async fn test_client_4xx_errors_do_not_trip_circuit_breaker() {
     for _ in 0..5 {
         let res = client.get::<TestResponse>("/not-found").await;
         assert!(res.is_err());
-        assert!(matches!(res.unwrap_err(), EchoMirrorError::Http { status: 404, .. }));
+        assert!(matches!(
+            res.unwrap_err(),
+            EchoMirrorError::Http { status: 404, .. }
+        ));
     }
 
     assert_eq!(client.circuit_breaker().state().await, CircuitState::Closed);

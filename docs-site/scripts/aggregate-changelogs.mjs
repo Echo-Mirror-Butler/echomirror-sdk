@@ -188,7 +188,8 @@ This page is **auto-generated** at docs-build time from the individual
 your changes will be overwritten on the next build.
 
 > 📡 **Subscribe** — an RSS feed for this changelog is available at
-> [/changelog/rss.xml](/changelog/rss.xml) once the blog plugin is enabled.
+> [changelog/rss.xml](https://karanjadavi.github.io/echomirror-sdk/changelog/rss.xml)
+> once the blog plugin is enabled.
 
 _Last generated: ${now}_
 

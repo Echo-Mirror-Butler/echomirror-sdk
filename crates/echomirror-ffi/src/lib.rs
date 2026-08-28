@@ -25,7 +25,7 @@ use std::ptr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub type EchoMirrorAsyncCallback =
     Option<extern "C" fn(user_data: *mut c_void, code: i32, payload: *mut c_char)>;
@@ -225,6 +225,63 @@ fn async_payload_error(code: EchoMirrorFfiErrorCode, message: &str) -> String {
     json!({ "message": message, "code": error_code(code) }).to_string()
 }
 
+const SIMULATED_ASYNC_WORK: Duration = Duration::from_millis(100);
+
+fn complete_async_control_error(
+    callback: EchoMirrorAsyncCallback,
+    user_data: *mut c_void,
+    code: EchoMirrorFfiErrorCode,
+) {
+    let message = match code {
+        EchoMirrorFfiErrorCode::Cancelled => "operation cancelled",
+        EchoMirrorFfiErrorCode::Timeout => "operation timed out",
+        _ => "asynchronous operation failed",
+    };
+    complete_async(
+        callback,
+        user_data,
+        code,
+        async_payload_error(code, message),
+    );
+}
+
+/// Simulated work used by the local mood/social FFI bridges.
+///
+/// The bridges currently construct deterministic local payloads instead of
+/// awaiting an HTTP operation. Keep a bounded work window so cancellation and
+/// timeout behavior is observable and has the same semantics as a real async
+/// task: cancellation wins immediately; a deadline ends the work with Timeout.
+fn wait_for_simulated_work(
+    cancelled: &AtomicBool,
+    timeout: Option<Duration>,
+) -> std::result::Result<(), EchoMirrorFfiErrorCode> {
+    let started = Instant::now();
+    loop {
+        if cancelled.load(Ordering::Acquire) {
+            return Err(EchoMirrorFfiErrorCode::Cancelled);
+        }
+
+        let elapsed = started.elapsed();
+        if let Some(timeout) = timeout {
+            if elapsed >= timeout {
+                return Err(EchoMirrorFfiErrorCode::Timeout);
+            }
+        }
+        if elapsed >= SIMULATED_ASYNC_WORK {
+            return Ok(());
+        }
+
+        let until_work_completes = SIMULATED_ASYNC_WORK.saturating_sub(elapsed);
+        let mut sleep_for = until_work_completes.min(Duration::from_millis(10));
+        if let Some(timeout) = timeout {
+            sleep_for = sleep_for.min(timeout.saturating_sub(elapsed));
+        }
+        if !sleep_for.is_zero() {
+            thread::sleep(sleep_for);
+        }
+    }
+}
+
 fn is_valid_stellar_address_str(address: &str) -> bool {
     address.starts_with('G')
         && address.len() == 56
@@ -408,45 +465,10 @@ pub extern "C" fn echomirror_mood_log_async(
         })
         .to_string();
 
-        // Simulate work with cancellation checks (in real use this would be
-        // an async operation like an HTTP call).
-        if let Some(timeout) = timeout {
-            let start = std::time::Instant::now();
-            while start.elapsed() < timeout {
-                if cancelled.load(Ordering::Acquire) {
-                    complete_async(
-                        callback,
-                        user_data,
-                        EchoMirrorFfiErrorCode::Cancelled,
-                        async_payload_error(
-                            EchoMirrorFfiErrorCode::Cancelled,
-                            "operation cancelled",
-                        ),
-                    );
-                    return;
-                }
-                std::thread::sleep(Duration::from_millis(10));
-            }
-        } else {
-            // No timeout — just check cancellation periodically.
-            for _ in 0..10 {
-                if cancelled.load(Ordering::Acquire) {
-                    complete_async(
-                        callback,
-                        user_data,
-                        EchoMirrorFfiErrorCode::Cancelled,
-                        async_payload_error(
-                            EchoMirrorFfiErrorCode::Cancelled,
-                            "operation cancelled",
-                        ),
-                    );
-                    return;
-                }
-                std::thread::sleep(Duration::from_millis(10));
-            }
+        match wait_for_simulated_work(&cancelled, timeout) {
+            Ok(()) => complete_async(callback, user_data, EchoMirrorFfiErrorCode::Ok, payload),
+            Err(code) => complete_async_control_error(callback, user_data, code),
         }
-
-        complete_async(callback, user_data, EchoMirrorFfiErrorCode::Ok, payload);
     });
 
     error_code(EchoMirrorFfiErrorCode::Ok)
@@ -587,9 +609,7 @@ pub extern "C" fn echomirror_stellar_get_balance_async(
                 ),
             },
             Err(error) => {
-                let is_cancelled = error
-                    .to_string()
-                    .contains("cancelled");
+                let is_cancelled = error.to_string().contains("cancelled");
                 let is_timeout = error.to_string().contains("timed out");
                 let code = if is_cancelled {
                     EchoMirrorFfiErrorCode::Cancelled
@@ -697,40 +717,9 @@ pub extern "C" fn echomirror_social_profile_async(
             return;
         }
 
-        // Simulate work with cancellation checks.
-        if let Some(timeout) = timeout {
-            let start = std::time::Instant::now();
-            while start.elapsed() < timeout {
-                if cancelled.load(Ordering::Acquire) {
-                    complete_async(
-                        callback,
-                        user_data,
-                        EchoMirrorFfiErrorCode::Cancelled,
-                        async_payload_error(
-                            EchoMirrorFfiErrorCode::Cancelled,
-                            "operation cancelled",
-                        ),
-                    );
-                    return;
-                }
-                std::thread::sleep(Duration::from_millis(10));
-            }
-        } else {
-            for _ in 0..10 {
-                if cancelled.load(Ordering::Acquire) {
-                    complete_async(
-                        callback,
-                        user_data,
-                        EchoMirrorFfiErrorCode::Cancelled,
-                        async_payload_error(
-                            EchoMirrorFfiErrorCode::Cancelled,
-                            "operation cancelled",
-                        ),
-                    );
-                    return;
-                }
-                std::thread::sleep(Duration::from_millis(10));
-            }
+        if let Err(code) = wait_for_simulated_work(&cancelled, timeout) {
+            complete_async_control_error(callback, user_data, code);
+            return;
         }
 
         let payload = json!({
@@ -855,6 +844,80 @@ mod tests {
         // from fully exiting. Give it a moment before tearing down, to avoid
         // a rare crash if the process starts exiting while it's still alive.
         thread::sleep(Duration::from_millis(50));
+
+        echomirror_mood_client_free(client);
+    }
+
+    #[test]
+    fn cancellation_handle_signals_across_the_ffi_boundary() {
+        let handle = echomirror_cancellation_new();
+        assert!(!handle.is_null());
+        assert_eq!(echomirror_cancellation_is_cancelled(handle), 0);
+
+        echomirror_cancellation_cancel(handle);
+        assert_eq!(echomirror_cancellation_is_cancelled(handle), 1);
+
+        echomirror_cancellation_free(handle);
+    }
+
+    #[test]
+    fn mood_log_cancellation_stops_in_flight_work() {
+        let api_key = CString::new("test").unwrap();
+        let user_id = CString::new("user-1").unwrap();
+        let tags = CString::new(r#"["focus"]"#).unwrap();
+        let client = echomirror_mood_client_new(api_key.as_ptr(), ptr::null(), 1);
+        let cancellation = echomirror_cancellation_new();
+        let (sender, receiver) = channel::<(i32, String)>();
+
+        let code = echomirror_mood_log_async(
+            client,
+            user_id.as_ptr(),
+            7,
+            ptr::null(),
+            tags.as_ptr(),
+            Some(capture_payload),
+            &sender as *const Sender<(i32, String)> as *mut c_void,
+            cancellation,
+            0,
+        );
+        assert_eq!(code, error_code(EchoMirrorFfiErrorCode::Ok));
+
+        // The bridge has started its bounded unit of work; cancelling now must
+        // produce Cancelled rather than a success callback.
+        thread::sleep(Duration::from_millis(10));
+        echomirror_cancellation_cancel(cancellation);
+        let (callback_code, payload) = receiver.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert_eq!(callback_code, error_code(EchoMirrorFfiErrorCode::Cancelled));
+        assert!(payload.contains("operation cancelled"));
+
+        echomirror_cancellation_free(cancellation);
+        echomirror_mood_client_free(client);
+    }
+
+    #[test]
+    fn mood_log_timeout_stops_in_flight_work() {
+        let api_key = CString::new("test").unwrap();
+        let user_id = CString::new("user-1").unwrap();
+        let tags = CString::new(r#"["focus"]"#).unwrap();
+        let client = echomirror_mood_client_new(api_key.as_ptr(), ptr::null(), 1);
+        let (sender, receiver) = channel::<(i32, String)>();
+
+        let code = echomirror_mood_log_async(
+            client,
+            user_id.as_ptr(),
+            7,
+            ptr::null(),
+            tags.as_ptr(),
+            Some(capture_payload),
+            &sender as *const Sender<(i32, String)> as *mut c_void,
+            ptr::null(),
+            1,
+        );
+        assert_eq!(code, error_code(EchoMirrorFfiErrorCode::Ok));
+
+        let (callback_code, payload) = receiver.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert_eq!(callback_code, error_code(EchoMirrorFfiErrorCode::Timeout));
+        assert!(payload.contains("operation timed out"));
 
         echomirror_mood_client_free(client);
     }

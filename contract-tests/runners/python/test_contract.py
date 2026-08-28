@@ -77,9 +77,11 @@ This runner includes the test anyway; the spec should be updated.
 """
 from __future__ import annotations
 
+from datetime import datetime
+
 import pytest
 
-from conftest import navigate, op_by_id
+from conftest import op_by_id
 
 # Guard: the import of echomirror itself is deferred to each test so that a
 # missing native extension (module not yet built with maturin) gives a
@@ -124,6 +126,22 @@ def make_horizon_client(
     )
 
 
+def comparable_contract_value(value: object) -> object:
+    """Normalize equivalent RFC 3339 timestamp spellings before comparison.
+
+    Chrono serializes UTC values for the Python binding as ``+00:00`` while
+    the shared wire fixture uses ``Z``. Both spellings identify the same
+    instant, so contract assertions should compare the instant rather than a
+    formatter-specific representation.
+    """
+    if not isinstance(value, str):
+        return value
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return value
+
+
 # ---------------------------------------------------------------------------
 # Mood operations
 # ---------------------------------------------------------------------------
@@ -145,7 +163,7 @@ async def test_fetch_mood_streak(spec, fixture_config, api_base):
         field = assertion["field"]
         expected_val = assertion["eq"]
         actual = getattr(streak, field)
-        assert actual == expected_val, (
+        assert comparable_contract_value(actual) == comparable_contract_value(expected_val), (
             f"[fetch_mood_streak] streak.{field}: expected {expected_val!r}, got {actual!r}"
         )
 
@@ -165,7 +183,7 @@ async def test_fetch_mood_summary(spec, fixture_config, api_base):
         field = assertion["field"]
         expected_val = assertion["eq"]
         actual = getattr(summary, field)
-        assert actual == expected_val, (
+        assert comparable_contract_value(actual) == comparable_contract_value(expected_val), (
             f"[fetch_mood_summary] summary.{field}: expected {expected_val!r}, got {actual!r}"
         )
 
@@ -190,7 +208,7 @@ async def test_log_mood(spec, fixture_config, api_base):
         field = assertion["field"]
         expected_val = assertion["eq"]
         actual = getattr(entry, field)
-        assert actual == expected_val, (
+        assert comparable_contract_value(actual) == comparable_contract_value(expected_val), (
             f"[log_mood] entry.{field}: expected {expected_val!r}, got {actual!r}"
         )
 
@@ -241,7 +259,7 @@ async def test_get_social_feed(spec, fixture_config, api_base):
                 "expected path-based navigation for feed entries"
             )
 
-        assert actual == expected_val, (
+        assert comparable_contract_value(actual) == comparable_contract_value(expected_val), (
             f"[get_social_feed] feed[...].{field}: expected {expected_val!r}, got {actual!r}"
         )
 
@@ -272,7 +290,7 @@ async def test_get_leaderboard(spec, fixture_config, api_base):
         else:
             pytest.fail(f"[get_leaderboard] no path for field {field!r}")
 
-        assert actual == expected_val, (
+        assert comparable_contract_value(actual) == comparable_contract_value(expected_val), (
             f"[get_leaderboard] leaderboard[...].{field}: expected {expected_val!r}, got {actual!r}"
         )
 
@@ -303,7 +321,7 @@ async def test_build_echo_transfer(spec, fixture_config, api_base):
         field = assertion["field"]
         expected_val = assertion["eq"]
         actual = getattr(unsigned, field)
-        assert actual == expected_val, (
+        assert comparable_contract_value(actual) == comparable_contract_value(expected_val), (
             f"[build_echo_transfer] unsigned.{field}: expected {expected_val!r}, got {actual!r}"
         )
 
@@ -345,7 +363,7 @@ async def test_submit_payment_transaction(spec, fixture_config, api_base):
         expected_val = assertion["eq"]
         py_field = _field_map.get(wire_field, wire_field)
         actual = getattr(tx, py_field)
-        assert actual == expected_val, (
+        assert comparable_contract_value(actual) == comparable_contract_value(expected_val), (
             f"[submit_payment_transaction] tx.{py_field} (wire: {wire_field!r}): "
             f"expected {expected_val!r}, got {actual!r}"
         )
@@ -387,7 +405,7 @@ async def test_get_transaction_history(spec, fixture_config, api_base):
         else:
             pytest.fail(f"[get_transaction_history] no path for field {wire_field!r}")
 
-        assert actual == expected_val, (
+        assert comparable_contract_value(actual) == comparable_contract_value(expected_val), (
             f"[get_transaction_history] tx.{py_field} (wire: {wire_field!r}): "
             f"expected {expected_val!r}, got {actual!r}"
         )

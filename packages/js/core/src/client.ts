@@ -2,10 +2,8 @@ import type { EchoMirrorConfig, SDKEvent, SDKEventHandler } from './types'
 import { EchoMirrorError, NetworkError, AuthError, RateLimitError } from './errors'
 import type {
   RequestMiddleware,
-  RetryConfig,
   MiddlewareRequest,
   MiddlewareOutcome,
-  MiddlewareDecision,
 } from './middleware'
 import { MAX_MIDDLEWARE_RETRIES } from './middleware'
 
@@ -14,6 +12,10 @@ const DEFAULT_TIMEOUT = 10_000
 const DEFAULT_MAX_RETRIES = 3
 const DEFAULT_BASE_DELAY_MS = 100
 const DEFAULT_MAX_DELAY_MS = 5_000
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 export class EchoMirrorClient {
   readonly config: Required<
@@ -101,8 +103,8 @@ export class EchoMirrorClient {
         throw err
       }
 
-      if (result.decision === 'success' && result.value !== undefined) {
-        return result.value as T
+      if (result.decision === 'success') {
+        return result.value
       }
     }
 

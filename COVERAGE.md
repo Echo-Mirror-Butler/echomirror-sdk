@@ -76,7 +76,8 @@ Python (`crates/echomirror-python`, via pytest) and Flutter/Dart
 (`packages/flutter`) now have coverage tooling wired into CI:
 
 - **Python**: `pytest-cov` with `--cov-fail-under=50` in `python-ci.yml`.
-  Measured via `pytest --cov=echomirror --cov-report=term-missing`.
+  Measured via `pytest --cov=echomirror --cov-report=term-missing`, with an
+  HTML report uploaded from `htmlcov/`.
 - **Flutter**: `flutter test --coverage` in `flutter-ci.yml`, with a 40%
   line-coverage threshold enforced on the `lcov.info` output.
 

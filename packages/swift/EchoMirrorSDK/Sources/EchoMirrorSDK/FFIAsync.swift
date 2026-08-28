@@ -42,8 +42,11 @@ private let echoMirrorCallback: EchoMirrorAsyncCallback = { userData, code, payl
 
 /// Handle to a cancellation token that can signal an in-flight FFI operation
 /// to abort. Wraps the C-ABI `EchoMirrorCancellationHandle`.
-public final class CancellationHandle {
-    private var pointer: UnsafeMutablePointer<EchoMirrorCancellationHandle>?
+public final class CancellationHandle: @unchecked Sendable {
+    // Forward-declared C structs import as OpaquePointer in Swift. The native
+    // flag is atomic, so sharing this immutable handle with a cancellation
+    // handler is safe.
+    fileprivate let pointer: OpaquePointer?
 
     public init() {
         pointer = echomirror_cancellation_new()
@@ -92,8 +95,8 @@ enum FFIAsync {
     /// Perform an FFI async call with cancellation and optional timeout.
     ///
     /// - Parameters:
-    ///   - cancellationHandle: An optional cancellation handle. Pass `nil` for
-    ///     no cancellation support.
+    ///   - cancellationHandle: Optional manual handle. When omitted, the
+    ///     enclosing Swift Task still receives a private cancellation handle.
     ///   - timeoutMs: Per-call timeout in milliseconds. 0 means no timeout.
     ///   - start: The FFI function to call, receiving the callback and user data.
     static func perform(
@@ -102,25 +105,35 @@ enum FFIAsync {
         _ start: (
             EchoMirrorAsyncCallback?,
             UnsafeMutableRawPointer?,
-            UnsafePointer<EchoMirrorCancellationHandle>?,
+            OpaquePointer?,
             UInt32
         ) -> Int32
     ) async throws -> String {
-        let cancellationPtr = cancellationHandle?.pointer
-        try await withCheckedThrowingContinuation { continuation in
-            let box = Unmanaged.passRetained(CallbackBox(continuation)).toOpaque()
-            let code = start(echoMirrorCallback, box, cancellationPtr, timeoutMs)
+        // Retain a handle for the duration of the continuation. This both lets
+        // callers cancel manually and propagates Swift Task cancellation to the
+        // Rust-side atomic token.
+        let handle = cancellationHandle ?? CancellationHandle()
+        return try await withTaskCancellationHandler(
+            operation: {
+                try await withCheckedThrowingContinuation { continuation in
+                    let box = Unmanaged.passRetained(CallbackBox(continuation)).toOpaque()
+                    let code = start(echoMirrorCallback, box, handle.pointer, timeoutMs)
 
-            if code != 0 {
-                Unmanaged<CallbackBox>.fromOpaque(box).release()
-                continuation.resume(
-                    throwing: EchoMirrorError(
-                        code: code,
-                        message: "FFI call failed before async dispatch"
-                    )
-                )
+                    if code != 0 {
+                        Unmanaged<CallbackBox>.fromOpaque(box).release()
+                        continuation.resume(
+                            throwing: EchoMirrorError(
+                                code: code,
+                                message: "FFI call failed before async dispatch"
+                            )
+                        )
+                    }
+                }
+            },
+            onCancel: {
+                handle.cancel()
             }
-        }
+        )
     }
 }
 

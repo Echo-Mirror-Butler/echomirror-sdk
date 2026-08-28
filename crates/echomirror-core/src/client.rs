@@ -1,11 +1,13 @@
-use crate::cache::ResponseCache;
+use crate::cache::{CacheValidatorKind, ResponseCache};
+use crate::circuit_breaker::CircuitBreaker;
 use crate::middleware::{
     MiddlewareDecision, MiddlewareOutcome, MiddlewareRequest, MiddlewareResponse,
     MAX_MIDDLEWARE_RETRIES,
 };
-use crate::circuit_breaker::CircuitBreaker;
 use crate::{ClientMetrics, EchoMirrorConfig, EchoMirrorError, MetricsSnapshot, Result};
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, IF_NONE_MATCH};
+use reqwest::header::{
+    HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, IF_MODIFIED_SINCE, IF_NONE_MATCH,
+};
 use reqwest::{Client as HttpClient, Method, StatusCode};
 use serde::{de::DeserializeOwned, Serialize};
 use std::sync::Arc;
@@ -152,6 +154,7 @@ impl EchoMirrorClient {
                 .await
             {
                 AttemptOutcome::Success(result) => {
+                    self.circuit_breaker.on_success(was_probe).await;
                     self.metrics.record_success();
                     // Reset token refresh flag on success
                     *self.token_refresh_attempted.write().await = false;
@@ -316,15 +319,21 @@ impl EchoMirrorClient {
             }
         }
 
-        // For GET requests, check the cache and add If-None-Match header.
+        // For GET requests, look up any stored response and send the matching
+        // standard conditional header. Keep the entry so a 304 can use exactly
+        // the body that was validated without a second cache lookup.
         let is_get = method == Method::GET;
-        let cached_validator: Option<String> = if is_get {
-            if let Some((validator, _body)) = self.cache.get(&url).await {
+        let cached_entry = if is_get {
+            if let Some(entry) = self.cache.get_entry(&url).await {
                 self.metrics.record_cache_hit();
-                if let Ok(hv) = HeaderValue::from_str(&validator) {
-                    headers.insert(IF_NONE_MATCH, hv);
+                if let Ok(value) = HeaderValue::from_str(&entry.validator) {
+                    let header = match entry.validator_kind {
+                        CacheValidatorKind::ETag => IF_NONE_MATCH,
+                        CacheValidatorKind::LastModified => IF_MODIFIED_SINCE,
+                    };
+                    headers.insert(header, value);
                 }
-                Some(validator)
+                Some(entry)
             } else {
                 self.metrics.record_cache_miss();
                 None
@@ -375,25 +384,24 @@ impl EchoMirrorClient {
                     let status = res.status();
                     let headers = res.headers().clone();
 
-                    // Handle 304 Not Modified: return cached body if available.
+                    // Handle 304 Not Modified: return the body that supplied
+                    // the conditional validator. A corrupt cached body is an
+                    // ordinary invalid-response error, never a client panic.
                     if status == StatusCode::NOT_MODIFIED {
-                        if let Some(_validator) = &cached_validator {
-                            if let Some((_v, cached_body)) = self.cache.get(&mw_req.url).await {
-                                return AttemptOutcome::Success(
-                                    serde_json::from_slice(&cached_body).unwrap_or_else(|_| {
-                                        panic!(
-                                            "cached body for {} should be valid JSON",
-                                            mw_req.url
-                                        )
-                                    }),
-                                );
-                            }
-                        }
-                        // No cached body — fall through to error handling.
-                        return AttemptOutcome::Error(EchoMirrorError::Http {
-                            status: 304,
-                            message: "Not Modified but no cached body available".to_string(),
-                        });
+                        return match cached_entry {
+                            Some(entry) => match serde_json::from_slice(&entry.body) {
+                                Ok(value) => AttemptOutcome::Success(value),
+                                Err(error) => {
+                                    AttemptOutcome::Error(EchoMirrorError::InvalidResponse(
+                                        format!("Failed to parse cached response: {error}"),
+                                    ))
+                                }
+                            },
+                            None => AttemptOutcome::Error(EchoMirrorError::Http {
+                                status: 304,
+                                message: "Not Modified but no cached body available".to_string(),
+                            }),
+                        };
                     }
 
                     match res.bytes().await {
@@ -453,24 +461,33 @@ impl EchoMirrorClient {
                 })
             }
             _ => {
-                // Success — check for ETag and cache GET responses.
+                // Success — cache GET responses that carry a standard
+                // validator. The cache reports capacity evictions so metrics
+                // remain observable alongside hits and misses.
                 if is_get {
-                    if let Some(etag) = res.headers.get("etag").and_then(|v| v.to_str().ok()) {
-                        self.cache
-                            .put(mw_req.url.clone(), etag.to_string(), res.body.clone())
-                            .await;
-                    } else if let Some(last_modified) = res
-                        .headers
-                        .get("last-modified")
-                        .and_then(|v| v.to_str().ok())
-                    {
-                        self.cache
-                            .put(
-                                mw_req.url.clone(),
-                                last_modified.to_string(),
-                                res.body.clone(),
-                            )
-                            .await;
+                    let evicted =
+                        if let Some(etag) = res.headers.get("etag").and_then(|v| v.to_str().ok()) {
+                            self.cache
+                                .put(mw_req.url.clone(), etag.to_string(), res.body.clone())
+                                .await
+                        } else if let Some(last_modified) = res
+                            .headers
+                            .get("last-modified")
+                            .and_then(|v| v.to_str().ok())
+                        {
+                            self.cache
+                                .put_with_validator(
+                                    mw_req.url.clone(),
+                                    last_modified.to_string(),
+                                    CacheValidatorKind::LastModified,
+                                    res.body.clone(),
+                                )
+                                .await
+                        } else {
+                            false
+                        };
+                    if evicted {
+                        self.metrics.record_cache_eviction();
                     }
                 }
                 match serde_json::from_slice::<T>(&res.body) {

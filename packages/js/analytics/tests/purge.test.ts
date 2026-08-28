@@ -24,8 +24,10 @@ describe('AnalyticsClient purge', () => {
     const result = client.purgeUser('user-abc')
 
     expect(result.purged).toBe(true)
-    expect(result.eventsRemoved).toBe(3) // mood_logged(7) was stamped with userId via identify, plus the two after identify
-    expect(result.audit.eventsRemoved).toBe(3)
+    // All events attributed to the user, including identity_stitched, must be
+    // removed for a complete right-to-erasure request.
+    expect(result.eventsRemoved).toBe(4)
+    expect(result.audit.eventsRemoved).toBe(4)
     expect(result.audit.userHash).toMatch(/^hash_/)
     expect(result.audit.purgedAt).toBeTruthy()
 
@@ -75,9 +77,11 @@ describe('AnalyticsClient purge', () => {
 
     const result = client.purgeUser('user-a')
 
-    expect(result.eventsRemoved).toBe(2)
+    // `identify('user-b')` must not re-attribute User A's already identified
+    // events. The identity-stitch event belongs to its respective user too.
+    expect(result.eventsRemoved).toBe(3)
     const remaining = client.getPendingEvents()
-    expect(remaining).toHaveLength(2)
+    expect(remaining).toHaveLength(3)
     expect(remaining.every((e) => e.userId === 'user-b')).toBe(true)
   })
 
@@ -101,22 +105,24 @@ describe('AnalyticsClient purge', () => {
       flushIntervalMs: 0,
     })
 
+    const email = 'sensitive@example.com'
+    client.identify(email)
     client.trackMoodLogged({ score: 5 })
-    client.purgeUser('sensitive@example.com')
+    client.purgeUser(email)
 
     const log = client.getPurgeAuditLog()
     expect(log).toHaveLength(1)
     expect(log[0].purgedAt).toBeTruthy()
-    expect(log[0].eventsRemoved).toBe(1)
+    // The queued identity-stitch and mood events both belonged to this user.
+    expect(log[0].eventsRemoved).toBe(2)
     expect(log[0].userHash).toMatch(/^hash_/)
 
-    // The raw email must NOT appear anywhere in storage
-    const raw = JSON.stringify(Object.fromEntries(
-      Array.from({ length: 100 }, (_, i) => [i, storage.getItem(String(i))]).filter(([, v]) => v !== null)
-    ))
-    // Check all storage keys
-    const allStorage = JSON.stringify(storage)
-    expect(allStorage).not.toContain('sensitive@example.com')
+    // The raw email must not survive in either persisted state or audit data.
+    const persisted = [
+      storage.getItem('echomirror.analytics.v1'),
+      storage.getItem('echomirror.analytics.audit.v1'),
+    ].join('\n')
+    expect(persisted).not.toContain(email)
   })
 
   it('audit log accumulates across multiple purges', () => {
@@ -176,7 +182,7 @@ describe('AnalyticsClient purge', () => {
     expect(reloaded.getPendingEvents()).toHaveLength(0)
     const log = reloaded.getPurgeAuditLog()
     expect(log).toHaveLength(1)
-    expect(log[0].eventsRemoved).toBe(2)
+    expect(log[0].eventsRemoved).toBe(3)
   })
 
   it('computed aggregates are not modified by purge (documented behavior)', () => {
@@ -200,6 +206,7 @@ describe('AnalyticsClient purge', () => {
     const rollup = aggregateMood(entries, {
       from: '2026-07-01T00:00:00Z',
       to: '2026-07-31T23:59:59Z',
+      raw: true,
     })
     expect(rollup.entryCount).toBe(2)
     expect(rollup.averageScore).toBe(6)

@@ -65,6 +65,11 @@ jobs:
       - uses: taiki-e/install-action@fcf5432d9f50d67e37ee6e29bdb7a224ff67b4a7 # v2.86.8
         with:
           tool: cargo-llvm-cov
+      # rust-cache can restore stale instrumented objects/profile data. Start
+      # each coverage job from a clean coverage target so reports never merge
+      # incompatible compiler metadata from an earlier run.
+      - name: Clear stale coverage data
+        run: cargo llvm-cov clean --workspace
       # Per-crate floors set from each crate's current measured baseline
       # (docs/COVERAGE.md has the full backlog + rationale). Only the crates
       # actually exercised by `cargo test` are gated here:

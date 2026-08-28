@@ -299,7 +299,6 @@ impl SyncEngine {
                                 )
                                 .await
                             {
-                                self.save_cursor(&account, &cursor).await;
                                 backoff.reset();
                             }
                         }
@@ -378,7 +377,6 @@ impl SyncEngine {
                 self.process_record(record, account, last_seen, cursor, total_processed)
                     .await;
             }
-            self.save_cursor(account, cursor).await;
 
             if records.len() < self.backfill_page_size as usize {
                 return Ok(());
@@ -386,10 +384,10 @@ impl SyncEngine {
         }
     }
 
-    /// Dedup → map → filter → emit one record, advancing the in-memory cursor.
+    /// Dedup → map → filter → persist → emit one record, advancing the cursor.
     /// Returns whether the record advanced the cursor (i.e. was not a dupe).
-    /// Persisting the cursor is the caller's job (per record when live, per
-    /// page during backfill).
+    /// Persistence happens before notification so an emitted event never
+    /// outruns its durable cursor.
     async fn process_record(
         &self,
         record: &HorizonPaymentRecord,
@@ -415,31 +413,42 @@ impl SyncEngine {
         *total_processed += 1;
 
         let mut ledger_sequence = ledger_from_token(token);
-        match map_payment(record, account) {
+        let event = match map_payment(record, account) {
             Ok(MapOutcome::Mapped(mapped)) => {
                 ledger_sequence = mapped.sync_record.ledger_sequence;
                 self.metrics
                     .record_event_time(mapped.tx.created_at.timestamp());
                 if self.filter.matches(&mapped.sync_record) {
-                    let _ = self
-                        .tx
-                        .send(SyncEvent::TransactionDetected { tx: mapped.tx });
-                    self.metrics.record_emitted();
+                    Some(SyncEvent::TransactionDetected { tx: mapped.tx })
                 } else {
                     self.metrics.record_filtered();
+                    None
                 }
             }
-            Ok(MapOutcome::Skipped) => self.metrics.record_skipped_op(),
+            Ok(MapOutcome::Skipped) => {
+                self.metrics.record_skipped_op();
+                None
+            }
             Err(e) => {
                 self.metrics.record_parse_error();
                 tracing::warn!(account = %account, error = %e, "skipping unmappable record");
+                None
             }
-        }
+        };
 
         cursor.ledger_sequence = ledger_sequence;
         cursor.paging_token = record.paging_token.clone();
         cursor.last_synced_at = chrono::Utc::now();
         cursor.total_processed += 1;
+
+        // Persist before broadcasting so a consumer that receives an event can
+        // safely observe the cursor at (or beyond) that event immediately.
+        self.save_cursor(account, cursor).await;
+
+        if let Some(event) = event {
+            self.metrics.record_emitted();
+            let _ = self.tx.send(event);
+        }
         true
     }
 

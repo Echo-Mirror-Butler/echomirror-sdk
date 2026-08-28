@@ -38,9 +38,11 @@ jobs:
       - name: Check coverage threshold
         run: |
           if [ -f coverage/lcov.info ]; then
-            # Extract line coverage percentage from lcov.info
-            LINES=$(grep -E '^LH:' coverage/lcov.info | head -1 | cut -d: -f2)
-            TOTAL=$(grep -E '^LF:' coverage/lcov.info | head -1 | cut -d: -f2)
+            # Sum every source-file record; taking only the first LH/LF pair
+            # can report a passing percentage while most of the package is
+            # uncovered.
+            LINES=$(awk -F: '$1 == "LH" { sum += $2 } END { print sum + 0 }' coverage/lcov.info)
+            TOTAL=$(awk -F: '$1 == "LF" { sum += $2 } END { print sum + 0 }' coverage/lcov.info)
             if [ -n "$LINES" ] && [ -n "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
               PCT=$((LINES * 100 / TOTAL))
               echo "Flutter line coverage: ${PCT}% (${LINES}/${TOTAL})"

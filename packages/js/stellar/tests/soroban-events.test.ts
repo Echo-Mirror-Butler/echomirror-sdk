@@ -14,19 +14,29 @@ vi.mock('@stellar/stellar-sdk', () => {
   return { rpc: { Server }, xdr: { ScVal } }
 })
 
-import { rpc } from '@stellar/stellar-sdk'
+import { rpc, xdr } from '@stellar/stellar-sdk'
 
-function makeRawEvent(overrides: Record<string, unknown> = {}): rpc.EventResponse {
+function scVal(raw: string) {
+  return {
+    decoded: raw,
+    toXDR: (_format: 'base64') => raw,
+  }
+}
+
+function makeRawEvent(overrides: Record<string, unknown> = {}): rpc.Api.EventResponse {
   return {
     type: 'contract',
-    contractId: 'C CONTRACT',
+    contractId: { contractId: () => 'C CONTRACT' },
     ledger: 100,
+    ledgerClosedAt: '2026-08-01T00:00:00Z',
     id: 'evt-1',
     pagingToken: 'tok-1',
-    topic: 'dG9waWM=',
-    value: 'dmFsdWU=',
+    inSuccessfulContractCall: true,
+    txHash: 'tx-hash',
+    topic: [scVal('dG9waWM=')],
+    value: scVal('dmFsdWU='),
     ...overrides,
-  } as unknown as rpc.EventResponse
+  } as unknown as rpc.Api.EventResponse
 }
 
 const server = new rpc.Server('https://example.test')
@@ -45,14 +55,14 @@ describe('getContractEvents', () => {
       events: [makeRawEvent()],
       latestLedger: 200,
       cursor: 'tok-1',
-    } as unknown as rpc.GetEventsResponse)
+    } as unknown as rpc.Api.GetEventsResponse)
 
     const result = await getContractEvents(server, { contractId: 'C CONTRACT' })
     expect(result.events).toHaveLength(1)
     const evt = result.events[0]
     expect(evt.contractId).toBe('C CONTRACT')
-    expect(evt.topicScVal).toEqual({ decoded: 'dG9waWM=' })
-    expect(evt.valueScVal).toEqual({ decoded: 'dmFsdWU=' })
+    expect(evt.topicScVal).toMatchObject({ decoded: 'dG9waWM=' })
+    expect(evt.valueScVal).toMatchObject({ decoded: 'dmFsdWU=' })
     expect(result.cursor).toBe('tok-1')
     expect(result.latestLedger).toBe(200)
   })
@@ -61,7 +71,7 @@ describe('getContractEvents', () => {
     vi.mocked(server.getEvents).mockResolvedValue({
       events: [],
       latestLedger: 1,
-    } as unknown as rpc.GetEventsResponse)
+    } as unknown as rpc.Api.GetEventsResponse)
 
     await getContractEvents(server, {
       contractId: 'C X',
@@ -73,7 +83,7 @@ describe('getContractEvents', () => {
 
     expect(server.getEvents).toHaveBeenCalledWith({
       startLedger: 42,
-      startCursor: 'tok-prev',
+      cursor: 'tok-prev',
       limit: 25,
       filters: [{ contractIds: ['C X'], topics: [['ABC']] }],
     })
@@ -86,7 +96,7 @@ describe('getContractEvents', () => {
         makeRawEvent({ id: 'b', pagingToken: 't2' }),
       ],
       latestLedger: 5,
-    } as unknown as rpc.GetEventsResponse)
+    } as unknown as rpc.Api.GetEventsResponse)
 
     const result = await getContractEvents(server, { contractId: 'C' })
     expect(result.cursor).toBe('t2')
@@ -96,7 +106,7 @@ describe('getContractEvents', () => {
 describe('topicToXdr', () => {
   it('encodes a ScVal to its base64 XDR topic string', () => {
     const scVal = { toXDR: (_f: string) => 'base64topic' }
-    expect(topicToXdr(scVal as unknown as rpc.xdr.ScVal)).toBe('base64topic')
+    expect(topicToXdr(scVal as unknown as xdr.ScVal)).toBe('base64topic')
   })
 })
 
@@ -114,7 +124,7 @@ describe('subscribeContractEvents', () => {
         ],
         cursor: 'p2',
         latestLedger: 10,
-      } as unknown as rpc.GetEventsResponse)
+      } as unknown as rpc.Api.GetEventsResponse)
       .mockResolvedValueOnce({
         events: [
           makeRawEvent({ id: 'e2', pagingToken: 'p2' }),
@@ -122,12 +132,12 @@ describe('subscribeContractEvents', () => {
         ],
         cursor: 'p3',
         latestLedger: 11,
-      } as unknown as rpc.GetEventsResponse)
+      } as unknown as rpc.Api.GetEventsResponse)
       .mockResolvedValueOnce({
         events: [makeRawEvent({ id: 'e1', pagingToken: 'p1' })],
         cursor: 'p1',
         latestLedger: 12,
-      } as unknown as rpc.GetEventsResponse)
+      } as unknown as rpc.Api.GetEventsResponse)
 
     const sub = subscribeContractEvents({
       server,

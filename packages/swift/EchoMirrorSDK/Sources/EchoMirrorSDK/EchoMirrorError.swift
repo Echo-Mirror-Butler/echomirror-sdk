@@ -8,6 +8,8 @@ public enum EchoMirrorError: Error, Equatable, Sendable {
     case runtime(String)
     case network(String)
     case serialization(String)
+    case cancelled(String)
+    case timeout(String)
     case unknown(code: Int32, message: String)
 
     public init(code: Int32, message: String) {
@@ -26,6 +28,10 @@ public enum EchoMirrorError: Error, Equatable, Sendable {
             self = .network(message)
         case 7:
             self = .serialization(message)
+        case 8:
+            self = .cancelled(message)
+        case 9:
+            self = .timeout(message)
         default:
             self = .unknown(code: code, message: message)
         }
@@ -42,6 +48,8 @@ extension EchoMirrorError: LocalizedError {
              .runtime(let message),
              .network(let message),
              .serialization(let message),
+             .cancelled(let message),
+             .timeout(let message),
              .unknown(_, let message):
             return message
         }

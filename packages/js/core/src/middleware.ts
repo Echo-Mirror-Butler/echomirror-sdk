@@ -98,35 +98,3 @@ export class LoggingMiddleware implements RequestMiddleware {
 
 /** Maximum middleware-requested retries per logical request. */
 export const MAX_MIDDLEWARE_RETRIES = 3
-
-/** Base delay of 100ms, exponential backoff: 100ms * 2^attempt, capped at 5s. */
-function calculateBackoff(attempt: number, baseMs: number, maxMs: number): number {
-  const exponentialDelay = baseMs * 2 ** attempt
-  const cappedDelay = Math.min(exponentialDelay, maxMs)
-  // Add jitter: +/- 25% of the delay
-  const jitter = (cappedDelay / 4) * (Math.random() * 2 - 1)
-  return Math.max(0, cappedDelay + jitter)
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-/** Check if an error is retryable (transient failures). */
-function isRetryable(err: unknown): boolean {
-  if (err instanceof Error) {
-    // Network errors are retryable
-    if (err.name === 'NetworkError' || err.message.includes('Network error')) {
-      return true
-    }
-    // Rate limit errors are retryable
-    if (err.name === 'RateLimitError') {
-      return true
-    }
-    // 5xx errors are retryable (check statusCode if available)
-    if ('statusCode' in err && typeof (err as any).statusCode === 'number') {
-      return (err as any).statusCode >= 500
-    }
-  }
-  return false
-}

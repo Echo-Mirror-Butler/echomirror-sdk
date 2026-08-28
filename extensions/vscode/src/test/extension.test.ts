@@ -69,10 +69,11 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('vscode', () => {
-  let statusBarCalls = 0
   return {
     window: {
-      createStatusBarItem: vi.fn(() => (statusBarCalls++ === 0 ? mocks.statusBar : mocks.moodStatusBar)),
+      createStatusBarItem: vi.fn((_alignment: unknown, priority?: number) =>
+        priority === 100 ? mocks.statusBar : mocks.moodStatusBar,
+      ),
       showInputBox: mocks.showInputBox,
       showQuickPick: mocks.showQuickPick,
       showInformationMessage: mocks.showInformationMessage,
@@ -188,7 +189,8 @@ describe('fundTestnetCommand', () => {
 
 describe('checkBalanceCommand', () => {
   it('prompts for a key when none is configured, then shows balance', async () => {
-    setConfig({ statusBarPublicKey: '' })
+    setConfig({ network: 'testnet', showStatusBar: false, statusBarPublicKey: '' })
+    ext.activate(makeContext())
     mocks.showInputBox.mockResolvedValue('G'.padEnd(56, 'A'))
     await ext.checkBalanceCommand()
     expect(mocks.showInputBox).toHaveBeenCalled()
@@ -196,7 +198,12 @@ describe('checkBalanceCommand', () => {
   })
 
   it('uses the configured key directly', async () => {
-    setConfig({ statusBarPublicKey: 'G'.padEnd(56, 'B'), network: 'testnet' })
+    setConfig({
+      statusBarPublicKey: 'G'.padEnd(56, 'B'),
+      network: 'testnet',
+      showStatusBar: false,
+    })
+    ext.activate(makeContext())
     await ext.checkBalanceCommand()
     expect(mocks.showInputBox).not.toHaveBeenCalled()
     expect(mocks.statusBar.text).toContain('ECHO')

@@ -62,7 +62,7 @@ jobs:
           else
             source ../../.venv/bin/activate
           fi
-          pytest -v --cov=echomirror --cov-report=term-missing --cov-fail-under=50
+          pytest -v --cov=echomirror --cov-report=term-missing --cov-report=html --cov-fail-under=50
 
       - name: Upload coverage artifact
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'

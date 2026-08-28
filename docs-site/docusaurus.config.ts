@@ -1,4 +1,4 @@
-﻿import {themes as prismThemes} from 'prism-react-renderer';
+import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
@@ -110,7 +110,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          to: '/docs/changelog',
+          to: '/docs/next/changelog',
           label: 'Changelog',
           position: 'left',
         },
@@ -146,7 +146,7 @@ const config: Config = {
             },
             {
               label: 'Changelog',
-              to: '/docs/changelog',
+              to: '/docs/next/changelog',
             },
           ],
         },

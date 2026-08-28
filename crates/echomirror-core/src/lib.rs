@@ -9,7 +9,7 @@ pub mod mood;
 pub mod social;
 pub mod types;
 
-pub use cache::{CacheConfig, ResponseCache};
+pub use cache::{CacheConfig, CacheValidatorKind, ResponseCache};
 pub use circuit_breaker::CircuitBreaker;
 pub use client::EchoMirrorClient;
 pub use config::{CircuitBreakerConfig, CircuitState, EchoMirrorConfig, StellarNetwork};
