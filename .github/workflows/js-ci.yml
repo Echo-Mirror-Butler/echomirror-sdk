@@ -10,15 +10,12 @@ jobs:
   js-checks:
     name: Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v7
-
       - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
-
       - run: npm ci
       - run: npm run lint --workspaces --if-present
       - run: npm run build -w packages/js/core
@@ -32,10 +29,7 @@ jobs:
       # import resolves against its own ambient .d.ts for type-checking,
       # with no dependency on the wasm-pack artifacts existing.
 
-      # Existing package tests
       - run: npm run test --if-present --workspace=packages/js/core --workspace=packages/js/mood --workspace=packages/js/react --workspace=packages/js/stellar
-
-      # Chrome extension tests
       - run: npm run test --if-present --workspace=extensions/chrome
 
       # `coverage` runs each package's test suite (superset of `test`) and
