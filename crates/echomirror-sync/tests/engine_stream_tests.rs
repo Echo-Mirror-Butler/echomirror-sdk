@@ -246,3 +246,61 @@ async fn idle_timeout_triggers_reconnect() {
     engine.stop();
     engine.stopped().await;
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn lagged_consumer_receives_gap_detected_event_and_updates_metrics() {
+    let fixture = HorizonFixture::start().await;
+    let client = test_client(&fixture.base_url());
+
+    // Small channel capacity so buffer overflows quickly on slow consumer
+    let engine = SyncEngine::builder(&client)
+        .watch(ACCOUNT)
+        .channel_capacity(2)
+        .build();
+
+    let mut stream = engine.subscribe_stream();
+    engine.clone().start();
+    fixture.wait_for_sse_connections(1).await;
+
+    // First event is SyncStarted
+    let first = stream.recv().await.unwrap();
+    assert!(matches!(first, SyncEvent::SyncStarted { .. }));
+
+    // Send multiple events rapidly while consumer does not read
+    for i in 501..=510 {
+        fixture.push_event(&payment_record(
+            i,
+            "GSENDER",
+            ACCOUNT,
+            Some("ECHO"),
+            "1.0000000",
+        ));
+    }
+
+    // Give time for engine to process records and broadcast to channel
+    tokio::time::sleep(Duration::from_millis(50)).await;
+
+    // Slow consumer wakes up and calls recv()
+    // Should receive GapDetected event with missed count > 0
+    let mut received_gap = false;
+    let mut gap_missed = 0;
+    for _ in 0..10 {
+        if let Ok(event) = stream.recv().await {
+            if let SyncEvent::GapDetected { missed_count } = event {
+                received_gap = true;
+                gap_missed = missed_count;
+                break;
+            }
+        }
+    }
+
+    assert!(received_gap, "expected consumer to receive GapDetected event");
+    assert!(gap_missed > 0, "expected missed count > 0");
+
+    let snapshot = engine.metrics();
+    assert!(snapshot.lag_events >= 1, "expected lag_events >= 1");
+    assert!(snapshot.events_lost >= 1, "expected events_lost >= 1");
+
+    engine.stop();
+    engine.stopped().await;
+}

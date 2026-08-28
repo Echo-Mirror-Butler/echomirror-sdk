@@ -4,6 +4,7 @@ export interface StellarNetworkConfig {
   id: StellarNetworkId
   passphrase: string
   horizonUrl: string
+  sorobanRpcUrl: string
   friendbotUrl?: string
 }
 
@@ -12,11 +13,13 @@ export const NETWORKS: Record<StellarNetworkId, StellarNetworkConfig> = {
     id: 'mainnet',
     passphrase: 'Public Global Stellar Network ; September 2015',
     horizonUrl: 'https://horizon.stellar.org',
+    sorobanRpcUrl: 'https://rpc.stellar.org',
   },
   testnet: {
     id: 'testnet',
     passphrase: 'Test SDF Network ; September 2015',
     horizonUrl: 'https://horizon-testnet.stellar.org',
+    sorobanRpcUrl: 'https://soroban-testnet.stellar.org',
     friendbotUrl: 'https://friendbot.stellar.org',
   },
 }

@@ -22,8 +22,10 @@ use sha2::{Digest, Sha256};
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
 use std::ptr;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub type EchoMirrorAsyncCallback =
     Option<extern "C" fn(user_data: *mut c_void, code: i32, payload: *mut c_char)>;
@@ -39,6 +41,71 @@ pub enum EchoMirrorFfiErrorCode {
     Runtime = 5,
     Network = 6,
     Serialization = 7,
+    Cancelled = 8,
+    Timeout = 9,
+}
+
+/// Opaque cancellation handle for async FFI operations.
+///
+/// Wrap an `Arc<AtomicBool>`. The native side (Swift/Dart) holds onto this
+/// and can signal cancellation at any time. The Rust-side async operation
+/// checks `is_cancelled()` at await points and aborts if true.
+pub struct EchoMirrorCancellationHandle {
+    cancelled: Arc<AtomicBool>,
+}
+
+impl EchoMirrorCancellationHandle {
+    fn new() -> *mut Self {
+        Box::into_raw(Box::new(Self {
+            cancelled: Arc::new(AtomicBool::new(false)),
+        }))
+    }
+
+    fn is_cancelled(&self) -> bool {
+        self.cancelled.load(Ordering::Acquire)
+    }
+
+    fn cancel(&self) {
+        self.cancelled.store(true, Ordering::Release);
+    }
+}
+
+/// Create a new cancellation handle. Caller must free with
+/// `echomirror_cancellation_free`.
+#[no_mangle]
+pub extern "C" fn echomirror_cancellation_new() -> *mut EchoMirrorCancellationHandle {
+    EchoMirrorCancellationHandle::new()
+}
+
+/// Signal cancellation. The associated async operation will abort at its next
+/// await point (or as soon as the check runs).
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "C" fn echomirror_cancellation_cancel(handle: *mut EchoMirrorCancellationHandle) {
+    if !handle.is_null() {
+        unsafe { &*handle }.cancel();
+    }
+}
+
+/// Returns 1 if cancellation has been signalled, 0 otherwise.
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "C" fn echomirror_cancellation_is_cancelled(
+    handle: *const EchoMirrorCancellationHandle,
+) -> u8 {
+    if handle.is_null() {
+        return 0;
+    }
+    u8::from(unsafe { &*handle }.is_cancelled())
+}
+
+/// Free a cancellation handle. Safe to call with a null pointer.
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "C" fn echomirror_cancellation_free(handle: *mut EchoMirrorCancellationHandle) {
+    if !handle.is_null() {
+        unsafe { drop(Box::from_raw(handle)) };
+    }
 }
 
 pub struct EchoMirrorMoodClient {
@@ -135,7 +202,8 @@ fn map_core_error(error: EchoMirrorError) -> EchoMirrorFfiErrorCode {
             EchoMirrorFfiErrorCode::Serialization
         }
         EchoMirrorError::Config(_) => EchoMirrorFfiErrorCode::InvalidConfig,
-        EchoMirrorError::Stellar(_)
+        EchoMirrorError::CircuitOpen(_)
+        | EchoMirrorError::Stellar(_)
         | EchoMirrorError::Sync(_)
         | EchoMirrorError::NotFound(_)
         | EchoMirrorError::Other(_) => EchoMirrorFfiErrorCode::Runtime,
@@ -262,6 +330,9 @@ pub extern "C" fn echomirror_mood_client_free(client: *mut EchoMirrorMoodClient)
 }
 
 /// Callback payload is a JSON mood entry.
+///
+/// `cancellation_handle` may be null (no cancellation support).
+/// `timeout_ms` of 0 means no per-call timeout.
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_mood_log_async(
@@ -272,6 +343,8 @@ pub extern "C" fn echomirror_mood_log_async(
     tags_json: *const c_char,
     callback: EchoMirrorAsyncCallback,
     user_data: *mut c_void,
+    cancellation_handle: *const EchoMirrorCancellationHandle,
+    timeout_ms: u32,
 ) -> i32 {
     if client.is_null() || callback.is_none() {
         return error_code(EchoMirrorFfiErrorCode::NullPointer);
@@ -297,9 +370,31 @@ pub extern "C" fn echomirror_mood_log_async(
 
     let network = unsafe { (*client).client.config().network };
     let user_data = user_data as usize;
+    let cancelled = if cancellation_handle.is_null() {
+        Arc::new(AtomicBool::new(false))
+    } else {
+        unsafe { &*cancellation_handle }.cancelled.clone()
+    };
+    let timeout = if timeout_ms > 0 {
+        Some(Duration::from_millis(timeout_ms as u64))
+    } else {
+        None
+    };
 
     thread::spawn(move || {
         let user_data = user_data as *mut c_void;
+
+        // Check cancellation before starting work.
+        if cancelled.load(Ordering::Acquire) {
+            complete_async(
+                callback,
+                user_data,
+                EchoMirrorFfiErrorCode::Cancelled,
+                async_payload_error(EchoMirrorFfiErrorCode::Cancelled, "operation cancelled"),
+            );
+            return;
+        }
+
         let timestamp = now_unix_ms();
         let id = hash_id(&format!("{user_id}:{score}:{timestamp}"));
         let payload = json!({
@@ -312,6 +407,44 @@ pub extern "C" fn echomirror_mood_log_async(
             "createdAtUnixMs": timestamp
         })
         .to_string();
+
+        // Simulate work with cancellation checks (in real use this would be
+        // an async operation like an HTTP call).
+        if let Some(timeout) = timeout {
+            let start = std::time::Instant::now();
+            while start.elapsed() < timeout {
+                if cancelled.load(Ordering::Acquire) {
+                    complete_async(
+                        callback,
+                        user_data,
+                        EchoMirrorFfiErrorCode::Cancelled,
+                        async_payload_error(
+                            EchoMirrorFfiErrorCode::Cancelled,
+                            "operation cancelled",
+                        ),
+                    );
+                    return;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        } else {
+            // No timeout — just check cancellation periodically.
+            for _ in 0..10 {
+                if cancelled.load(Ordering::Acquire) {
+                    complete_async(
+                        callback,
+                        user_data,
+                        EchoMirrorFfiErrorCode::Cancelled,
+                        async_payload_error(
+                            EchoMirrorFfiErrorCode::Cancelled,
+                            "operation cancelled",
+                        ),
+                    );
+                    return;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
 
         complete_async(callback, user_data, EchoMirrorFfiErrorCode::Ok, payload);
     });
@@ -344,6 +477,9 @@ pub extern "C" fn echomirror_stellar_client_free(client: *mut EchoMirrorStellarC
 }
 
 /// Callback payload is a JSON Stellar balance.
+///
+/// `cancellation_handle` may be null (no cancellation support).
+/// `timeout_ms` of 0 means no per-call timeout.
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_stellar_get_balance_async(
@@ -351,6 +487,8 @@ pub extern "C" fn echomirror_stellar_get_balance_async(
     public_key: *const c_char,
     callback: EchoMirrorAsyncCallback,
     user_data: *mut c_void,
+    cancellation_handle: *const EchoMirrorCancellationHandle,
+    timeout_ms: u32,
 ) -> i32 {
     if client.is_null() || callback.is_none() {
         return error_code(EchoMirrorFfiErrorCode::NullPointer);
@@ -365,9 +503,31 @@ pub extern "C" fn echomirror_stellar_get_balance_async(
 
     let client = unsafe { (*client).client.clone() };
     let user_data = user_data as usize;
+    let cancelled = if cancellation_handle.is_null() {
+        Arc::new(AtomicBool::new(false))
+    } else {
+        unsafe { &*cancellation_handle }.cancelled.clone()
+    };
+    let timeout = if timeout_ms > 0 {
+        Some(Duration::from_millis(timeout_ms as u64))
+    } else {
+        None
+    };
 
     thread::spawn(move || {
         let user_data = user_data as *mut c_void;
+
+        // Check cancellation before starting.
+        if cancelled.load(Ordering::Acquire) {
+            complete_async(
+                callback,
+                user_data,
+                EchoMirrorFfiErrorCode::Cancelled,
+                async_payload_error(EchoMirrorFfiErrorCode::Cancelled, "operation cancelled"),
+            );
+            return;
+        }
+
         let runtime = match tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -387,7 +547,31 @@ pub extern "C" fn echomirror_stellar_get_balance_async(
             }
         };
 
-        match runtime.block_on(echomirror_stellar::get_balance(&client, &public_key)) {
+        // Wrap the async operation with timeout and cancellation checks.
+        let result = if let Some(timeout) = timeout {
+            runtime.block_on(async {
+                tokio::select! {
+                    result = echomirror_stellar::get_balance(&client, &public_key) => result,
+                    _ = tokio::time::sleep(timeout) => {
+                        Err(echomirror_core::EchoMirrorError::Other("FFI call timed out".to_string()))
+                    }
+                    _ = cancel_check(cancelled) => {
+                        Err(echomirror_core::EchoMirrorError::Other("FFI call cancelled".to_string()))
+                    }
+                }
+            })
+        } else {
+            runtime.block_on(async {
+                tokio::select! {
+                    result = echomirror_stellar::get_balance(&client, &public_key) => result,
+                    _ = cancel_check(cancelled) => {
+                        Err(echomirror_core::EchoMirrorError::Other("FFI call cancelled".to_string()))
+                    }
+                }
+            })
+        };
+
+        match result {
             Ok(balance) => match serde_json::to_string(&balance) {
                 Ok(payload) => {
                     complete_async(callback, user_data, EchoMirrorFfiErrorCode::Ok, payload)
@@ -403,7 +587,17 @@ pub extern "C" fn echomirror_stellar_get_balance_async(
                 ),
             },
             Err(error) => {
-                let code = map_core_error(error);
+                let is_cancelled = error
+                    .to_string()
+                    .contains("cancelled");
+                let is_timeout = error.to_string().contains("timed out");
+                let code = if is_cancelled {
+                    EchoMirrorFfiErrorCode::Cancelled
+                } else if is_timeout {
+                    EchoMirrorFfiErrorCode::Timeout
+                } else {
+                    map_core_error(error)
+                };
                 complete_async(
                     callback,
                     user_data,
@@ -415,6 +609,16 @@ pub extern "C" fn echomirror_stellar_get_balance_async(
     });
 
     error_code(EchoMirrorFfiErrorCode::Ok)
+}
+
+/// Helper future that completes when the cancellation flag is set.
+async fn cancel_check(cancelled: Arc<AtomicBool>) {
+    loop {
+        if cancelled.load(Ordering::Acquire) {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
 }
 
 // Social
@@ -442,6 +646,9 @@ pub extern "C" fn echomirror_social_client_free(client: *mut EchoMirrorSocialCli
 }
 
 /// Callback payload is a JSON user profile snapshot.
+///
+/// `cancellation_handle` may be null (no cancellation support).
+/// `timeout_ms` of 0 means no per-call timeout.
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn echomirror_social_profile_async(
@@ -449,6 +656,8 @@ pub extern "C" fn echomirror_social_profile_async(
     user_id: *const c_char,
     callback: EchoMirrorAsyncCallback,
     user_data: *mut c_void,
+    cancellation_handle: *const EchoMirrorCancellationHandle,
+    timeout_ms: u32,
 ) -> i32 {
     if client.is_null() || callback.is_none() {
         return error_code(EchoMirrorFfiErrorCode::NullPointer);
@@ -463,9 +672,67 @@ pub extern "C" fn echomirror_social_profile_async(
 
     let network = unsafe { (*client).client.config().network };
     let user_data = user_data as usize;
+    let cancelled = if cancellation_handle.is_null() {
+        Arc::new(AtomicBool::new(false))
+    } else {
+        unsafe { &*cancellation_handle }.cancelled.clone()
+    };
+    let timeout = if timeout_ms > 0 {
+        Some(Duration::from_millis(timeout_ms as u64))
+    } else {
+        None
+    };
 
     thread::spawn(move || {
         let user_data = user_data as *mut c_void;
+
+        // Check cancellation before starting.
+        if cancelled.load(Ordering::Acquire) {
+            complete_async(
+                callback,
+                user_data,
+                EchoMirrorFfiErrorCode::Cancelled,
+                async_payload_error(EchoMirrorFfiErrorCode::Cancelled, "operation cancelled"),
+            );
+            return;
+        }
+
+        // Simulate work with cancellation checks.
+        if let Some(timeout) = timeout {
+            let start = std::time::Instant::now();
+            while start.elapsed() < timeout {
+                if cancelled.load(Ordering::Acquire) {
+                    complete_async(
+                        callback,
+                        user_data,
+                        EchoMirrorFfiErrorCode::Cancelled,
+                        async_payload_error(
+                            EchoMirrorFfiErrorCode::Cancelled,
+                            "operation cancelled",
+                        ),
+                    );
+                    return;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        } else {
+            for _ in 0..10 {
+                if cancelled.load(Ordering::Acquire) {
+                    complete_async(
+                        callback,
+                        user_data,
+                        EchoMirrorFfiErrorCode::Cancelled,
+                        async_payload_error(
+                            EchoMirrorFfiErrorCode::Cancelled,
+                            "operation cancelled",
+                        ),
+                    );
+                    return;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+
         let payload = json!({
             "id": user_id,
             "username": user_id,
@@ -573,6 +840,8 @@ mod tests {
             tags.as_ptr(),
             Some(capture_payload),
             &sender as *const Sender<(i32, String)> as *mut c_void,
+            ptr::null(),
+            0,
         );
 
         assert_eq!(code, error_code(EchoMirrorFfiErrorCode::Ok));

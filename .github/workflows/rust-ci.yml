@@ -50,6 +50,35 @@ jobs:
           key: ${{ hashFiles('Cargo.lock') }}
       - run: cargo test --workspace
 
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}-coverage
+      - uses: taiki-e/install-action@fcf5432d9f50d67e37ee6e29bdb7a224ff67b4a7 # v2.86.8
+        with:
+          tool: cargo-llvm-cov
+      # Per-crate floors set from each crate's current measured baseline
+      # (docs/COVERAGE.md has the full backlog + rationale). Only the crates
+      # actually exercised by `cargo test` are gated here:
+      # echomirror-ffi is tested via Swift XCTest and echomirror-python via
+      # pytest, neither of which cargo-llvm-cov sees — gating them on a
+      # cargo-only number would be misleading, not a real signal. Each
+      # invocation is separate (not one `--workspace` run) because
+      # `--fail-under-lines` applies to the whole invocation, and a
+      # meaningful per-package floor needs a per-package invocation.
+      - run: cargo llvm-cov -p echomirror-core --fail-under-lines 55
+      - run: cargo llvm-cov -p echomirror-stellar --fail-under-lines 15
+      - run: cargo llvm-cov -p echomirror-sync --fail-under-lines 70
+      - run: cargo llvm-cov -p echomirror-wasm --fail-under-lines 55
+
   test-sync-postgres:
     name: Test (echomirror-sync + PostgreSQL)
     runs-on: ubuntu-latest
@@ -107,3 +136,16 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - run: npm run test:browser -w packages/js/wasm
+      # @echomirror/wasm is the one package where WASM loading makes
+      # cross-runtime differences most likely to bite (Deno's stricter
+      # ESM/permissions model, Bun's own WASM-loading quirks) — see
+      # packages/js/wasm/README.md#runtime-compatibility for what's verified
+      # and why each runtime needs the flags/invocation it does below.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+      - run: npm run test:bun -w packages/js/wasm
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.x
+      - run: npm run test:deno -w packages/js/wasm

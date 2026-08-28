@@ -21,12 +21,20 @@
       "node": "./wasm-node/echomirror_wasm.cjs",
       "browser": "./wasm-web/echomirror_wasm.js",
       "default": "./wasm-web/echomirror_wasm.js"
+    },
+    "#wasm-binding-simd": {
+      "types": "./src/wasm-binding.d.ts",
+      "node": "./wasm-node-simd/echomirror_wasm.cjs",
+      "browser": "./wasm-web-simd/echomirror_wasm.js",
+      "default": "./wasm-web-simd/echomirror_wasm.js"
     }
   },
   "files": [
     "dist",
     "wasm-web",
     "wasm-node",
+    "wasm-web-simd",
+    "wasm-node-simd",
     "src/wasm-binding.d.ts"
   ],
   "scripts": {
@@ -36,11 +44,13 @@
     "size-limit": "size-limit",
     "test": "vitest run --config vitest.config.ts --passWithNoTests",
     "test:browser": "vitest run --config vitest.browser.config.ts --passWithNoTests",
+    "test:bun": "bun test test/wasm.test.ts",
+    "test:deno": "deno run -A npm:vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "clean": "rm -rf dist wasm-web wasm-node"
+    "clean": "rm -rf dist wasm-web wasm-node wasm-web-simd wasm-node-simd"
   },
-  "keywords": ["echomirror", "wasm", "webassembly", "stellar", "mood"],
+  "keywords": ["echomirror", "wasm", "webassembly", "stellar", "mood", "simd"],
   "license": "MIT",
   "devDependencies": {
     "typescript": "*",
@@ -52,11 +62,23 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "browserslist": [
+    "Chrome >= 91",
+    "Edge >= 91",
+    "Firefox >= 89",
+    "Safari >= 16.4",
+    "not dead"
+  ],
   "size-limit": [
     {
-      "name": "@echomirror/wasm (browser)",
-      "path": "dist/index.js",
-      "limit": "220 KB"
+      "name": "@echomirror/wasm (scalar — always shipped)",
+      "path": "wasm-web/echomirror_wasm_bg.wasm",
+      "limit": "250 KB"
+    },
+    {
+      "name": "@echomirror/wasm (SIMD build — additive, loaded only when supported)",
+      "path": "wasm-web-simd/echomirror_wasm_bg.wasm",
+      "limit": "260 KB"
     }
   ]
 }

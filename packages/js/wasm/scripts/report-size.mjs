@@ -1,35 +1,79 @@
 #!/usr/bin/env node
-// Reports the optimized .wasm binary size for both build targets and fails
-// if either exceeds the documented budget. Run after `npm run build:wasm`.
+// Reports the optimized .wasm binary size for all build targets and fails if
+// any exceed the documented budget. Run after `npm run build:wasm`.
+//
+// Scalar builds are always required. SIMD builds are optional — the script
+// reports them if present and warns (but does not fail) if they are absent,
+// since WASM_BUILD_DEV=1 skips them intentionally.
 import { statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const pkgRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 
-// See README.md "Bundle size" — budget is set with headroom above the
-// measured wasm-opt -O4 output for this crate, to catch real regressions
-// (e.g. an accidentally-added heavy dependency) without flapping on noise.
-const BUDGET_BYTES = 250 * 1024
+// See packages/js/wasm/BENCHMARKS.md for the measured wasm-opt -O4 output
+// sizes. Budgets are set with headroom above the measured size to catch real
+// regressions (e.g. an accidentally-added heavy dependency) without flapping
+// on noise. SIMD budget is slightly higher because the SIMD binary may
+// contain additional v128 instruction encodings.
+const SCALAR_BUDGET_BYTES = 250 * 1024
+const SIMD_BUDGET_BYTES = 260 * 1024
 
-const files = [
-  path.join(pkgRoot, 'wasm-web/echomirror_wasm_bg.wasm'),
-  path.join(pkgRoot, 'wasm-node/echomirror_wasm_bg.wasm'),
+const required = [
+  {
+    file: path.join(pkgRoot, 'wasm-web/echomirror_wasm_bg.wasm'),
+    label: 'wasm-web   [scalar]',
+    budget: SCALAR_BUDGET_BYTES,
+    required: true,
+  },
+  {
+    file: path.join(pkgRoot, 'wasm-node/echomirror_wasm_bg.wasm'),
+    label: 'wasm-node  [scalar]',
+    budget: SCALAR_BUDGET_BYTES,
+    required: true,
+  },
+  {
+    file: path.join(pkgRoot, 'wasm-web-simd/echomirror_wasm_bg.wasm'),
+    label: 'wasm-web   [simd]  ',
+    budget: SIMD_BUDGET_BYTES,
+    required: false,
+  },
+  {
+    file: path.join(pkgRoot, 'wasm-node-simd/echomirror_wasm_bg.wasm'),
+    label: 'wasm-node  [simd]  ',
+    budget: SIMD_BUDGET_BYTES,
+    required: false,
+  },
 ]
 
 let failed = false
-for (const file of files) {
-  if (!statSync(file, { throwIfNoEntry: false })) {
-    console.error(`Missing ${path.relative(pkgRoot, file)} — run \`npm run build:wasm\` first.`)
-    failed = true
+
+for (const { file, label, budget, required: isRequired } of required) {
+  const stat = statSync(file, { throwIfNoEntry: false })
+
+  if (!stat) {
+    if (isRequired) {
+      console.error(`✗ ${label}  MISSING — run \`npm run build:wasm\` first.`)
+      failed = true
+    } else {
+      console.log(
+        `  ${label}  (not built — run without WASM_BUILD_DEV=1 to produce SIMD artifacts)`,
+      )
+    }
     continue
   }
-  const { size } = statSync(file)
+
+  const { size } = stat
   const kb = (size / 1024).toFixed(1)
-  const budgetKb = (BUDGET_BYTES / 1024).toFixed(0)
-  const over = size > BUDGET_BYTES
+  const budgetKb = (budget / 1024).toFixed(0)
+  const over = size > budget
+
   if (over) failed = true
-  console.log(`${path.relative(pkgRoot, file)}: ${kb} KB (budget ${budgetKb} KB) — ${over ? 'OVER BUDGET' : 'OK'}`)
+
+  const icon = over ? '✗' : '✓'
+  console.log(
+    `${icon} ${label}  ${kb.padStart(7)} KB  (budget ${budgetKb} KB)  ${over ? 'OVER BUDGET' : 'OK'}`,
+  )
 }
 
 if (failed) {

@@ -1,10 +1,27 @@
+use crate::cache::ResponseCache;
+use crate::middleware::{
+    MiddlewareDecision, MiddlewareOutcome, MiddlewareRequest, MiddlewareResponse,
+    MAX_MIDDLEWARE_RETRIES,
+};
+use crate::circuit_breaker::CircuitBreaker;
 use crate::{ClientMetrics, EchoMirrorConfig, EchoMirrorError, MetricsSnapshot, Result};
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, IF_NONE_MATCH};
 use reqwest::{Client as HttpClient, Method, StatusCode};
 use serde::{de::DeserializeOwned, Serialize};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use tokio::time::sleep;
+
+/// What a single HTTP attempt (one call to `request_once`) resolved to.
+enum AttemptOutcome<T> {
+    Success(T),
+    Error(EchoMirrorError),
+    /// A middleware's `after_response` asked for an immediate retry (e.g.
+    /// after refreshing an expired auth token). Doesn't count against
+    /// `max_retries` and skips backoff — see `crate::middleware` docs.
+    RetryNow,
+}
 
 #[derive(Debug, Clone)]
 pub struct EchoMirrorClient {
@@ -15,6 +32,10 @@ pub struct EchoMirrorClient {
     token_refresh_attempted: Arc<RwLock<bool>>,
     // Metrics for observability
     metrics: Arc<ClientMetrics>,
+    // Circuit breaker for failing fast on sustained outages
+    circuit_breaker: Arc<CircuitBreaker>,
+    // ETag/conditional-request response cache
+    cache: ResponseCache,
 }
 
 impl EchoMirrorClient {
@@ -25,12 +46,21 @@ impl EchoMirrorClient {
             .build()
             .map_err(EchoMirrorError::Network)?;
 
+        let metrics = Arc::new(ClientMetrics::new());
+        let circuit_breaker = Arc::new(CircuitBreaker::new(
+            config.circuit_breaker.clone(),
+            metrics.clone(),
+        ));
+        let cache = ResponseCache::new(config.cache.clone());
+
         Ok(Self {
             config: Arc::new(config),
             http,
             auth_token: Arc::new(RwLock::new(None)),
             token_refresh_attempted: Arc::new(RwLock::new(false)),
-            metrics: Arc::new(ClientMetrics::new()),
+            metrics,
+            circuit_breaker,
+            cache,
         })
     }
 
@@ -42,9 +72,19 @@ impl EchoMirrorClient {
         &self.config
     }
 
+    /// Get a reference to the client's circuit breaker
+    pub fn circuit_breaker(&self) -> &Arc<CircuitBreaker> {
+        &self.circuit_breaker
+    }
+
     /// Get a snapshot of the current metrics
     pub fn metrics(&self) -> MetricsSnapshot {
         self.metrics.snapshot()
+    }
+
+    /// Get a reference to the response cache
+    pub fn cache(&self) -> &ResponseCache {
+        &self.cache
     }
 
     /// Reset all metrics to zero
@@ -96,8 +136,11 @@ impl EchoMirrorClient {
         body: Option<&B>,
         timeout_override: Option<Duration>,
     ) -> Result<T> {
+        let was_probe = self.circuit_breaker.before_request().await?;
+
         let mut attempt = 0;
         let max_attempts = self.config.max_retries + 1;
+        let mut middleware_retries = 0;
 
         self.metrics.record_request();
 
@@ -105,16 +148,28 @@ impl EchoMirrorClient {
             attempt += 1;
 
             match self
-                .request_once::<B, T>(method.clone(), path, body, timeout_override)
+                .request_once::<B, T>(method.clone(), path, body, timeout_override, attempt)
                 .await
             {
-                Ok(result) => {
+                AttemptOutcome::Success(result) => {
                     self.metrics.record_success();
                     // Reset token refresh flag on success
                     *self.token_refresh_attempted.write().await = false;
                     return Ok(result);
                 }
-                Err(err) => {
+                AttemptOutcome::RetryNow => {
+                    middleware_retries += 1;
+                    if middleware_retries > MAX_MIDDLEWARE_RETRIES {
+                        self.metrics.record_failure();
+                        return Err(EchoMirrorError::Auth(
+                            "middleware requested a retry too many times".to_string(),
+                        ));
+                    }
+                    // Doesn't count against max_retries/backoff: retry same attempt slot.
+                    attempt -= 1;
+                    continue;
+                }
+                AttemptOutcome::Error(err) => {
                     // Record error type metrics
                     self.record_error_metrics(&err);
 
@@ -149,6 +204,14 @@ impl EchoMirrorClient {
 
                     // Check if we should retry
                     if attempt >= max_attempts || !err.is_retryable() {
+                        let is_backend_failure = matches!(&err, EchoMirrorError::Network(_))
+                            || matches!(
+                                &err,
+                                EchoMirrorError::Http { status, .. } if *status >= 500
+                            );
+                        self.circuit_breaker
+                            .on_failure(is_backend_failure, was_probe)
+                            .await;
                         self.metrics.record_failure();
                         // Reset token refresh flag on final failure
                         *self.token_refresh_attempted.write().await = false;
@@ -217,65 +280,206 @@ impl EchoMirrorClient {
         path: &str,
         body: Option<&B>,
         timeout_override: Option<Duration>,
-    ) -> Result<T> {
+        attempt: u32,
+    ) -> AttemptOutcome<T> {
         let url = format!("{}{}", self.config.base_url, path);
         let token = self.auth_token.read().await.clone();
 
-        let mut req_builder = self
-            .http
-            .request(method, &url)
-            .header("x-api-key", &self.config.api_key)
-            .header(
-                "x-echomirror-network",
-                format!("{:?}", self.config.network).to_lowercase(),
-            );
+        let mut headers = HeaderMap::new();
+        match HeaderValue::from_str(&self.config.api_key) {
+            Ok(v) => {
+                headers.insert("x-api-key", v);
+            }
+            Err(e) => {
+                return AttemptOutcome::Error(EchoMirrorError::Config(format!(
+                    "invalid api key: {e}"
+                )))
+            }
+        }
+        headers.insert(
+            "x-echomirror-network",
+            HeaderValue::from_static(match self.config.network {
+                crate::config::StellarNetwork::Mainnet => "mainnet",
+                crate::config::StellarNetwork::Testnet => "testnet",
+            }),
+        );
+        if let Some(tok) = &token {
+            match HeaderValue::from_str(&format!("Bearer {tok}")) {
+                Ok(v) => {
+                    headers.insert(AUTHORIZATION, v);
+                }
+                Err(e) => {
+                    return AttemptOutcome::Error(EchoMirrorError::Config(format!(
+                        "invalid auth token: {e}"
+                    )))
+                }
+            }
+        }
 
-        // Apply timeout override if provided
+        // For GET requests, check the cache and add If-None-Match header.
+        let is_get = method == Method::GET;
+        let cached_validator: Option<String> = if is_get {
+            if let Some((validator, _body)) = self.cache.get(&url).await {
+                self.metrics.record_cache_hit();
+                if let Ok(hv) = HeaderValue::from_str(&validator) {
+                    headers.insert(IF_NONE_MATCH, hv);
+                }
+                Some(validator)
+            } else {
+                self.metrics.record_cache_miss();
+                None
+            }
+        } else {
+            None
+        };
+
+        let body_bytes = match body {
+            Some(b) => match serde_json::to_vec(b) {
+                Ok(bytes) => Some(bytes),
+                Err(e) => return AttemptOutcome::Error(EchoMirrorError::Serialization(e)),
+            },
+            None => None,
+        };
+
+        let mut mw_req = MiddlewareRequest {
+            method,
+            url,
+            headers,
+            body: body_bytes,
+            attempt,
+        };
+
+        for mw in &self.config.middlewares {
+            mw.before_request(self, &mut mw_req).await;
+        }
+
+        let mut req_builder = self.http.request(mw_req.method.clone(), &mw_req.url);
+        for (name, value) in mw_req.headers.iter() {
+            req_builder = req_builder.header(name.clone(), value.clone());
+        }
         if let Some(timeout) = timeout_override {
             req_builder = req_builder.timeout(timeout);
         }
-
-        if let Some(tok) = &token {
-            req_builder = req_builder.bearer_auth(tok);
-        }
-        if let Some(b) = body {
-            req_builder = req_builder.json(b);
+        if let Some(b) = &mw_req.body {
+            req_builder = req_builder
+                .header(CONTENT_TYPE, "application/json")
+                .body(b.clone());
         }
 
-        let res = req_builder.send().await?;
-        let status = res.status();
+        let started = Instant::now();
+        let send_result = req_builder.send().await;
 
-        match status {
-            StatusCode::UNAUTHORIZED => {
-                return Err(EchoMirrorError::AuthExpired);
+        let http_result: std::result::Result<MiddlewareResponse, EchoMirrorError> =
+            match send_result {
+                Ok(res) => {
+                    let status = res.status();
+                    let headers = res.headers().clone();
+
+                    // Handle 304 Not Modified: return cached body if available.
+                    if status == StatusCode::NOT_MODIFIED {
+                        if let Some(_validator) = &cached_validator {
+                            if let Some((_v, cached_body)) = self.cache.get(&mw_req.url).await {
+                                return AttemptOutcome::Success(
+                                    serde_json::from_slice(&cached_body).unwrap_or_else(|_| {
+                                        panic!(
+                                            "cached body for {} should be valid JSON",
+                                            mw_req.url
+                                        )
+                                    }),
+                                );
+                            }
+                        }
+                        // No cached body — fall through to error handling.
+                        return AttemptOutcome::Error(EchoMirrorError::Http {
+                            status: 304,
+                            message: "Not Modified but no cached body available".to_string(),
+                        });
+                    }
+
+                    match res.bytes().await {
+                        Ok(bytes) => Ok(MiddlewareResponse {
+                            status,
+                            headers,
+                            body: bytes.to_vec(),
+                            duration: started.elapsed(),
+                        }),
+                        Err(e) => Err(EchoMirrorError::Network(e)),
+                    }
+                }
+                Err(e) => Err(EchoMirrorError::Network(e)),
+            };
+
+        let outcome = match &http_result {
+            Ok(res) => MiddlewareOutcome::Response(res),
+            Err(err) => MiddlewareOutcome::Error(err),
+        };
+
+        for mw in &self.config.middlewares {
+            if mw.after_response(self, &mw_req, &outcome).await == MiddlewareDecision::RetryNow {
+                return AttemptOutcome::RetryNow;
             }
+        }
+
+        let res = match http_result {
+            Ok(res) => res,
+            Err(err) => return AttemptOutcome::Error(err),
+        };
+
+        match res.status {
+            StatusCode::UNAUTHORIZED => AttemptOutcome::Error(EchoMirrorError::AuthExpired),
             StatusCode::TOO_MANY_REQUESTS => {
                 let retry = res
-                    .headers()
+                    .headers
                     .get("retry-after")
                     .and_then(|v| v.to_str().ok())
                     .and_then(|v| v.parse().ok())
                     .unwrap_or(60);
-                return Err(EchoMirrorError::RateLimit {
+                AttemptOutcome::Error(EchoMirrorError::RateLimit {
                     retry_after_secs: retry,
-                });
+                })
             }
             StatusCode::NO_CONTENT => {
                 // Safety: T must be () for 204 responses
-                return Ok(serde_json::from_value(serde_json::Value::Null)?);
+                match serde_json::from_value(serde_json::Value::Null) {
+                    Ok(v) => AttemptOutcome::Success(v),
+                    Err(e) => AttemptOutcome::Error(EchoMirrorError::Serialization(e)),
+                }
             }
             s if !s.is_success() => {
-                let msg = res.text().await.unwrap_or_default();
-                return Err(EchoMirrorError::Http {
+                let msg = String::from_utf8_lossy(&res.body).into_owned();
+                AttemptOutcome::Error(EchoMirrorError::Http {
                     status: s.as_u16(),
                     message: msg,
-                });
+                })
             }
-            _ => {}
+            _ => {
+                // Success — check for ETag and cache GET responses.
+                if is_get {
+                    if let Some(etag) = res.headers.get("etag").and_then(|v| v.to_str().ok()) {
+                        self.cache
+                            .put(mw_req.url.clone(), etag.to_string(), res.body.clone())
+                            .await;
+                    } else if let Some(last_modified) = res
+                        .headers
+                        .get("last-modified")
+                        .and_then(|v| v.to_str().ok())
+                    {
+                        self.cache
+                            .put(
+                                mw_req.url.clone(),
+                                last_modified.to_string(),
+                                res.body.clone(),
+                            )
+                            .await;
+                    }
+                }
+                match serde_json::from_slice::<T>(&res.body) {
+                    Ok(v) => AttemptOutcome::Success(v),
+                    Err(e) => AttemptOutcome::Error(EchoMirrorError::InvalidResponse(format!(
+                        "Failed to parse response: {e}"
+                    ))),
+                }
+            }
         }
-
-        res.json::<T>().await.map_err(|e| {
-            EchoMirrorError::InvalidResponse(format!("Failed to parse response: {}", e))
-        })
     }
 }

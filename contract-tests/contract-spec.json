@@ -153,6 +153,33 @@
       ]
     },
     {
+      "id": "get_social_feed_since",
+      "binding": ["js"],
+      "target": "api",
+      "method": "GET",
+      "path": "/social/feed?since_id=feed-001&limit=50",
+      "request": {},
+      "response": {
+        "status": 200,
+        "body": {
+          "entries": [
+            {
+              "id": "feed-002",
+              "score": 6,
+              "tags": ["sleep"],
+              "country": "US",
+              "city": "Austin",
+              "created_at": "2026-08-17T09:05:00Z"
+            }
+          ]
+        }
+      },
+      "assertions": [
+        { "field": "id", "eq": "feed-002", "path": "entries.0" },
+        { "field": "created_at", "eq": "2026-08-17T09:05:00Z", "path": "entries.0" }
+      ]
+    },
+    {
       "id": "get_leaderboard",
       "binding": ["rust", "js", "flutter"],
       "target": "api",

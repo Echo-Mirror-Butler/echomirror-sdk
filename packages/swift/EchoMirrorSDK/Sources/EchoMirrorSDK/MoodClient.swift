@@ -26,7 +26,9 @@ public final class MoodClient {
         userId: String,
         score: UInt8,
         note: String? = nil,
-        tags: [String] = []
+        tags: [String] = [],
+        cancellationHandle: CancellationHandle? = nil,
+        timeoutMs: UInt32 = 0
     ) async throws -> MoodEntry {
         guard isValidScore(score) else {
             throw EchoMirrorError.invalidInput("Mood score must be between 1 and 10")
@@ -35,7 +37,10 @@ public final class MoodClient {
         let tagsData = try JSONEncoder().encode(tags)
         let tagsJSON = String(decoding: tagsData, as: UTF8.self)
 
-        let payload = try await FFIAsync.perform { callback, userData in
+        let payload = try await FFIAsync.perform(
+            cancellationHandle: cancellationHandle,
+            timeoutMs: timeoutMs
+        ) { callback, userData, cancelPtr, timeout in
             userId.withCString { userIdCString in
                 tagsJSON.withCString { tagsCString in
                     if let note {
@@ -47,7 +52,9 @@ public final class MoodClient {
                                 noteCString,
                                 tagsCString,
                                 callback,
-                                userData
+                                userData,
+                                cancelPtr,
+                                timeout
                             )
                         }
                     }
@@ -59,7 +66,9 @@ public final class MoodClient {
                         nil,
                         tagsCString,
                         callback,
-                        userData
+                        userData,
+                        cancelPtr,
+                        timeout
                     )
                 }
             }

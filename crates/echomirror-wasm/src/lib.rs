@@ -15,6 +15,12 @@ and wraps the raw output in an ergonomic TypeScript API:
 npm run build:wasm -w packages/js/wasm
 ```
 
+The build script produces two builds side-by-side:
+- `wasm-web/` and `wasm-node/` — scalar (baseline), always compatible
+- `wasm-web-simd/` and `wasm-node-simd/` — SIMD128, for supporting runtimes
+
+See `packages/js/wasm/BENCHMARKS.md` for the measured before/after numbers.
+
 ## Usage from JavaScript
 
 ```js
@@ -60,14 +66,23 @@ pub fn verify_mood_score(score: u8) -> bool {
 
 // ── Crypto / Stellar ──────────────────────────────────────────────────────────
 
+/// Compute a SHA-256 digest. On WASM targets built with `target-feature=+simd128`
+/// (activated by the `simd` Cargo feature), sha2's SIMD backend is selected
+/// automatically by the compiler — no manual dispatch needed. The same
+/// function signature is used in both builds; the ABI exposed to JS is
+/// unchanged.
+pub(crate) fn sha256_hex(input: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(input);
+    hex::encode(hasher.finalize())
+}
+
 /// SHA-256 hash of a Stellar public key, returned as lowercase hex.
 /// Used for anonymous analytics — never stored as a raw key.
 #[wasm_bindgen]
 pub fn hash_public_key(public_key: &str) -> String {
-    use sha2::{Digest, Sha256};
-    let mut hasher = Sha256::new();
-    hasher.update(public_key.as_bytes());
-    hex::encode(hasher.finalize())
+    sha256_hex(public_key.as_bytes())
 }
 
 /// Verify that a string looks like a valid Stellar G-address (ed25519 public key).
@@ -96,7 +111,7 @@ pub fn encode_memo(text: &str) -> Result<String, JsValue> {
 }
 
 /// Decode a base64 string into raw bytes. Returns `None` on malformed input.
-fn base64_decode(input: &str) -> Option<Vec<u8>> {
+pub(crate) fn base64_decode(input: &str) -> Option<Vec<u8>> {
     fn val(c: u8) -> Option<u32> {
         match c {
             b'A'..=b'Z' => Some((c - b'A') as u32),
@@ -128,7 +143,7 @@ fn base64_decode(input: &str) -> Option<Vec<u8>> {
     Some(out)
 }
 
-fn base64_encode(input: &[u8]) -> String {
+pub(crate) fn base64_encode(input: &[u8]) -> String {
     const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::new();
     let mut i = 0;
@@ -271,10 +286,7 @@ impl StellarTxBytes {
 
     /// SHA-256 hash of the raw envelope bytes, as lowercase hex.
     pub fn sha256(&self) -> String {
-        use sha2::{Digest, Sha256};
-        let mut hasher = Sha256::new();
-        hasher.update(&self.bytes);
-        hex::encode(hasher.finalize())
+        sha256_hex(&self.bytes)
     }
 
     /// Copy the raw bytes out as a fresh, JS-owned `Uint8Array`.
@@ -282,6 +294,224 @@ impl StellarTxBytes {
         self.bytes.clone()
     }
 }
+
+// ── Benchmark helpers (pub for criterion benches, not exposed to JS) ──────────
+
+/// Benchmark-only helpers. These are compiled into the native rlib but are
+/// NOT exported via wasm-bindgen and therefore never appear in the generated
+/// JS/TS glue. They live here — rather than in a separate `benches/` helper
+/// file — so they exercise exactly the same internal functions the WASM
+/// export paths call.
+///
+/// On wasm32 targets the module is gated behind `test` / `bench-helpers` to
+/// avoid bloating the WASM binary with unused code. On native targets it is
+/// always compiled so `cargo bench` can reach it without any feature flags.
+#[cfg(any(not(target_arch = "wasm32"), test, feature = "bench-helpers"))]
+pub mod bench {
+    use super::*;
+
+    const SAMPLE_KEY: &str = "GPUBLIC_KEY_ECHOMIRROR_BENCH_FIXTURE_00000000000000";
+
+    /// Hash one representative Stellar public key.
+    #[inline]
+    pub fn bench_hash_single() -> String {
+        sha256_hex(SAMPLE_KEY.as_bytes())
+    }
+
+    /// Hash `n` public keys, simulating an analytics batch.
+    #[inline]
+    pub fn bench_hash_many(n: usize) -> Vec<String> {
+        (0..n)
+            .map(|i| {
+                let key = format!("GPUBLIC_KEY_BENCH_{:032}", i);
+                sha256_hex(key.as_bytes())
+            })
+            .collect()
+    }
+
+    /// Base64-encode `n` bytes of synthetic payload (memo-sized up to XDR-sized).
+    #[inline]
+    pub fn bench_base64_encode(len: usize) -> String {
+        let data: Vec<u8> = (0..len).map(|i| (i & 0xff) as u8).collect();
+        base64_encode(&data)
+    }
+
+    /// Base64-decode a pre-encoded blob of `len` bytes.
+    #[inline]
+    pub fn bench_base64_decode(len: usize) -> Vec<u8> {
+        let data: Vec<u8> = (0..len).map(|i| (i & 0xff) as u8).collect();
+        let encoded = base64_encode(&data);
+        base64_decode(&encoded).expect("valid base64")
+    }
+
+    /// Encode a memo of exactly `len` bytes.
+    #[inline]
+    pub fn bench_memo_encode(len: usize) -> String {
+        let text: String = std::iter::repeat('x').take(len.min(28)).collect();
+        base64_encode(text.as_bytes())
+    }
+
+    /// Decode a synthetic XDR blob of `len` bytes.
+    #[inline]
+    pub fn bench_xdr_decode(len: usize) -> StellarTxBytes {
+        let raw: Vec<u8> = (0..len).map(|i| (i & 0xff) as u8).collect();
+        let encoded = base64_encode(&raw);
+        StellarTxBytes {
+            bytes: base64_decode(&encoded).expect("valid"),
+        }
+    }
+
+    /// Decode a synthetic XDR blob of `len` bytes, then SHA-256 the result —
+    /// the combined hot path called for every processed Stellar transaction.
+    #[inline]
+    pub fn bench_xdr_round_trip(len: usize) -> String {
+        let tx = bench_xdr_decode(len);
+        sha256_hex(&tx.bytes)
+    }
+
+    /// Batch: decode + hash `n` synthetic XDR payloads (512 bytes each).
+    #[inline]
+    pub fn bench_xdr_batch_hash(n: usize) -> Vec<String> {
+        (0..n).map(|_| bench_xdr_round_trip(512)).collect()
+    }
+}
+
+// ── wasm-bindgen-test benchmarks ──────────────────────────────────────────────
+//
+// These run in a real WASM runtime (browser via `wasm-pack test --chrome` or
+// Node via `wasm-pack test --node`) and time the actual JS↔WASM call overhead
+// on top of the Rust execution time. Run them via:
+//
+//   # Node (fast, no browser needed):
+//   wasm-pack test --node crates/echomirror-wasm
+//
+//   # SIMD build (pass the feature flag through RUSTFLAGS):
+//   RUSTFLAGS="-C target-feature=+simd128" wasm-pack test --node crates/echomirror-wasm
+//
+// Each test logs a wall-clock time per iteration to the console so the
+// numbers can be captured manually or by the build script.
+#[cfg(target_arch = "wasm32")]
+#[cfg(test)]
+mod wasm_bench {
+    use wasm_bindgen::prelude::*;
+    use wasm_bindgen_test::*;
+
+    // Allow the tests to run in both browser and Node without a server.
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    use super::*;
+
+    /// Number of iterations per timed loop — large enough to smooth over
+    /// WASM JIT warm-up variance, small enough to finish in < 5 s.
+    const ITERS: usize = 50_000;
+
+    fn now_ms() -> f64 {
+        js_sys::Date::now()
+    }
+
+    #[wasm_bindgen_test]
+    fn bench_hash_public_key() {
+        let start = now_ms();
+        for _ in 0..ITERS {
+            let _ = hash_public_key("GPUBLIC_KEY_ECHOMIRROR_BENCH_FIXTURE_00000000000000");
+        }
+        let elapsed = now_ms() - start;
+        web_sys::console::log_1(
+            &format!(
+                "[bench] hash_public_key: {:.2} µs/iter  ({} iters, {:.0} ms total)",
+                (elapsed * 1000.0) / ITERS as f64,
+                ITERS,
+                elapsed,
+            )
+            .into(),
+        );
+    }
+
+    #[wasm_bindgen_test]
+    fn bench_base64_encode_512() {
+        let data: Vec<u8> = (0..512u16).map(|i| (i & 0xff) as u8).collect();
+        let start = now_ms();
+        for _ in 0..ITERS {
+            let _ = base64_encode(&data);
+        }
+        let elapsed = now_ms() - start;
+        web_sys::console::log_1(
+            &format!(
+                "[bench] base64_encode(512 B): {:.2} µs/iter  ({} iters, {:.0} ms total)",
+                (elapsed * 1000.0) / ITERS as f64,
+                ITERS,
+                elapsed,
+            )
+            .into(),
+        );
+    }
+
+    #[wasm_bindgen_test]
+    fn bench_base64_decode_512() {
+        let data: Vec<u8> = (0..512u16).map(|i| (i & 0xff) as u8).collect();
+        let encoded = base64_encode(&data);
+        let start = now_ms();
+        for _ in 0..ITERS {
+            let _ = base64_decode(&encoded);
+        }
+        let elapsed = now_ms() - start;
+        web_sys::console::log_1(
+            &format!(
+                "[bench] base64_decode(512 B): {:.2} µs/iter  ({} iters, {:.0} ms total)",
+                (elapsed * 1000.0) / ITERS as f64,
+                ITERS,
+                elapsed,
+            )
+            .into(),
+        );
+    }
+
+    #[wasm_bindgen_test]
+    fn bench_xdr_decode_and_sha256_512() {
+        let raw: Vec<u8> = (0..512u16).map(|i| (i & 0xff) as u8).collect();
+        let encoded = base64_encode(&raw);
+        let start = now_ms();
+        for _ in 0..ITERS {
+            let bytes = base64_decode(&encoded).unwrap();
+            let _ = sha256_hex(&bytes);
+        }
+        let elapsed = now_ms() - start;
+        web_sys::console::log_1(
+            &format!(
+                "[bench] xdr_decode+sha256(512 B): {:.2} µs/iter  ({} iters, {:.0} ms total)",
+                (elapsed * 1000.0) / ITERS as f64,
+                ITERS,
+                elapsed,
+            )
+            .into(),
+        );
+    }
+
+    #[wasm_bindgen_test]
+    fn bench_stellar_tx_bytes_sha256_512() {
+        let raw: Vec<u8> = (0..512u16).map(|i| (i & 0xff) as u8).collect();
+        let xdr_base64 = base64_encode(&raw);
+        let start = now_ms();
+        for _ in 0..ITERS {
+            let tx = StellarTxBytes {
+                bytes: base64_decode(&xdr_base64).unwrap(),
+            };
+            let _ = tx.sha256();
+        }
+        let elapsed = now_ms() - start;
+        web_sys::console::log_1(
+            &format!(
+                "[bench] StellarTxBytes.sha256(512 B): {:.2} µs/iter  ({} iters, {:.0} ms total)",
+                (elapsed * 1000.0) / ITERS as f64,
+                ITERS,
+                elapsed,
+            )
+            .into(),
+        );
+    }
+}
+
+// ── Unit tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -343,5 +573,14 @@ mod tests {
     fn memo_validation() {
         assert!(validate_memo("short memo").is_ok());
         assert!(validate_memo(&"x".repeat(29)).is_err());
+    }
+
+    #[test]
+    fn sha256_hex_is_deterministic() {
+        let a = sha256_hex(b"GPUBLIC_KEY_TEST");
+        let b = sha256_hex(b"GPUBLIC_KEY_TEST");
+        assert_eq!(a, b);
+        assert_eq!(a.len(), 64);
+        assert!(a.chars().all(|c| c.is_ascii_hexdigit()));
     }
 }
