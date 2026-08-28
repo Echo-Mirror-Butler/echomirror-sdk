@@ -7,25 +7,24 @@ interface WatchState {
   totalSeen: number
 }
 
+type WatchMessage =
+  | { type: 'START_WATCH'; publicKey: string; network: string }
+  | { type: 'STOP_WATCH' }
+  | { type?: string; publicKey?: unknown; network?: unknown }
+
 let watchState: WatchState | null = null
 let pollInterval: ReturnType<typeof setInterval> | null = null
 
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'START_WATCH') {
-    startWatching(msg.publicKey, msg.network)
-  } else if (msg.type === 'STOP_WATCH') {
-    stopWatching()
-  }
-})
-
-function startWatching(publicKey: string, network: string) {
+/** Start polling an account's Horizon transaction feed. */
+export function startWatching(publicKey: string, network: string) {
   stopWatching()
   watchState = { publicKey, network, cursor: 'now', totalSeen: 0 }
-  poll()
-  pollInterval = setInterval(poll, 5_000)
+  void poll()
+  pollInterval = setInterval(() => void poll(), 5_000)
 }
 
-function stopWatching() {
+/** Stop the active polling loop and discard its in-memory cursor. */
+export function stopWatching() {
   if (pollInterval) {
     clearInterval(pollInterval)
     pollInterval = null
@@ -33,7 +32,8 @@ function stopWatching() {
   watchState = null
 }
 
-async function poll() {
+/** Poll Horizon once and create a notification for each new transaction. */
+export async function poll() {
   if (!watchState) return
   const { publicKey, network, cursor } = watchState
   const horizon = network === 'testnet'
@@ -50,19 +50,38 @@ async function poll() {
     const records: Array<{ hash: string; ledger: number; paging_token: string; memo?: string }> =
       data._embedded?.records ?? []
 
-    for (const r of records) {
+    for (const record of records) {
+      // A STOP_WATCH message may arrive while fetch is in flight.
+      if (!watchState) return
       watchState.totalSeen++
-      watchState.cursor = r.paging_token
+      watchState.cursor = record.paging_token
 
-      chrome.notifications.create(`echo-tx-${r.hash}`, {
+      chrome.notifications.create(`echo-tx-${record.hash}`, {
         type: 'basic',
         iconUrl: 'icons/icon48.png',
         title: 'EchoMirror: Stellar Transaction',
-        message: `Ledger ${r.ledger} • ${r.hash.slice(0, 16)}…${r.memo ? ` • ${r.memo}` : ''}`,
+        message: `Ledger ${record.ledger} • ${record.hash.slice(0, 16)}…${record.memo ? ` • ${record.memo}` : ''}`,
         priority: 1,
       })
     }
   } catch {
-    // Network errors during polling are silently ignored
+    // Network errors during background polling are intentionally non-fatal.
   }
 }
+
+/** Register the MV3 message bridge used by the popup. */
+export function registerMessageListener() {
+  chrome.runtime.onMessage.addListener((message: WatchMessage) => {
+    if (
+      message.type === 'START_WATCH' &&
+      typeof message.publicKey === 'string' &&
+      typeof message.network === 'string'
+    ) {
+      startWatching(message.publicKey, message.network)
+    } else if (message.type === 'STOP_WATCH') {
+      stopWatching()
+    }
+  })
+}
+
+registerMessageListener()

@@ -36,5 +36,5 @@ jobs:
       # runtime-matrix tests (rust-ci.yml's wasm-build job), not source-line
       # coverage here.
       - run: npm run coverage --if-present --workspace=packages/js/core --workspace=packages/js/mood --workspace=packages/js/react --workspace=packages/js/stellar --workspace=packages/js/social --workspace=packages/js/analytics
-      - run: npm run test --if-present --workspace=extensions/chrome
+      - run: npm run coverage --if-present --workspace=extensions/chrome
       - run: npm run build --workspaces --if-present
