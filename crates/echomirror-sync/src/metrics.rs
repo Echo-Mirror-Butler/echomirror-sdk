@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+use std::sync::RwLock;
 
 /// Operational metrics for the sync engine — atomic counters shared across all
 /// per-account tasks, in the same style as `echomirror_core::ClientMetrics`.
@@ -31,6 +33,17 @@ pub struct SyncMetrics {
     /// Unix timestamp (seconds) of the most recently processed record's
     /// `created_at` — compare with now() for cursor lag. 0 = no events yet.
     pub last_event_unix: AtomicI64,
+    /// Times this instance successfully became leader for an account.
+    pub leases_acquired: AtomicU64,
+    /// Times an acquisition attempt found another instance's lease still active.
+    pub leases_denied: AtomicU64,
+    /// Times this instance lost a previously-held lease (expired without
+    /// renewal, or another instance's renewal won a race).
+    pub leases_lost: AtomicU64,
+    /// Per-account leader-election state: `true` if this instance currently
+    /// believes it holds the lease and is actively streaming that account,
+    /// `false` if it's a standby. Absent until the first acquire attempt.
+    leadership: RwLock<HashMap<String, bool>>,
 }
 
 impl SyncMetrics {
@@ -84,6 +97,40 @@ impl SyncMetrics {
         self.last_event_unix.store(unix_seconds, Ordering::Relaxed);
     }
 
+    pub fn record_lease_acquired(&self) {
+        self.leases_acquired.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn record_lease_denied(&self) {
+        self.leases_denied.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn record_lease_lost(&self) {
+        self.leases_lost.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Record this instance's current leader (`true`) / standby (`false`)
+    /// state for `account`. Call on every acquire/renew outcome so the state
+    /// is always fresh, not just on transitions.
+    pub fn set_leader(&self, account: &str, is_leader: bool) {
+        self.leadership
+            .write()
+            .unwrap()
+            .insert(account.to_string(), is_leader);
+    }
+
+    /// Whether this instance currently believes it holds the lease for
+    /// `account`. `false` (including for an unrecognized account) means
+    /// standby — it must not be actively streaming.
+    pub fn is_leader(&self, account: &str) -> bool {
+        self.leadership
+            .read()
+            .unwrap()
+            .get(account)
+            .copied()
+            .unwrap_or(false)
+    }
+
     pub fn snapshot(&self) -> SyncMetricsSnapshot {
         SyncMetricsSnapshot {
             events_emitted: self.events_emitted.load(Ordering::Relaxed),
@@ -99,6 +146,10 @@ impl SyncMetrics {
             lag_events: self.lag_events.load(Ordering::Relaxed),
             events_lost: self.events_lost.load(Ordering::Relaxed),
             last_event_unix: self.last_event_unix.load(Ordering::Relaxed),
+            leases_acquired: self.leases_acquired.load(Ordering::Relaxed),
+            leases_denied: self.leases_denied.load(Ordering::Relaxed),
+            leases_lost: self.leases_lost.load(Ordering::Relaxed),
+            leadership: self.leadership.read().unwrap().clone(),
         }
     }
 }
@@ -119,6 +170,11 @@ pub struct SyncMetricsSnapshot {
     pub lag_events: u64,
     pub events_lost: u64,
     pub last_event_unix: i64,
+    pub leases_acquired: u64,
+    pub leases_denied: u64,
+    pub leases_lost: u64,
+    /// Per-account leader (`true`) / standby (`false`) state at snapshot time.
+    pub leadership: HashMap<String, bool>,
 }
 
 impl SyncMetricsSnapshot {
@@ -130,6 +186,12 @@ impl SyncMetricsSnapshot {
         } else {
             Some(chrono::Utc::now().timestamp() - self.last_event_unix)
         }
+    }
+
+    /// Whether this instance was leader (actively streaming) for `account`
+    /// at snapshot time.
+    pub fn is_leader(&self, account: &str) -> bool {
+        self.leadership.get(account).copied().unwrap_or(false)
     }
 }
 

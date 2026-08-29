@@ -1,8 +1,11 @@
 use crate::cursor::{CursorStore, SyncCursor};
+use crate::election::LeaderElector;
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use echomirror_core::{EchoMirrorError, Result};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{PgPool, Row};
+use std::time::Duration;
 
 fn store_err(context: &str, e: impl std::fmt::Display) -> EchoMirrorError {
     EchoMirrorError::Sync(format!("postgres cursor store: {context}: {e}"))
@@ -110,6 +113,99 @@ impl CursorStore for PgCursorStore {
         .execute(&self.pool)
         .await
         .map_err(|e| store_err("save", e))?;
+        Ok(())
+    }
+}
+
+/// PostgreSQL-backed [`LeaderElector`] — a renewable per-account lease row in
+/// `echomirror_sync_leases` (see `migrations/0002_create_sync_leases.sql`).
+///
+/// Acquire/renew is a single upserting `INSERT ... ON CONFLICT DO UPDATE`
+/// guarded by a `WHERE` clause, so it's race-safe under concurrent instances
+/// without needing a dedicated session-pinned connection: a row is only
+/// (re)written when the caller already holds it or the previous lease has
+/// expired. A crashed holder's row simply ages out — no explicit release
+/// needed for another instance to take over.
+///
+/// ```rust,no_run
+/// # async fn example() -> echomirror_core::Result<()> {
+/// use echomirror_sync::PgLeaderElector;
+///
+/// let elector = PgLeaderElector::connect("postgres://user:pass@localhost/echomirror").await?;
+/// // Or share your application's existing pool (run `elector.migrate()` once):
+/// // let elector = PgLeaderElector::new(pool);
+/// # Ok(())
+/// # }
+/// ```
+pub struct PgLeaderElector {
+    pool: PgPool,
+}
+
+impl PgLeaderElector {
+    /// Wrap an existing connection pool. Call [`migrate`](Self::migrate) once
+    /// before first use unless your deployment applies migrations itself.
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    /// Connect with a small dedicated pool (max 5 connections) and apply the
+    /// embedded migrations.
+    pub async fn connect(database_url: &str) -> Result<Self> {
+        let pool = PgPoolOptions::new()
+            .max_connections(5)
+            .connect(database_url)
+            .await
+            .map_err(|e| store_err("connect", e))?;
+        let elector = Self::new(pool);
+        elector.migrate().await?;
+        Ok(elector)
+    }
+
+    /// Apply the crate's embedded migrations. Idempotent.
+    pub async fn migrate(&self) -> Result<()> {
+        sqlx::migrate!("./migrations")
+            .run(&self.pool)
+            .await
+            .map_err(|e| store_err("migrate", e))
+    }
+
+    /// The underlying pool, e.g. for health checks.
+    pub fn pool(&self) -> &PgPool {
+        &self.pool
+    }
+}
+
+#[async_trait]
+impl LeaderElector for PgLeaderElector {
+    async fn try_acquire(&self, account: &str, holder_id: &str, ttl: Duration) -> Result<bool> {
+        let ttl_ms = ttl.as_millis() as i64;
+        let row = sqlx::query(
+            "INSERT INTO echomirror_sync_leases (account, holder_id, expires_at) \
+                 VALUES ($1, $2, now() + ($3 * INTERVAL '1 millisecond')) \
+             ON CONFLICT (account) DO UPDATE SET \
+                 holder_id = EXCLUDED.holder_id, \
+                 expires_at = EXCLUDED.expires_at \
+             WHERE echomirror_sync_leases.holder_id = $2 \
+                OR echomirror_sync_leases.expires_at < now() \
+             RETURNING holder_id",
+        )
+        .bind(account)
+        .bind(holder_id)
+        .bind(ttl_ms)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| store_err("try_acquire", e))?;
+
+        Ok(row.is_some())
+    }
+
+    async fn release(&self, account: &str, holder_id: &str) -> Result<()> {
+        sqlx::query("DELETE FROM echomirror_sync_leases WHERE account = $1 AND holder_id = $2")
+            .bind(account)
+            .bind(holder_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| store_err("release", e))?;
         Ok(())
     }
 }

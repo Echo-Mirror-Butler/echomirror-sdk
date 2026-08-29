@@ -10,6 +10,10 @@ autobenches = false
 [features]
 default = []
 postgres = ["dep:sqlx"]
+# Exposes SyncEngine::crash_for_test, which aborts sync tasks without
+# releasing their leadership lease, to simulate an unclean process crash in
+# leader-election tests.
+test-util = []
 
 [dependencies]
 echomirror-core = { path = "../echomirror-core" }

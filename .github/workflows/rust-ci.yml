@@ -48,7 +48,9 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           key: ${{ hashFiles('Cargo.lock') }}
-      - run: cargo test --workspace
+      # echomirror-sync/test-util gates SyncEngine::crash_for_test, used by
+      # its leader-election failover tests to simulate an unclean crash.
+      - run: cargo test --workspace --features echomirror-sync/test-util
 
   coverage:
     name: Coverage
