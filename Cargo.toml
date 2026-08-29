@@ -54,5 +54,7 @@ tokio-util = "0.7"
 tracing = "0.1"
 # postgres cursor store (optional feature of echomirror-sync)
 sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "migrate", "macros"] }
+# redis cursor store (optional feature of echomirror-sync)
+redis = { version = "0.26", features = ["tokio-comp", "connection-manager"] }
 # testing
 wiremock = "0.6"
