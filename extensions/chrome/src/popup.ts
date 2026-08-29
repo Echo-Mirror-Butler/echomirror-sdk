@@ -1,21 +1,27 @@
 // EchoMirror SDK Companion — popup script
 
-interface StorageData {
+export interface StorageData {
   publicKey?: string
   network?: string
   apiKey?: string
   balance?: { xlm: string; echo: string; ts: number }
 }
 
-async function load(): Promise<StorageData> {
-  return new Promise((resolve) => chrome.storage.local.get(null, resolve as (items: { [key: string]: unknown }) => void))
+export async function load(): Promise<StorageData> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(null, (items) => resolve(items as StorageData))
+  })
 }
 
-async function save(data: Partial<StorageData>) {
-  return new Promise<void>((resolve) => chrome.storage.local.set(data, resolve))
+export async function save(data: Partial<StorageData>): Promise<void> {
+  return new Promise((resolve) => chrome.storage.local.set(data, resolve))
 }
 
-async function fetchBalance(publicKey: string, network: string) {
+export function isValidStellarAddress(publicKey: string): boolean {
+  return publicKey.startsWith('G') && publicKey.length === 56
+}
+
+export async function fetchBalance(publicKey: string, network: string) {
   const horizon = network === 'testnet'
     ? 'https://horizon-testnet.stellar.org'
     : 'https://horizon.stellar.org'
@@ -23,21 +29,26 @@ async function fetchBalance(publicKey: string, network: string) {
   const res = await fetch(`${horizon}/accounts/${publicKey}`)
   if (!res.ok) return null
   const data = await res.json()
-  const xlm = data.balances.find((b: { asset_type: string }) => b.asset_type === 'native')?.balance ?? '0'
-  const echo = data.balances.find((b: { asset_code?: string }) => b.asset_code === 'ECHO')?.balance ?? '0'
+  const xlm = data.balances.find((balance: { asset_type: string }) => balance.asset_type === 'native')?.balance ?? '0'
+  const echo = data.balances.find((balance: { asset_code?: string }) => balance.asset_code === 'ECHO')?.balance ?? '0'
   return { xlm, echo, ts: Date.now() }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+/** Wire the popup DOM to storage, Horizon balance lookups, and background watch messages. */
+export async function initializePopup() {
   const data = await load()
 
-  const keyInput = document.getElementById('public-key') as HTMLInputElement
-  const networkSelect = document.getElementById('network') as HTMLSelectElement
-  const checkBtn = document.getElementById('check-btn') as HTMLButtonElement
-  const injectBtn = document.getElementById('inject-btn') as HTMLButtonElement
-  const watchBtn = document.getElementById('watch-btn') as HTMLButtonElement
-  const balanceEl = document.getElementById('balance') as HTMLDivElement
-  const statusEl = document.getElementById('status') as HTMLParagraphElement
+  const keyInput = document.getElementById('public-key') as HTMLInputElement | null
+  const networkSelect = document.getElementById('network') as HTMLSelectElement | null
+  const checkBtn = document.getElementById('check-btn') as HTMLButtonElement | null
+  const injectBtn = document.getElementById('inject-btn') as HTMLButtonElement | null
+  const watchBtn = document.getElementById('watch-btn') as HTMLButtonElement | null
+  const balanceEl = document.getElementById('balance') as HTMLDivElement | null
+  const statusEl = document.getElementById('status') as HTMLParagraphElement | null
+
+  if (!keyInput || !networkSelect || !checkBtn || !injectBtn || !watchBtn || !balanceEl || !statusEl) {
+    return
+  }
 
   keyInput.value = data.publicKey ?? ''
   networkSelect.value = data.network ?? 'testnet'
@@ -49,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   checkBtn.addEventListener('click', async () => {
     const key = keyInput.value.trim()
     const network = networkSelect.value
-    if (!key.startsWith('G') || key.length !== 56) {
+    if (!isValidStellarAddress(key)) {
       statusEl.textContent = '❌ Invalid Stellar address'
       return
     }
@@ -73,7 +84,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   })
 
-  // Inject the EchoMirror mood widget into the current tab
   injectBtn.addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
     if (!tab.id) return
@@ -84,7 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     statusEl.textContent = '✅ Mood widget injected!'
   })
 
-  // Start watching transactions in the background
   watchBtn.addEventListener('click', async () => {
     const key = keyInput.value.trim()
     const network = networkSelect.value
@@ -93,9 +102,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.runtime.sendMessage({ type: 'START_WATCH', publicKey: key, network })
     statusEl.textContent = `Watching ${key.slice(0, 8)}…`
   })
-})
+}
 
-function injectMoodWidget() {
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    void initializePopup()
+  })
+}
+
+/** Inject the lightweight mood widget into the active page. */
+export function injectMoodWidget() {
   if (document.getElementById('echomirror-widget')) return
 
   const widget = document.createElement('div')
@@ -121,31 +137,33 @@ function injectMoodWidget() {
     <p id="em-result" style="text-align:center;font-size:12px;color:#86efac;margin:8px 0 0"></p>
   `
 
-  const btn = document.createElement('button')
-  btn.style.cssText = `
+  const button = document.createElement('button')
+  button.style.cssText = `
     width: 52px; height: 52px; border-radius: 50%; background: #6366f1;
     color: white; border: none; cursor: pointer; font-size: 22px;
     box-shadow: 0 4px 16px rgba(99,102,241,0.5);
   `
-  btn.textContent = '🪞'
-  btn.title = 'Log your mood with EchoMirror'
+  button.textContent = '🪞'
+  button.title = 'Log your mood with EchoMirror'
 
-  btn.addEventListener('click', () => {
+  button.addEventListener('click', () => {
     form.style.display = form.style.display === 'none' ? 'block' : 'none'
   })
 
-  const emojis = ['😫','😟','😕','😐','🙂','😊','😄','😁','🌟','🚀']
-  form.querySelector('#em-score')!.addEventListener('input', (e) => {
-    const v = parseInt((e.target as HTMLInputElement).value)
-    ;(form.querySelector('#em-emoji') as HTMLElement).textContent = emojis[v - 1]
+  const emojis = ['😫', '😟', '😕', '😐', '🙂', '😊', '😄', '😁', '🌟', '🚀']
+  form.querySelector('#em-score')!.addEventListener('input', (event) => {
+    const value = parseInt((event.target as HTMLInputElement).value, 10)
+    ;(form.querySelector('#em-emoji') as HTMLElement).textContent = emojis[value - 1]
   })
 
   form.querySelector('#em-log')!.addEventListener('click', () => {
-    ;(form.querySelector('#em-result') as HTMLElement).textContent = '✅ Mood logged!'
-    setTimeout(() => { form.style.display = 'none' }, 1200)
+    (form.querySelector('#em-result') as HTMLElement).textContent = '✅ Mood logged!'
+    setTimeout(() => {
+      form.style.display = 'none'
+    }, 1200)
   })
 
   widget.appendChild(form)
-  widget.appendChild(btn)
+  widget.appendChild(button)
   document.body.appendChild(widget)
 }
