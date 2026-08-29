@@ -1,0 +1,112 @@
+# Required Secrets for Publishing:
+# - VSCE_PAT: Personal Access Token for the VS Code Marketplace
+# - CHROME_EXTENSION_ID: ID of the Chrome Extension in the Web Store
+# - CHROME_CLIENT_ID: Client ID for the Chrome Web Store API
+# - CHROME_CLIENT_SECRET: Client Secret for the Chrome Web Store API
+# - CHROME_REFRESH_TOKEN: Refresh Token for the Chrome Web Store API
+
+name: Extensions CI
+
+on:
+  pull_request:
+    paths:
+      - 'extensions/**'
+      - '.github/workflows/extensions-ci.yml'
+      - '.github/workflows/vscode-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    tags:
+      - 'extension-vscode-v*'
+      - 'extension-chrome-v*'
+
+jobs:
+  build-vscode:
+    name: Build & Package VS Code Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # The extension imports @echomirror/core and @echomirror/mood, whose
+      # `exports` point at built dist/ output — build them before typechecking,
+      # bundling, and packaging the extension.
+      - run: npm run build --workspace=packages/js/core --workspace=packages/js/mood
+      - name: Lint
+        run: npm run lint -w extensions/vscode
+      - name: Typecheck
+        run: npm run typecheck -w extensions/vscode
+      - name: Build
+        run: npm run build -w extensions/vscode
+      - name: Package (.vsix dry-run)
+        run: npm run package -w extensions/vscode
+      - name: Upload .vsix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension-${{ github.sha }}
+          path: extensions/vscode/*.vsix
+
+  build-chrome:
+    name: Build & Package Chrome Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint -w extensions/chrome
+      - name: Typecheck
+        run: npm run typecheck -w extensions/chrome
+      - name: Package extension (.zip)
+        working-directory: ${{ github.workspace }}/extensions/chrome
+        run: zip -r ../chrome-extension.zip .
+      - name: Upload .zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension-${{ github.sha }}
+          path: extensions/chrome-extension.zip
+
+  publish-vscode:
+    name: Publish VS Code Extension
+    needs: build-vscode
+    if: startsWith(github.ref, 'refs/tags/extension-vscode-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build --workspace=packages/js/core --workspace=packages/js/mood
+      - name: Build (minified)
+        run: npm run vscode:prepublish -w extensions/vscode
+      - name: Publish to VS Code Marketplace
+        run: npx vsce publish --pat ${{ secrets.VSCE_PAT }} --no-dependencies
+        working-directory: extensions/vscode
+
+  publish-chrome:
+    name: Publish Chrome Extension
+    needs: build-chrome
+    if: startsWith(github.ref, 'refs/tags/extension-chrome-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package extension (.zip)
+        run: |
+          cd extensions/chrome
+          zip -r ../chrome-extension.zip .
+      - name: Upload to Chrome Web Store
+        uses: mnao305/chrome-extension-upload@v4.0.1
+        with:
+          file-path: extensions/chrome-extension.zip
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}

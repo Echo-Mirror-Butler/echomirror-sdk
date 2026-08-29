@@ -1,0 +1,39 @@
+{
+  "EchoMirror: Log Mood (Dart)": {
+    "prefix": "em-mood",
+    "body": [
+      "final entry = await EchoMirror.instance.mood.log(",
+      "  score: ${1:7},",
+      "  note: '${2:How are you feeling?}',",
+      "  tags: ['${3:work}'],",
+      ");"
+    ],
+    "description": "Log a mood entry with EchoMirror SDK (Dart)"
+  },
+  "EchoMirror: Get Streak (Dart)": {
+    "prefix": "em-streak",
+    "body": [
+      "final streak = await EchoMirror.instance.mood.streak()",
+      "print('${streak.current} day streak \u{1F525}')"
+    ],
+    "description": "Get the user's current mood streak (Dart)"
+  },
+  "EchoMirror: Get Balance (Dart)": {
+    "prefix": "em-balance",
+    "body": [
+      "final balance = await EchoMirror.instance.stellar.balance('${1:publicKey}')",
+      "print('${balance.xlm} XLM  \u{2022}  ${balance.echo} ECHO')"
+    ],
+    "description": "Get Stellar XLM and ECHO balance (Dart)"
+  },
+  "EchoMirror: Initialize (Dart)": {
+    "prefix": "echomirror-init",
+    "body": [
+      "final echoMirror = EchoMirror.instance..init(",
+      "  apiKey: '${1:your_api_key}',",
+      "  network: EchoMirrorNetwork.${2:testnet},",
+      ");"
+    ],
+    "description": "Boilerplate EchoMirror setup (Dart)"
+  }
+}
