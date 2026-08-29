@@ -1,211 +1,48 @@
-import type { ReactNode } from 'react';
-import clsx from 'clsx';
+import type {ReactNode} from 'react';
 import Link from '@docusaurus/Link';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
-
+import InstallPlayground from '@site/src/components/InstallPlayground';
 import styles from './index.module.css';
 
-// ─── Feature cards ───────────────────────────────────────────────────────────
-
-type FeatureItem = {
-  emoji: string;
-  title: string;
-  description: ReactNode;
-};
-
-const FEATURES: FeatureItem[] = [
-  {
-    emoji: '🦀',
-    title: 'Rust core, every platform',
-    description: (
-      <>
-        Stellar crypto, XDR encoding, and blockchain sync are written once in
-        Rust and shipped as WebAssembly, a C-ABI shared library, and native
-        crates — so you get the same correctness on every platform without
-        reimplementing anything.
-      </>
-    ),
-  },
-  {
-    emoji: '🌊',
-    title: 'Real-time blockchain sync',
-    description: (
-      <>
-        <code>echomirror-sync</code> streams Stellar events over SSE with
-        resumable cursors, automatic reconnect, gap backfill, and exactly-once
-        delivery. Works in Rust and Flutter.
-      </>
-    ),
-  },
-  {
-    emoji: '💛',
-    title: 'Mood × Stellar payments',
-    description: (
-      <>
-        Log moods, earn streaks, and gift ECHO tokens — all in one SDK. The
-        social feed, leaderboard, and Freighter / Albedo wallet integrations
-        are a single import away.
-      </>
-    ),
-  },
-  {
-    emoji: '🧩',
-    title: 'Pick only what you need',
-    description: (
-      <>
-        Each language binding is independently publishable. Use{' '}
-        <code>@echomirror/stellar</code> alone for Stellar payments, or{' '}
-        <code>@echomirror/analytics</code> standalone for UX event tracking —
-        no need to take the full SDK.
-      </>
-    ),
-  },
-  {
-    emoji: '⚡',
-    title: 'Drop-in React integration',
-    description: (
-      <>
-        <code>EchoMirrorProvider</code>, <code>useMoodStreak</code>, and{' '}
-        <code>MoodWidget</code> let you add a floating mood widget and live
-        balance to any React app in minutes.
-      </>
-    ),
-  },
-  {
-    emoji: '🔌',
-    title: 'VS Code + browser extensions',
-    description: (
-      <>
-        A VS Code extension puts live ECHO balance, Friendbot, and the Sync
-        Explorer in your editor. The Chrome extension injects the mood widget
-        and watches Stellar transactions on any site.
-      </>
-    ),
-  },
+type Package = {name: string; label: string; description: string; tone: string};
+const PACKAGES: Package[] = [
+  {name: '@echomirror/core', label: 'CORE', description: 'Typed client primitives, retries, middleware, and shared configuration.', tone: 'mint'},
+  {name: '@echomirror/react', label: 'REACT', description: 'Provider, hooks, and MoodWidget components for product teams.', tone: 'peach'},
+  {name: '@echomirror/stellar', label: 'STELLAR', description: 'Wallet connections, payments, balances, and Soroban-ready flows.', tone: 'lilac'},
+  {name: '@echomirror/social', label: 'SOCIAL', description: 'Feeds, reactions, leaderboards, and wellness-first community signals.', tone: 'sky'},
+  {name: '@echomirror/analytics', label: 'ANALYTICS', description: 'Privacy-conscious events that help teams understand engagement.', tone: 'gold'},
+  {name: 'echomirror-sync', label: 'SYNC', description: 'Resumable event streaming with cursors, reconnects, and backfill.', tone: 'coral'},
 ];
 
-function FeatureCard({ emoji, title, description }: FeatureItem) {
-  return (
-    <div className={clsx('col col--4', styles.featureCard)}>
-      <div className={styles.featureEmoji} role="img" aria-label={title}>
-        {emoji}
+function Mark() { return <span className={styles.mark} aria-hidden="true">E</span>; }
+
+function Hero(): ReactNode {
+  return <header className={styles.hero}>
+    <div className="container">
+      <nav className={styles.heroNav} aria-label="Landing page navigation"><Link to="/" className={styles.brand}><Mark /> EchoMirror</Link><div className={styles.navLinks}><Link to="/docs/intro">Docs</Link><a href="https://github.com/Echo-Mirror-Butler/echomirror-sdk">GitHub ↗</a></div></nav>
+      <div className={styles.heroGrid}>
+        <div className={styles.heroCopy}>
+          <p className={styles.kicker}><span /> Open-source SDK for social wellness</p>
+          <Heading as="h1">Build products that understand <em>how people feel.</em></Heading>
+          <p className={styles.heroLead}>EchoMirror brings mood intelligence, Stellar payments, and social wellness into one composable SDK—so a check-in can become a healthier habit, a generous moment, or a connected community.</p>
+          <div className={styles.ctaRow}><Link className="button button--primary button--lg" to="/docs/quickstart/react">Start with React <span aria-hidden="true">→</span></Link><a className={styles.textCta} href="https://github.com/Echo-Mirror-Butler/echomirror-sdk">Explore on GitHub <span aria-hidden="true">↗</span></a></div>
+          <div className={styles.trustRow} aria-label="Repository facts"><div><strong>26</strong><span>contributors</span></div><div><strong>7</strong><span>JS packages</span></div><div><strong>Rust-first</strong><span>cross-platform core</span></div></div>
+        </div>
+        <div className={styles.heroArt} aria-label="Illustration showing a mood check-in connected to a Stellar payment and social feed" role="img"><div className={`${styles.orbit} ${styles.orbitOne}`} /><div className={`${styles.orbit} ${styles.orbitTwo}`} /><div className={styles.signalCard}><span className={styles.signalIcon}>◒</span><span><small>MOOD SIGNAL</small><strong>Feeling good</strong></span><b>+18%</b></div><div className={styles.centerOrb}><Mark /><span>human<br />connection</span></div><div className={`${styles.floatCard} ${styles.paymentCard}`}><span>✦</span><div><small>STELLAR PAYMENT</small><strong>+ 12.50 ECHO</strong></div></div><div className={`${styles.floatCard} ${styles.socialCard}`}><span>◎</span><div><small>SOCIAL WELLNESS</small><strong>4 day streak</strong></div></div></div>
       </div>
-      <Heading as="h3">{title}</Heading>
-      <p>{description}</p>
     </div>
-  );
+  </header>;
 }
-
-// ─── Platform quickstart tiles ───────────────────────────────────────────────
-
-type PlatformItem = {
-  label: string;
-  to: string;
-  install: string;
-};
-
-const PLATFORMS: PlatformItem[] = [
-  { label: 'React', to: '/docs/quickstart/react', install: 'npm i @echomirror/react' },
-  { label: 'JavaScript', to: '/docs/quickstart/javascript', install: 'npm i @echomirror/core' },
-  { label: 'Flutter', to: '/docs/quickstart/flutter', install: 'pub add echomirror_sdk' },
-  { label: 'Rust', to: '/docs/quickstart/rust', install: 'cargo add echomirror-core' },
-  { label: 'Python', to: '/docs/quickstart/python', install: 'pip install echomirror-sdk' },
-  { label: 'Swift', to: '/docs/quickstart/swift', install: 'SPM: EchoMirrorSDK' },
-];
-
-function PlatformTile({ label, to, install }: PlatformItem) {
-  return (
-    <Link to={to} className={styles.platformTile}>
-      <span className={styles.platformLabel}>{label}</span>
-      <code className={styles.platformInstall}>{install}</code>
-    </Link>
-  );
-}
-
-// ─── Hero ─────────────────────────────────────────────────────────────────────
-
-function Hero() {
-  const { siteConfig } = useDocusaurusContext();
-  return (
-    <header className={styles.hero}>
-      <div className="container">
-        <div className={styles.heroBadge}>Rust · WASM · FFI · TypeScript · Flutter · Swift · Python</div>
-        <Heading as="h1" className={styles.heroTitle}>
-          {siteConfig.title}
-        </Heading>
-        <p className={styles.heroSubtitle}>
-          Mood intelligence, Stellar payments, and social wellness for every platform and language.
-          One Rust core — shipped as WebAssembly, C-ABI, and native crates.
-        </p>
-
-        <div className={styles.heroCta}>
-          <Link className="button button--primary button--lg" to="/docs/architecture">
-            How the SDK fits together →
-          </Link>
-          <Link className="button button--outline button--lg" to="/docs/intro">
-            Get started
-          </Link>
-        </div>
-
-        <div className={styles.platformGrid}>
-          {PLATFORMS.map((p) => (
-            <PlatformTile key={p.label} {...p} />
-          ))}
-        </div>
-      </div>
-    </header>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Home(): ReactNode {
-  const { siteConfig } = useDocusaurusContext();
-  return (
-    <Layout
-      title={siteConfig.title}
-      description="Mood intelligence, Stellar payments, and social wellness SDK for React, Flutter, Swift, Python, and Rust."
-    >
-      <Hero />
-
-      <main>
-        {/* Architecture callout */}
-        <section className={styles.archCallout}>
-          <div className="container">
-            <div className={styles.archCalloutInner}>
-              <div>
-                <Heading as="h2" className={styles.archCalloutHeading}>
-                  Not sure where to start?
-                </Heading>
-                <p className={styles.archCalloutText}>
-                  The Architecture page shows the full dependency graph — which Rust crates compile
-                  to which targets, how language bindings consume them, and a decision guide for
-                  every platform.
-                </p>
-              </div>
-              <Link className="button button--primary button--lg" to="/docs/architecture">
-                View architecture &amp; package guide →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Feature grid */}
-        <section className={styles.features}>
-          <div className="container">
-            <Heading as="h2" className={styles.sectionHeading}>
-              What's included
-            </Heading>
-            <div className="row">
-              {FEATURES.map((props, idx) => (
-                <FeatureCard key={idx} {...props} />
-              ))}
-            </div>
-          </div>
-        </section>
-      </main>
-    </Layout>
-  );
+  return <Layout title="Mood intelligence for every app" description="Build social wellness products with mood intelligence, Stellar payments, and real-time sync.">
+    <Hero />
+    <main>
+      <section className={styles.introSection}><div className="container introGrid"><div><p className={styles.kicker}>One SDK, many ways to care</p><Heading as="h2">The infrastructure for <span className={styles.highlight}>human-centered</span> apps.</Heading></div><p className={styles.sectionLead}>From the first mood check-in to the moment a community gives back, EchoMirror gives developers the building blocks to make wellbeing feel native—not bolted on.</p></div></section>
+      <section className={styles.packageSection} aria-labelledby="packages-title"><div className="container"><div className={styles.sectionHeader}><div><p className={styles.kicker}>Composable by design</p><Heading as="h2" id="packages-title">Pick your starting point.</Heading></div><Link to="/docs/architecture" className={styles.outlineLink}>See the architecture <span aria-hidden="true">→</span></Link></div><div className={styles.packageGrid}>{PACKAGES.map((pkg, index) => <article className={styles.packageCard} key={pkg.name}><div className={`${styles.packageIcon} ${styles[pkg.tone]}`} aria-hidden="true">{String(index + 1).padStart(2, '0')}</div><p className={styles.packageLabel}>{pkg.label}</p><h3>{pkg.name}</h3><p>{pkg.description}</p><Link to={pkg.name === '@echomirror/react' ? '/docs/quickstart/react' : '/docs/architecture'} aria-label={`Learn about ${pkg.name}`}>Learn more <span aria-hidden="true">↗</span></Link></article>)}</div></div></section>
+      <InstallPlayground />
+      <section className={styles.finalCta}><div className="container"><div><p className={styles.kicker}>Ready when you are</p><Heading as="h2">Make room for better moments.</Heading><p>Read the quickstart, bring your own product context, and help shape the next layer of social wellness infrastructure.</p></div><Link className="button button--primary button--lg" to="/docs/intro">Read the quickstart <span aria-hidden="true">→</span></Link></div></section>
+    </main>
+  </Layout>;
 }

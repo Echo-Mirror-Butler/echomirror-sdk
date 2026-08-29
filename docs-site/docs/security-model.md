@@ -8,7 +8,7 @@
 This document is the authoritative reference for **key custody** in the SDK. It
 audits, per binding, whether raw secret material ever enters the process, what
 guarantees each signing path provides, and what remains the integrator's
-responsibility. It complements [SECURITY.md](../SECURITY.md), which covers
+responsibility. It complements [SECURITY.md](https://github.com/Echo-Mirror-Butler/echomirror-sdk/blob/main/SECURITY.md), which covers
 vulnerability reporting and supported versions.
 
 ---

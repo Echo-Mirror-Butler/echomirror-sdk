@@ -47,4 +47,4 @@ function MoodDashboard() {
 ## Next steps
 
 - [Core Concepts](../core-concepts) to understand how the pieces fit together
-- [JS API Reference](../api/js) for the full typed API surface, including `EchoMirrorConfig`, `MoodStreak`, and `UserProfile`
+- [Architecture and package guide](../architecture) for the full typed API surface, including `EchoMirrorConfig`, `MoodStreak`, and `UserProfile`

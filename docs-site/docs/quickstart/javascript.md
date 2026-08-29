@@ -53,4 +53,4 @@ const transfer = await sendEcho(client, {
 
 - [React Quickstart](./react) if you're building a React app
 - [Core Concepts](../core-concepts) to understand how the pieces fit together
-- [JS API Reference](../api/js) for the full typed API surface
+- [Architecture and package guide](../architecture) for the full typed API surface

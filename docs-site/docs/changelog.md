@@ -13,8 +13,7 @@ This page is **auto-generated** at docs-build time from the individual
 `CHANGELOG.md` files in each package directory. Do not edit it manually —
 your changes will be overwritten on the next build.
 
-> 📡 **Subscribe** — an RSS feed for this changelog is available at
-> [/changelog/rss.xml](/changelog/rss.xml) once the blog plugin is enabled.
+> 📡 **Subscribe** — RSS and Atom feeds are generated under the release-feed route once the site is built.
 
 _Last generated: 2026-08-19_
 
