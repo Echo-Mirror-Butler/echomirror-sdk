@@ -187,8 +187,8 @@ This page is **auto-generated** at docs-build time from the individual
 \`CHANGELOG.md\` files in each package directory. Do not edit it manually —
 your changes will be overwritten on the next build.
 
-> 📡 **Subscribe** — an RSS feed for this changelog is available at
-> [/changelog/rss.xml](/changelog/rss.xml) once the blog plugin is enabled.
+> 📡 **Subscribe** — RSS/Atom feeds for this changelog are available at
+> [rss.xml](pathname:///changelog/rss.xml) / [atom.xml](pathname:///changelog/atom.xml).
 
 _Last generated: ${now}_
 
