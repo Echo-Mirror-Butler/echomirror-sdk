@@ -1,5 +1,10 @@
 # @echomirror/stellar
 
+## Unreleased
+
+### Fixed
+
+- `getTransactionHistory` now sends the canonical `public_key` query parameter expected by the wire contract. This corrects the previously published camelCase `publicKey` request shape.
 ## 0.2.0 — 2026-08-19
 
 ### Added
