@@ -29,26 +29,23 @@ describe('LeaderboardClient', () => {
     leaderboard = new LeaderboardClient(client)
   })
 
-  it('fetches the weekly leaderboard by default', async () => {
-    ;(client.request as ReturnType<typeof vi.fn>).mockResolvedValue(mockEntries)
+  it('fetches the default leaderboard limit', async () => {
+    ;(client.request as ReturnType<typeof vi.fn>).mockResolvedValue({ entries: mockEntries })
 
     const result = await leaderboard.fetchLeaderboard()
     expect(result).toHaveLength(3)
-    expect(client.request).toHaveBeenCalledWith('GET', '/social/leaderboard?window=weekly')
+    expect(client.request).toHaveBeenCalledWith('GET', '/social/leaderboard?limit=10')
   })
 
-  it('fetches leaderboard with custom window', async () => {
-    ;(client.request as ReturnType<typeof vi.fn>).mockResolvedValue(mockEntries)
+  it('fetches leaderboard with custom limit', async () => {
+    ;(client.request as ReturnType<typeof vi.fn>).mockResolvedValue({ entries: mockEntries })
 
-    await leaderboard.fetchLeaderboard({ window: 'daily' })
-    expect(client.request).toHaveBeenCalledWith('GET', '/social/leaderboard?window=daily')
-
-    await leaderboard.fetchLeaderboard({ window: 'all-time' })
-    expect(client.request).toHaveBeenCalledWith('GET', '/social/leaderboard?window=all-time')
+    await leaderboard.fetchLeaderboard({ limit: 5 })
+    expect(client.request).toHaveBeenCalledWith('GET', '/social/leaderboard?limit=5')
   })
 
   it('returns cached data on repeated fetch with same window', async () => {
-    const spy = vi.fn().mockResolvedValue(mockEntries)
+    const spy = vi.fn().mockResolvedValue({ entries: mockEntries })
     ;(client.request as ReturnType<typeof vi.fn>).mockImplementation(spy)
 
     await leaderboard.fetchLeaderboard()
@@ -58,7 +55,7 @@ describe('LeaderboardClient', () => {
   })
 
   it('refetches after clearCache()', async () => {
-    const spy = vi.fn().mockResolvedValue(mockEntries)
+    const spy = vi.fn().mockResolvedValue({ entries: mockEntries })
     ;(client.request as ReturnType<typeof vi.fn>).mockImplementation(spy)
 
     await leaderboard.fetchLeaderboard()
@@ -74,7 +71,7 @@ describe('LeaderboardClient', () => {
       { rank: 0, userId: 'b', displayName: 'B', streak: 3, totalEntries: 50, echoBalance: '200', weeklyScore: 50 },
       { rank: 0, userId: 'c', displayName: 'C', streak: 10, totalEntries: 80, echoBalance: '300', weeklyScore: 70 },
     ]
-    ;(client.request as ReturnType<typeof vi.fn>).mockResolvedValue(unsorted)
+    ;(client.request as ReturnType<typeof vi.fn>).mockResolvedValue({ entries: unsorted })
 
     const result = await leaderboard.fetchLeaderboard()
 
@@ -90,9 +87,9 @@ describe('LeaderboardClient', () => {
 
   it('accepts custom basePath', async () => {
     const customLB = new LeaderboardClient(client, { basePath: '/custom/leaderboard' })
-    ;(client.request as ReturnType<typeof vi.fn>).mockResolvedValue(mockEntries)
+    ;(client.request as ReturnType<typeof vi.fn>).mockResolvedValue({ entries: mockEntries })
 
     await customLB.fetchLeaderboard()
-    expect(client.request).toHaveBeenCalledWith('GET', '/custom/leaderboard?window=weekly')
+    expect(client.request).toHaveBeenCalledWith('GET', '/custom/leaderboard?limit=10')
   })
 })
