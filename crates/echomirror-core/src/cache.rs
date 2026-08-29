@@ -226,20 +226,14 @@ mod tests {
             ttl: Duration::from_secs(60),
         });
 
-        cache
-            .put("/a".to_string(), "va".to_string(), vec![])
-            .await;
-        cache
-            .put("/b".to_string(), "vb".to_string(), vec![])
-            .await;
+        cache.put("/a".to_string(), "va".to_string(), vec![]).await;
+        cache.put("/b".to_string(), "vb".to_string(), vec![]).await;
 
         // Access /a to make it most recently used.
         cache.get("/a").await;
 
         // Adding /c should evict /b (LRU).
-        cache
-            .put("/c".to_string(), "vc".to_string(), vec![])
-            .await;
+        cache.put("/c".to_string(), "vc".to_string(), vec![]).await;
 
         assert!(cache.get("/b").await.is_none());
         assert!(cache.get("/a").await.is_some());
@@ -253,9 +247,7 @@ mod tests {
             ..Default::default()
         });
 
-        cache
-            .put("/x".to_string(), "v".to_string(), vec![])
-            .await;
+        cache.put("/x".to_string(), "v".to_string(), vec![]).await;
         assert!(cache.get("/x").await.is_some());
 
         cache.invalidate("/x").await;
@@ -269,12 +261,8 @@ mod tests {
             ..Default::default()
         });
 
-        cache
-            .put("/a".to_string(), "v".to_string(), vec![])
-            .await;
-        cache
-            .put("/b".to_string(), "v".to_string(), vec![])
-            .await;
+        cache.put("/a".to_string(), "v".to_string(), vec![]).await;
+        cache.put("/b".to_string(), "v".to_string(), vec![]).await;
         assert_eq!(cache.len().await, 2);
 
         cache.clear().await;

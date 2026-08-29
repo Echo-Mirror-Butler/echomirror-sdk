@@ -587,9 +587,7 @@ pub extern "C" fn echomirror_stellar_get_balance_async(
                 ),
             },
             Err(error) => {
-                let is_cancelled = error
-                    .to_string()
-                    .contains("cancelled");
+                let is_cancelled = error.to_string().contains("cancelled");
                 let is_timeout = error.to_string().contains("timed out");
                 let code = if is_cancelled {
                     EchoMirrorFfiErrorCode::Cancelled

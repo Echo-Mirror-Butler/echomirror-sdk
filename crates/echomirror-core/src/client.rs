@@ -1,9 +1,9 @@
 use crate::cache::ResponseCache;
+use crate::circuit_breaker::CircuitBreaker;
 use crate::middleware::{
     MiddlewareDecision, MiddlewareOutcome, MiddlewareRequest, MiddlewareResponse,
     MAX_MIDDLEWARE_RETRIES,
 };
-use crate::circuit_breaker::CircuitBreaker;
 use crate::{ClientMetrics, EchoMirrorConfig, EchoMirrorError, MetricsSnapshot, Result};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, IF_NONE_MATCH};
 use reqwest::{Client as HttpClient, Method, StatusCode};
@@ -152,6 +152,7 @@ impl EchoMirrorClient {
                 .await
             {
                 AttemptOutcome::Success(result) => {
+                    self.circuit_breaker.on_success(was_probe).await;
                     self.metrics.record_success();
                     // Reset token refresh flag on success
                     *self.token_refresh_attempted.write().await = false;

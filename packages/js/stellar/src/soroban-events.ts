@@ -32,14 +32,17 @@ export interface SorobanEvent {
    * resume a query or de-duplicate across subscription polls.
    */
   pagingToken: string
-  /** Raw topic XDR, base64-encoded, exactly as returned by the RPC node. */
-  topic: string
-  /** The same topic decoded to an `ScVal` when it parses as one; else null. */
-  topicScVal: xdr.ScVal | null
-  /** Raw value XDR, base64-encoded. */
+  /**
+   * The event's topic segments, base64 XDR-encoded, exactly as the RPC node
+   * would accept them back in a topic filter.
+   */
+  topic: string[]
+  /** The same topic segments, already decoded to `ScVal`s by the RPC client. */
+  topicScVal: xdr.ScVal[]
+  /** Event value, base64 XDR-encoded. */
   value: string
-  /** The same value decoded to an `ScVal` when it parses as one; else null. */
-  valueScVal: xdr.ScVal | null
+  /** The same value, already decoded to an `ScVal` by the RPC client. */
+  valueScVal: xdr.ScVal
 }
 
 export interface GetContractEventsOptions {
@@ -67,26 +70,18 @@ export interface GetContractEventsResult {
   latestLedger: number
 }
 
-function decodeScVal(raw: string): xdr.ScVal | null {
-  try {
-    return xdr.ScVal.fromXDR(raw, 'base64')
-  } catch {
-    return null
-  }
-}
-
-function mapEvent(ev: rpc.EventResponse): SorobanEvent {
+function mapEvent(ev: rpc.Api.EventResponse): SorobanEvent {
   return {
     type: ev.type,
-    contractId: ev.contractId ?? '',
+    contractId: ev.contractId?.contractId() ?? '',
     ledger: ev.ledger,
     ledgerClosedAt: ev.ledgerClosedAt,
     id: ev.id,
     pagingToken: ev.pagingToken,
-    topic: ev.topic,
-    topicScVal: decodeScVal(ev.topic),
-    value: ev.value,
-    valueScVal: decodeScVal(ev.value),
+    topic: ev.topic.map((t) => t.toXDR('base64')),
+    topicScVal: ev.topic,
+    value: ev.value.toXDR('base64'),
+    valueScVal: ev.value,
   }
 }
 
@@ -108,7 +103,7 @@ export async function getContractEvents(
 
   const response = await server.getEvents({
     startLedger: options.startLedger,
-    startCursor: options.cursor,
+    cursor: options.cursor,
     limit: options.limit,
     filters: [
       {
@@ -133,6 +128,8 @@ export interface SubscribeContractEventsOptions {
   topic?: string | string[]
   /** Ledger to begin scanning from the first time the subscription polls. */
   startLedger?: number
+  /** Page cursor to resume scanning from, taking priority over startLedger. */
+  cursor?: string
   /** Milliseconds between polls. Defaults to 5000. */
   pollIntervalMs?: number
   /** Called once per newly-seen event, in ledger order. */

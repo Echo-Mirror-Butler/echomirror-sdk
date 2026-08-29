@@ -24,8 +24,10 @@ describe('AnalyticsClient purge', () => {
     const result = client.purgeUser('user-abc')
 
     expect(result.purged).toBe(true)
-    expect(result.eventsRemoved).toBe(3) // mood_logged(7) was stamped with userId via identify, plus the two after identify
-    expect(result.audit.eventsRemoved).toBe(3)
+    // mood_logged(7) stamped via identify, the identify_stitched event identify()
+    // itself enqueues (also stamped), plus the two tracked after identify.
+    expect(result.eventsRemoved).toBe(4)
+    expect(result.audit.eventsRemoved).toBe(4)
     expect(result.audit.userHash).toMatch(/^hash_/)
     expect(result.audit.purgedAt).toBeTruthy()
 
@@ -75,9 +77,11 @@ describe('AnalyticsClient purge', () => {
 
     const result = client.purgeUser('user-a')
 
-    expect(result.eventsRemoved).toBe(2)
+    // user-a's mood(3), its identity_stitched event, and mood(4).
+    expect(result.eventsRemoved).toBe(3)
     const remaining = client.getPendingEvents()
-    expect(remaining).toHaveLength(2)
+    // user-b's identity_stitched event, mood(8), and mood(9).
+    expect(remaining).toHaveLength(3)
     expect(remaining.every((e) => e.userId === 'user-b')).toBe(true)
   })
 
@@ -102,12 +106,14 @@ describe('AnalyticsClient purge', () => {
     })
 
     client.trackMoodLogged({ score: 5 })
+    client.identify('sensitive@example.com')
     client.purgeUser('sensitive@example.com')
 
     const log = client.getPurgeAuditLog()
     expect(log).toHaveLength(1)
     expect(log[0].purgedAt).toBeTruthy()
-    expect(log[0].eventsRemoved).toBe(1)
+    // mood_logged(5), stamped via identify, plus identify()'s own identity_stitched event.
+    expect(log[0].eventsRemoved).toBe(2)
     expect(log[0].userHash).toMatch(/^hash_/)
 
     // The raw email must NOT appear anywhere in storage
@@ -176,7 +182,8 @@ describe('AnalyticsClient purge', () => {
     expect(reloaded.getPendingEvents()).toHaveLength(0)
     const log = reloaded.getPurgeAuditLog()
     expect(log).toHaveLength(1)
-    expect(log[0].eventsRemoved).toBe(2)
+    // mood_logged(1), identify()'s own identity_stitched event, and mood_logged(2).
+    expect(log[0].eventsRemoved).toBe(3)
   })
 
   it('computed aggregates are not modified by purge (documented behavior)', () => {
@@ -197,9 +204,13 @@ describe('AnalyticsClient purge', () => {
 
     // The pre-computed aggregate is still valid for its original data set
     // (This test documents that purge does NOT retroactively fix aggregates.)
+    // raw: true bypasses the differential-privacy minimum-cohort-size gate
+    // (default 5) so this small sample produces a deterministic result —
+    // this test is about purge/aggregate independence, not DP noise.
     const rollup = aggregateMood(entries, {
       from: '2026-07-01T00:00:00Z',
       to: '2026-07-31T23:59:59Z',
+      raw: true,
     })
     expect(rollup.entryCount).toBe(2)
     expect(rollup.averageScore).toBe(6)

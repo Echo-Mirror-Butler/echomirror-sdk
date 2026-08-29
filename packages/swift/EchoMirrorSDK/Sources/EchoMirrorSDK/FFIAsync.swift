@@ -43,7 +43,7 @@ private let echoMirrorCallback: EchoMirrorAsyncCallback = { userData, code, payl
 /// Handle to a cancellation token that can signal an in-flight FFI operation
 /// to abort. Wraps the C-ABI `EchoMirrorCancellationHandle`.
 public final class CancellationHandle {
-    private var pointer: UnsafeMutablePointer<EchoMirrorCancellationHandle>?
+    fileprivate var pointer: UnsafeMutablePointer<EchoMirrorCancellationHandle>?
 
     public init() {
         pointer = echomirror_cancellation_new()
@@ -107,7 +107,7 @@ enum FFIAsync {
         ) -> Int32
     ) async throws -> String {
         let cancellationPtr = cancellationHandle?.pointer
-        try await withCheckedThrowingContinuation { continuation in
+        return try await withCheckedThrowingContinuation { continuation in
             let box = Unmanaged.passRetained(CallbackBox(continuation)).toOpaque()
             let code = start(echoMirrorCallback, box, cancellationPtr, timeoutMs)
 

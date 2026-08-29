@@ -1,8 +1,10 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, SecondsFormat, Utc};
 use pyo3::prelude::*;
 
 fn dt(d: DateTime<Utc>) -> String {
-    d.to_rfc3339()
+    // Match the other language bindings' "Z" suffix for UTC, rather than
+    // chrono's default "+00:00" offset notation.
+    d.to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
 fn opt_dt(d: Option<DateTime<Utc>>) -> Option<String> {

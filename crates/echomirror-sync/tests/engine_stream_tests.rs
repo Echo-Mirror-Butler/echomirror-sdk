@@ -285,16 +285,17 @@ async fn lagged_consumer_receives_gap_detected_event_and_updates_metrics() {
     let mut received_gap = false;
     let mut gap_missed = 0;
     for _ in 0..10 {
-        if let Ok(event) = stream.recv().await {
-            if let SyncEvent::GapDetected { missed_count } = event {
-                received_gap = true;
-                gap_missed = missed_count;
-                break;
-            }
+        if let Ok(SyncEvent::GapDetected { missed_count }) = stream.recv().await {
+            received_gap = true;
+            gap_missed = missed_count;
+            break;
         }
     }
 
-    assert!(received_gap, "expected consumer to receive GapDetected event");
+    assert!(
+        received_gap,
+        "expected consumer to receive GapDetected event"
+    );
     assert!(gap_missed > 0, "expected missed count > 0");
 
     let snapshot = engine.metrics();

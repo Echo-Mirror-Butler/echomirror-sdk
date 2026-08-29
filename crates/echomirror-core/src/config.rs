@@ -85,18 +85,13 @@ impl std::fmt::Debug for EchoMirrorConfig {
 }
 
 /// State of the HTTP client's circuit breaker
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CircuitState {
+    #[default]
     Closed,
     Open,
     HalfOpen,
-}
-
-impl Default for CircuitState {
-    fn default() -> Self {
-        CircuitState::Closed
-    }
 }
 
 /// Configuration for the HTTP client circuit breaker

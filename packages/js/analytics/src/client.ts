@@ -130,10 +130,16 @@ export class AnalyticsClient {
 
     const previousAnonymousId = this.state.anonymousId
     this.state.userId = normalizedUserId
-    this.state.queue = this.state.queue.map((event) => ({
-      ...event,
-      userId: normalizedUserId,
-    }))
+    // Only stamp events that aren't already attributed to a (different) user —
+    // switching identity must not silently re-attribute another user's history.
+    this.state.queue = this.state.queue.map((event) =>
+      event.userId
+        ? event
+        : {
+            ...event,
+            userId: normalizedUserId,
+          },
+    )
     this.persist()
     this.enqueue('identity_stitched', { previousAnonymousId })
   }
@@ -218,10 +224,9 @@ export class AnalyticsClient {
 
     const eventsRemoved = userIdResult.eventsRemoved + anonResult.eventsRemoved
 
-    // Merge the state — take the more "complete" one (whichever had more events removed)
-    const finalState = userIdResult.eventsRemoved >= anonResult.eventsRemoved
-      ? userIdResult.state
-      : anonResult.state
+    // anonResult reads storage after the userId purge already wrote back, so
+    // its state reflects both filters — always the correct final state.
+    const finalState = anonResult.state
 
     // If the current in-memory state matches, update it
     if (this.state.anonymousId === finalState.anonymousId || this.state.sessionId === finalState.sessionId) {
