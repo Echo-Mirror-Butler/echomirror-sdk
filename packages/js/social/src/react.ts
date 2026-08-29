@@ -102,7 +102,7 @@ export function useGlobalFeed(
 }
 
 /**
- * React hook providing leaderboard state with configurable time window.
+ * React hook providing leaderboard state with a canonical limit-based fetch and window-scoped realtime updates.
  *
  * @example
  * const { entries, isLoading, refresh } = useLeaderboard(client, 'daily')
@@ -161,7 +161,7 @@ export function useLeaderboard(
       }
     })
     return unsubscribe
-  }, [options?.limit])
+  }, [window])
 
   return { entries, isLoading, error, refresh }
 }
