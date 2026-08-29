@@ -29,7 +29,7 @@ fn sha256_benchmarks(c: &mut Criterion) {
 
     // Single short key (the most common call-site: hashPublicKey)
     group.throughput(Throughput::Elements(1));
-    group.bench_function("single_public_key", |b| b.iter(|| bench_hash_single()));
+    group.bench_function("single_public_key", |b| b.iter(bench_hash_single));
 
     // Batch: simulate hashing a stream of XDR payloads for analytics
     for batch_size in [100u64, 1_000, 10_000] {

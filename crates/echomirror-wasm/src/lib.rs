@@ -347,7 +347,7 @@ pub mod bench {
     /// Encode a memo of exactly `len` bytes.
     #[inline]
     pub fn bench_memo_encode(len: usize) -> String {
-        let text: String = std::iter::repeat('x').take(len.min(28)).collect();
+        let text: String = "x".repeat(len.min(28));
         base64_encode(text.as_bytes())
     }
 
