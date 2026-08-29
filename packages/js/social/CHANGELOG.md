@@ -1,5 +1,10 @@
 # @echomirror/social
 
+## Unreleased
+
+### Fixed
+
+- `LeaderboardClient` now sends the canonical `limit` query parameter and unwraps leaderboard responses from `{ entries }` instead of expecting a bare array.
 ## 0.1.0 — 2026-08-19
 
 ### Added

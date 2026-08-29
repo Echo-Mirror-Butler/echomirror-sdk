@@ -118,7 +118,7 @@ export async function getTransactionHistory(
   publicKey: string,
   options: { limit?: number; cursor?: string } = {},
 ): Promise<{ transactions: StellarTransaction[]; cursor: string | null }> {
-  const params = new URLSearchParams({ publicKey })
+  const params = new URLSearchParams({ public_key: publicKey })
   if (options.limit) params.set('limit', String(options.limit))
   if (options.cursor) params.set('cursor', options.cursor)
   return client.request('GET', `/stellar/transactions?${params}`)

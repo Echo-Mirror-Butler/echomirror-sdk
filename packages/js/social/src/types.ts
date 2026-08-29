@@ -28,8 +28,8 @@ export interface FeedResponse {
  * Options for fetching the leaderboard.
  */
 export interface LeaderboardFetchOptions {
-  /** Time window. Defaults to 'weekly'. */
-  window?: LeaderboardWindow
+  /** Number of entries to request. Defaults to 10. */
+  limit?: number
 }
 
 /**
