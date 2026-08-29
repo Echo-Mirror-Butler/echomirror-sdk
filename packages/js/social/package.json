@@ -2,6 +2,9 @@
   "name": "@echomirror/social",
   "version": "0.1.0",
   "description": "EchoMirror SDK social module — global feed, leaderboard, and real-time updates",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

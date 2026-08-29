@@ -72,10 +72,10 @@ def load_spec() -> dict:
         return json.load(fh)
 
 
-def build_routes(spec: dict) -> dict[str, tuple[int, dict]]:
+def build_routes(spec: dict, role: str = ROLE) -> dict[str, tuple[int, dict]]:
     routes: dict[str, tuple[int, dict]] = {}
     for op in spec.get("operations", []):
-        if op.get("target") != ROLE:
+        if op.get("target") != role:
             continue
         method = op["method"]
         path = op["path"]

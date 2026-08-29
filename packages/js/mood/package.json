@@ -2,6 +2,9 @@
   "name": "@echomirror/mood",
   "version": "0.1.0",
   "description": "EchoMirror SDK mood tracking module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

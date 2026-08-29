@@ -12,7 +12,10 @@ Cargo.lock
 crates/echomirror-python/.venv/
 crates/echomirror-python/**/__pycache__/
 crates/echomirror-python/**/*.so
+crates/echomirror-python/**/*.pyd
+crates/echomirror-python/**/*.pdb
 crates/echomirror-python/.pytest_cache/
+contract-tests/fixture/__pycache__/
 
 # JS/TS build output
 dist/
