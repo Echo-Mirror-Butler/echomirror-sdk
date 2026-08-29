@@ -33,15 +33,15 @@ export interface SorobanEvent {
    */
   pagingToken: string
   /**
-   * First topic XDR, base64-encoded. Soroban events can carry several topics;
-   * this preserves the original convenience field for the primary topic.
+   * The event's topic segments, base64 XDR-encoded, exactly as the RPC node
+   * would accept them back in a topic filter.
    */
-  topic: string
-  /** The parsed primary topic, or null when the event has no topics. */
-  topicScVal: xdr.ScVal | null
-  /** Value XDR, base64-encoded. */
+  topic: string[]
+  /** The same topic segments, already decoded to `ScVal`s by the RPC client. */
+  topicScVal: xdr.ScVal[]
+  /** Event value, base64 XDR-encoded. */
   value: string
-  /** Parsed value from the RPC SDK. */
+  /** The same value, already decoded to an `ScVal` by the RPC client. */
   valueScVal: xdr.ScVal
 }
 
@@ -71,10 +71,6 @@ export interface GetContractEventsResult {
 }
 
 function mapEvent(ev: rpc.Api.EventResponse): SorobanEvent {
-  // `rpc.Server.getEvents` returns parsed XDR values in SDK v13. Convert the
-  // values back to base64 for this package's wire-friendly public fields while
-  // also preserving the parsed values for callers that need to inspect them.
-  const [topicScVal] = ev.topic
   return {
     type: ev.type,
     contractId: ev.contractId?.contractId() ?? '',
@@ -82,8 +78,8 @@ function mapEvent(ev: rpc.Api.EventResponse): SorobanEvent {
     ledgerClosedAt: ev.ledgerClosedAt,
     id: ev.id,
     pagingToken: ev.pagingToken,
-    topic: topicScVal?.toXDR('base64') ?? '',
-    topicScVal: topicScVal ?? null,
+    topic: ev.topic.map((t) => t.toXDR('base64')),
+    topicScVal: ev.topic,
     value: ev.value.toXDR('base64'),
     valueScVal: ev.value,
   }
@@ -132,7 +128,7 @@ export interface SubscribeContractEventsOptions {
   topic?: string | string[]
   /** Ledger to begin scanning from the first time the subscription polls. */
   startLedger?: number
-  /** Resume from this event cursor instead of the first matching event. */
+  /** Page cursor to resume scanning from, taking priority over startLedger. */
   cursor?: string
   /** Milliseconds between polls. Defaults to 5000. */
   pollIntervalMs?: number

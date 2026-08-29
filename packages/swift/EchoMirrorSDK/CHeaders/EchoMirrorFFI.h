@@ -22,10 +22,20 @@ typedef enum EchoMirrorFfiErrorCode {
 
 typedef void (*EchoMirrorAsyncCallback)(void *user_data, int32_t code, char *payload);
 
+// Fully opaque (no body) — Swift imports a pointer to these as `OpaquePointer`,
+// which is exactly what MoodClient.swift/StellarClient.swift/SocialClient.swift expect.
 typedef struct EchoMirrorMoodClient EchoMirrorMoodClient;
 typedef struct EchoMirrorStellarClient EchoMirrorStellarClient;
 typedef struct EchoMirrorSocialClient EchoMirrorSocialClient;
-typedef struct EchoMirrorCancellationHandle EchoMirrorCancellationHandle;
+
+// This one needs a (placeholder, never read/written) body: CancellationHandle's
+// Swift code holds it as `UnsafeMutablePointer<EchoMirrorCancellationHandle>`,
+// not `OpaquePointer`, and Swift's ClangImporter only exposes a nominal type
+// name for *complete* C structs — a bare forward declaration like the three
+// above imports fine as `OpaquePointer` but can't be named directly.
+typedef struct EchoMirrorCancellationHandle {
+    uint8_t _opaque;
+} EchoMirrorCancellationHandle;
 
 void echomirror_free_string(char *ptr);
 char *echomirror_version(void);

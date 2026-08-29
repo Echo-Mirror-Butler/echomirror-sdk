@@ -9,7 +9,7 @@ export interface EchoMirrorConfig {
   network?: 'mainnet' | 'testnet'
   /** Request timeout in ms. Defaults to 10000 */
   timeout?: number
-  /** Retry/backoff configuration. Defaults: maxRetries 3, baseDelayMs 100, maxDelayMs 5000. */
+  /** Retry/backoff configuration. Defaults to `{ maxRetries: 3, baseDelayMs: 100, maxDelayMs: 5000 }` */
   retry?: {
     maxRetries?: number
     baseDelayMs?: number

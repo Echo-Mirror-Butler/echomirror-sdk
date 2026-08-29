@@ -5,7 +5,7 @@ import type {
   MiddlewareRequest,
   MiddlewareOutcome,
 } from './middleware'
-import { MAX_MIDDLEWARE_RETRIES } from './middleware'
+import { MAX_MIDDLEWARE_RETRIES, sleep } from './middleware'
 
 const DEFAULT_BASE_URL = 'https://api.echomirror.dev/v1'
 const DEFAULT_TIMEOUT = 10_000

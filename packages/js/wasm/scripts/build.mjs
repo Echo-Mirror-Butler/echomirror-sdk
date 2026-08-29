@@ -90,9 +90,13 @@ for (const { wasmPackTarget, outDir, simd } of variants) {
       outDir,
       '--out-name',
       'echomirror_wasm',
-      // wasm-pack 0.15 parses the variadic --features option greedily when
-      // it comes before --release, forwarding --release to cargo twice.
-      // Put profile flags first so Cargo receives each flag exactly once.
+      // profileArgs (--release/--dev) must come before --features: once
+      // wasm-pack's clap parser hits an option it doesn't recognize (like
+      // --features, which is cargo's, not wasm-pack's own), everything
+      // after it — including a later --release — gets swept into the
+      // trailing EXTRA_OPTIONS bucket instead of being parsed as wasm-pack's
+      // own flag. wasm-pack then still applies its own implicit --release,
+      // and cargo sees --release twice and refuses to build.
       ...profileArgs,
       ...(simd ? ['--features', 'simd'] : []),
     ],

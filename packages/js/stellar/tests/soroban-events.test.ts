@@ -16,25 +16,17 @@ vi.mock('@stellar/stellar-sdk', () => {
 
 import { rpc, xdr } from '@stellar/stellar-sdk'
 
-function scVal(raw: string) {
-  return {
-    decoded: raw,
-    toXDR: (_format: 'base64') => raw,
-  }
-}
-
 function makeRawEvent(overrides: Record<string, unknown> = {}): rpc.Api.EventResponse {
   return {
     type: 'contract',
-    contractId: { contractId: () => 'C CONTRACT' },
+    contractId: {
+      contractId: () => 'C CONTRACT',
+    },
     ledger: 100,
-    ledgerClosedAt: '2026-08-01T00:00:00Z',
     id: 'evt-1',
     pagingToken: 'tok-1',
-    inSuccessfulContractCall: true,
-    txHash: 'tx-hash',
-    topic: [scVal('dG9waWM=')],
-    value: scVal('dmFsdWU='),
+    topic: [{ toXDR: (_f: string) => 'dG9waWM=', decoded: 'dG9waWM=' }],
+    value: { toXDR: (_f: string) => 'dmFsdWU=', decoded: 'dmFsdWU=' },
     ...overrides,
   } as unknown as rpc.Api.EventResponse
 }
@@ -61,8 +53,10 @@ describe('getContractEvents', () => {
     expect(result.events).toHaveLength(1)
     const evt = result.events[0]
     expect(evt.contractId).toBe('C CONTRACT')
-    expect(evt.topicScVal).toMatchObject({ decoded: 'dG9waWM=' })
-    expect(evt.valueScVal).toMatchObject({ decoded: 'dmFsdWU=' })
+    expect(evt.topic).toEqual(['dG9waWM='])
+    expect(evt.topicScVal).toEqual([{ toXDR: expect.any(Function), decoded: 'dG9waWM=' }])
+    expect(evt.value).toBe('dmFsdWU=')
+    expect(evt.valueScVal).toEqual({ toXDR: expect.any(Function), decoded: 'dmFsdWU=' })
     expect(result.cursor).toBe('tok-1')
     expect(result.latestLedger).toBe(200)
   })

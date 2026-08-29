@@ -134,6 +134,7 @@ export class AnalyticsClient {
     this.state.queue = this.state.queue.map((event) =>
       event.userId ? event : { ...event, userId: normalizedUserId },
     )
+    )
     this.persist()
     this.enqueue('identity_stitched', { previousAnonymousId })
   }
@@ -214,6 +215,22 @@ export class AnalyticsClient {
     let eventsRemoved = 0
 
     if (stored) {
+      const before = stored.queue.length
+      // Match both identifiers in one state transition. Doing two independent
+      // read-modify-write passes can make the in-memory state stale and can
+      // resurrect events when an identifier matches both fields.
+      stored.queue = stored.queue.filter(
+        (event) => event.userId !== id && event.anonymousId !== id,
+      )
+      eventsRemoved = before - stored.queue.length
+      if (stored.userId === id) delete stored.userId
+
+      try {
+        storage.setItem(this.storageKey, JSON.stringify(stored))
+      } catch (error) {
+        this.reportError(error)
+      }
+
       const before = stored.queue.length
       // Match both identifiers in one state transition. Doing two independent
       // read-modify-write passes can make the in-memory state stale and can

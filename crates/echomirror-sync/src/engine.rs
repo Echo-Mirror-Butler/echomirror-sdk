@@ -1,6 +1,7 @@
 use crate::{
     backoff::Backoff,
     cursor::{CursorStore, InMemoryCursorStore, SyncCursor},
+    election::{LeaderElector, SingleProcessElector},
     filter::SyncFilter,
     metrics::{SyncMetrics, SyncMetricsSnapshot},
     record::{ledger_from_token, map_payment, parse_paging_token, MapOutcome},
@@ -23,6 +24,33 @@ const DEFAULT_BACKOFF_MAX: Duration = Duration::from_secs(60);
 const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(45);
 const DEFAULT_CHANNEL_CAPACITY: usize = 1024;
 const SSE_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+/// How long an acquired leadership lease is valid for before it must be
+/// renewed. A crashed leader that stops renewing frees the account for
+/// takeover after this elapses.
+const DEFAULT_LEASE_TTL: Duration = Duration::from_secs(15);
+/// How often an active leader renews its lease. Comfortably inside the TTL
+/// so a couple of missed renewals (GC pause, transient backend hiccup) don't
+/// cause an unnecessary handoff.
+const DEFAULT_LEASE_RENEW_INTERVAL: Duration = Duration::from_secs(5);
+/// Backoff bounds for a standby's retry loop while it doesn't hold the lease.
+const DEFAULT_LEASE_RETRY_MIN: Duration = Duration::from_millis(500);
+const DEFAULT_LEASE_RETRY_MAX: Duration = Duration::from_secs(30);
+
+fn default_holder_id() -> String {
+    format!("{}-{:x}", std::process::id(), rand::random::<u64>())
+}
+
+/// Cancels a `CancellationToken` when dropped — including on abnormal
+/// teardown (task abort, panic unwind), not just a normal return. Used to
+/// make sure a detached lease-renewal task is always told to stop once its
+/// owning session ends, however that happens.
+struct CancelOnDrop(CancellationToken);
+
+impl Drop for CancelOnDrop {
+    fn drop(&mut self) {
+        self.0.cancel();
+    }
+}
 
 /// Streams real-time Stellar blockchain events for one or more accounts over
 /// Horizon Server-Sent Events, with resumable cursors and automatic recovery.
@@ -38,6 +66,10 @@ const SSE_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 ///   backfilled and streamed records are emitted exactly once
 /// - **Self-healing** — dropped or idle streams reconnect with full-jitter
 ///   exponential backoff, resuming from the persisted cursor
+/// - **Coordinated** — a per-account leadership lease ([`LeaderElector`])
+///   ensures only one instance actively streams a given account when
+///   horizontally scaled; others sit as standbys and take over automatically
+///   if the leader stops renewing (crash or clean shutdown alike)
 ///
 /// ## Example
 /// ```rust,no_run
@@ -77,11 +109,19 @@ pub struct SyncEngine {
     idle_timeout: Duration,
     watch_ledgers: bool,
     start_from_now: bool,
+    elector: Arc<dyn LeaderElector>,
+    holder_id: String,
+    lease_ttl: Duration,
+    lease_renew_interval: Duration,
+    lease_retry_min: Duration,
+    lease_retry_max: Duration,
     tx: broadcast::Sender<SyncEvent>,
     metrics: Arc<SyncMetrics>,
     cancel: CancellationToken,
     started: AtomicBool,
     supervisor: Mutex<Option<JoinHandle<()>>>,
+    #[cfg(feature = "test-util")]
+    account_handles: Mutex<Vec<tokio::task::AbortHandle>>,
 }
 
 pub struct SyncEngineBuilder {
@@ -95,6 +135,12 @@ pub struct SyncEngineBuilder {
     idle_timeout: Duration,
     watch_ledgers: bool,
     start_from_now: bool,
+    elector: Arc<dyn LeaderElector>,
+    holder_id: String,
+    lease_ttl: Duration,
+    lease_renew_interval: Duration,
+    lease_retry_min: Duration,
+    lease_retry_max: Duration,
     channel_capacity: usize,
 }
 
@@ -111,6 +157,12 @@ impl SyncEngine {
             idle_timeout: DEFAULT_IDLE_TIMEOUT,
             watch_ledgers: false,
             start_from_now: false,
+            elector: Arc::new(SingleProcessElector::new()),
+            holder_id: default_holder_id(),
+            lease_ttl: DEFAULT_LEASE_TTL,
+            lease_renew_interval: DEFAULT_LEASE_RENEW_INTERVAL,
+            lease_retry_min: DEFAULT_LEASE_RETRY_MIN,
+            lease_retry_max: DEFAULT_LEASE_RETRY_MAX,
             channel_capacity: DEFAULT_CHANNEL_CAPACITY,
         }
     }
@@ -148,6 +200,16 @@ impl SyncEngine {
             handles.push(tokio::spawn(async move { engine.run_ledgers().await }));
         }
 
+        #[cfg(feature = "test-util")]
+        {
+            // start() is sync, so try_lock is safe here too.
+            if let Ok(mut slot) = self.account_handles.try_lock() {
+                for handle in &handles {
+                    slot.push(handle.abort_handle());
+                }
+            }
+        }
+
         let engine = self.clone();
         let supervisor = tokio::spawn(async move {
             let mut total_processed: u64 = 0;
@@ -181,14 +243,36 @@ impl SyncEngine {
         }
     }
 
+    /// Test-only: kill every per-account sync task immediately, bypassing
+    /// cooperative cancellation entirely — no lease release, no cursor flush.
+    /// Simulates an unclean process crash so tests can verify that another
+    /// instance takes over once the held leadership lease naturally expires.
+    /// Requires the `test-util` feature.
+    #[cfg(feature = "test-util")]
+    pub fn crash_for_test(&self) {
+        if let Ok(handles) = self.account_handles.try_lock() {
+            for handle in handles.iter() {
+                handle.abort();
+            }
+        }
+    }
+
     /// Snapshot of the engine's operational metrics.
     pub fn metrics(&self) -> SyncMetricsSnapshot {
         self.metrics.snapshot()
     }
 
-    /// Main loop for one watched account: load cursor → backfill the gap →
-    /// attach live SSE → on drop, back off and repeat. Returns the number of
-    /// records processed (for the engine-wide `SyncCompleted` total).
+    /// Per-account entry point: repeatedly attempt to acquire (or renew) the
+    /// leadership lease for `account`, actively stream while held, and
+    /// otherwise sit as a standby retrying on a backoff. Returns the number
+    /// of records processed (for the engine-wide `SyncCompleted` total).
+    ///
+    /// This is the leader-election guard around [`stream_account`]: an
+    /// instance that can't acquire the lease never reaches the streaming
+    /// logic at all, so two instances configured for the same account can
+    /// never both actively stream it.
+    ///
+    /// [`stream_account`]: Self::stream_account
     async fn run_account(&self, account: String) -> u64 {
         let base_url = self.client.config().resolved_horizon_url();
         let horizon = HorizonClient::new(base_url.clone());
@@ -202,16 +286,138 @@ impl SyncEngine {
             }
         };
 
+        let mut total_processed: u64 = 0;
+        let mut retry_backoff = Backoff::new(self.lease_retry_min, self.lease_retry_max);
+
+        while !self.cancel.is_cancelled() {
+            match self
+                .elector
+                .try_acquire(&account, &self.holder_id, self.lease_ttl)
+                .await
+            {
+                Ok(true) => {
+                    self.metrics.record_lease_acquired();
+                    self.metrics.set_leader(&account, true);
+                    tracing::info!(
+                        account = %account,
+                        holder = %self.holder_id,
+                        "acquired sync leadership lease"
+                    );
+                    retry_backoff.reset();
+
+                    // A child of self.cancel: cancelled by global stop() as
+                    // well as by the renewal task below the moment the lease
+                    // is lost, so stream_account reacts to either the same way.
+                    let session_cancel = self.cancel.child_token();
+                    // Guarantees the renewal task below is told to stop even
+                    // if this task is torn down abnormally (aborted or
+                    // panicking) instead of returning normally from
+                    // stream_account — otherwise it would keep renewing a
+                    // lease nobody is actively holding anymore.
+                    let _cancel_guard = CancelOnDrop(session_cancel.clone());
+                    let renewal = self.spawn_lease_renewal(account.clone(), session_cancel.clone());
+
+                    total_processed += self
+                        .stream_account(&account, &horizon, &sse_http, &base_url, &session_cancel)
+                        .await;
+
+                    renewal.abort();
+                    self.metrics.set_leader(&account, false);
+                    let _ = self.elector.release(&account, &self.holder_id).await;
+                }
+                Ok(false) => {
+                    self.metrics.record_lease_denied();
+                    self.metrics.set_leader(&account, false);
+                    tracing::debug!(
+                        account = %account,
+                        "standby: sync lease for this account is held elsewhere"
+                    );
+                    if self.sleep_backoff(&self.cancel, &mut retry_backoff).await {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(account = %account, error = %e, "lease acquisition error");
+                    if self.sleep_backoff(&self.cancel, &mut retry_backoff).await {
+                        break;
+                    }
+                }
+            }
+        }
+
+        total_processed
+    }
+
+    /// Periodically renew the leadership lease for `account` while
+    /// `session_cancel` is live. Cancels `session_cancel` itself (stepping
+    /// down) the moment a renewal is denied or errors, so the caller's
+    /// streaming loop unwinds promptly instead of continuing to run without
+    /// actually holding the lease.
+    fn spawn_lease_renewal(
+        &self,
+        account: String,
+        session_cancel: CancellationToken,
+    ) -> JoinHandle<()> {
+        let elector = self.elector.clone();
+        let holder_id = self.holder_id.clone();
+        let ttl = self.lease_ttl;
+        let interval = self.lease_renew_interval;
+        let metrics = self.metrics.clone();
+
+        tokio::spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = session_cancel.cancelled() => return,
+                    _ = tokio::time::sleep(interval) => {}
+                }
+                match elector.try_acquire(&account, &holder_id, ttl).await {
+                    Ok(true) => {}
+                    Ok(false) => {
+                        metrics.record_lease_lost();
+                        metrics.set_leader(&account, false);
+                        tracing::warn!(
+                            account = %account,
+                            "lost sync leadership lease to another instance; stepping down"
+                        );
+                        session_cancel.cancel();
+                        return;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            account = %account,
+                            error = %e,
+                            "lease renewal error; stepping down defensively"
+                        );
+                        session_cancel.cancel();
+                        return;
+                    }
+                }
+            }
+        })
+    }
+
+    /// Leader-only loop for one watched account: load cursor → backfill the
+    /// gap → attach live SSE → on drop, back off and repeat. Runs until
+    /// `cancel` fires, whether from a global `stop()` or from losing the
+    /// leadership lease. Returns the number of records processed.
+    async fn stream_account(
+        &self,
+        account: &str,
+        horizon: &HorizonClient,
+        sse_http: &reqwest::Client,
+        base_url: &str,
+        cancel: &CancellationToken,
+    ) -> u64 {
         let mut backoff = Backoff::new(self.backoff_min, self.backoff_max);
         let mut first_attach = true;
         let mut total_processed: u64 = 0;
 
-        while !self.cancel.is_cancelled() {
+        while !cancel.is_cancelled() {
             // 1. Load the persisted cursor (or start fresh).
             let loaded = if first_attach && self.start_from_now {
                 Ok(None)
             } else {
-                self.cursor_store.load(&account).await
+                self.cursor_store.load(account).await
             };
             let mut cursor = match loaded {
                 Ok(Some(cursor)) => cursor,
@@ -220,7 +426,7 @@ impl SyncEngine {
                     let _ = self.tx.send(SyncEvent::Error {
                         message: format!("cursor load failed for {account}: {e}"),
                     });
-                    if self.sleep_backoff(&mut backoff).await {
+                    if self.sleep_backoff(cancel, &mut backoff).await {
                         break;
                     }
                     continue;
@@ -240,8 +446,9 @@ impl SyncEngine {
             if cursor.paging_token != "now" {
                 if let Err(e) = self
                     .backfill(
-                        &horizon,
-                        &account,
+                        horizon,
+                        account,
+                        cancel,
                         &mut cursor,
                         &mut last_seen,
                         &mut total_processed,
@@ -251,25 +458,25 @@ impl SyncEngine {
                     let _ = self.tx.send(SyncEvent::Error {
                         message: format!("backfill failed for {account}: {e}"),
                     });
-                    if self.sleep_backoff(&mut backoff).await {
+                    if self.sleep_backoff(cancel, &mut backoff).await {
                         break;
                     }
                     continue;
                 }
             }
-            if self.cancel.is_cancelled() {
+            if cancel.is_cancelled() {
                 break;
             }
 
             // 3. Attach the live SSE stream at the backfilled position.
-            let url = payments_url(&base_url, &account, &cursor.paging_token, true);
-            let mut stream = match open_sse_stream(&sse_http, &url, self.idle_timeout).await {
+            let url = payments_url(base_url, account, &cursor.paging_token, true);
+            let mut stream = match open_sse_stream(sse_http, &url, self.idle_timeout).await {
                 Ok(stream) => stream,
                 Err(e) => {
                     let _ = self.tx.send(SyncEvent::Error {
                         message: format!("SSE connect failed for {account}: {e}"),
                     });
-                    if self.sleep_backoff(&mut backoff).await {
+                    if self.sleep_backoff(cancel, &mut backoff).await {
                         break;
                     }
                     continue;
@@ -279,7 +486,7 @@ impl SyncEngine {
             // 4. Consume live events until the stream drops or we're stopped.
             loop {
                 let item = tokio::select! {
-                    _ = self.cancel.cancelled() => None,
+                    _ = cancel.cancelled() => None,
                     item = stream.next() => item,
                 };
                 let Some(item) = item else { break };
@@ -292,13 +499,16 @@ impl SyncEngine {
                             if self
                                 .process_record(
                                     &record,
-                                    &account,
+                                    account,
                                     &mut last_seen,
                                     &mut cursor,
                                     &mut total_processed,
                                 )
                                 .await
                             {
+                            {
+                                backoff.reset();
+                            }
                                 backoff.reset();
                             }
                         }
@@ -322,7 +532,7 @@ impl SyncEngine {
                 }
             }
 
-            if self.cancel.is_cancelled() {
+            if cancel.is_cancelled() {
                 break;
             }
 
@@ -335,7 +545,7 @@ impl SyncEngine {
                 },
             });
             self.metrics.record_reconnect();
-            if self.sleep_backoff(&mut backoff).await {
+            if self.sleep_backoff(cancel, &mut backoff).await {
                 break;
             }
         }
@@ -350,12 +560,13 @@ impl SyncEngine {
         &self,
         horizon: &HorizonClient,
         account: &str,
+        cancel: &CancellationToken,
         cursor: &mut SyncCursor,
         last_seen: &mut u64,
         total_processed: &mut u64,
     ) -> echomirror_core::Result<()> {
         loop {
-            if self.cancel.is_cancelled() {
+            if cancel.is_cancelled() {
                 return Ok(());
             }
 
@@ -490,7 +701,7 @@ impl SyncEngine {
                     let _ = self.tx.send(SyncEvent::Error {
                         message: format!("ledger SSE connect failed: {e}"),
                     });
-                    if self.sleep_backoff(&mut backoff).await {
+                    if self.sleep_backoff(&self.cancel, &mut backoff).await {
                         break;
                     }
                     continue;
@@ -538,19 +749,18 @@ impl SyncEngine {
                 break;
             }
             self.metrics.record_reconnect();
-            if self.sleep_backoff(&mut backoff).await {
+            if self.sleep_backoff(&self.cancel, &mut backoff).await {
                 break;
             }
         }
         0
     }
 
-    /// Jittered backoff sleep. Returns true if the engine was stopped while
-    /// sleeping.
-    async fn sleep_backoff(&self, backoff: &mut Backoff) -> bool {
+    /// Jittered backoff sleep. Returns true if `cancel` fired while sleeping.
+    async fn sleep_backoff(&self, cancel: &CancellationToken, backoff: &mut Backoff) -> bool {
         let delay = backoff.next_delay();
         tokio::select! {
-            _ = self.cancel.cancelled() => true,
+            _ = cancel.cancelled() => true,
             _ = tokio::time::sleep(delay) => false,
         }
     }
@@ -622,6 +832,41 @@ impl SyncEngineBuilder {
         self
     }
 
+    /// Coordination backend for per-account leader election (default:
+    /// [`SingleProcessElector`], which only coordinates instances sharing the
+    /// same `Arc`). Plug in a shared backend such as
+    /// [`crate::PgLeaderElector`] to coordinate real, separately-deployed
+    /// instances the same way you would swap in a shared [`CursorStore`].
+    pub fn leader_elector(mut self, elector: Arc<dyn LeaderElector>) -> Self {
+        self.elector = elector;
+        self
+    }
+
+    /// Identifier this instance presents to the [`LeaderElector`] (default: a
+    /// process-id + random suffix). Only needs to be distinct across
+    /// concurrently-running instances sharing an elector backend.
+    pub fn holder_id(mut self, id: impl Into<String>) -> Self {
+        self.holder_id = id.into();
+        self
+    }
+
+    /// Leadership lease TTL and how often an active leader renews it
+    /// (default 15s / 5s). `renew_interval` is clamped below `ttl` so a
+    /// leader always renews with margin to spare.
+    pub fn lease(mut self, ttl: Duration, renew_interval: Duration) -> Self {
+        self.lease_ttl = ttl;
+        self.lease_renew_interval = renew_interval.min(ttl / 2).max(Duration::from_millis(1));
+        self
+    }
+
+    /// Backoff bounds for a standby's lease-acquisition retry loop
+    /// (default 500ms–30s).
+    pub fn lease_retry_backoff(mut self, min: Duration, max: Duration) -> Self {
+        self.lease_retry_min = min;
+        self.lease_retry_max = max.max(min);
+        self
+    }
+
     pub fn build(self) -> Arc<SyncEngine> {
         let (tx, _) = broadcast::channel(self.channel_capacity);
         Arc::new(SyncEngine {
@@ -635,11 +880,19 @@ impl SyncEngineBuilder {
             idle_timeout: self.idle_timeout,
             watch_ledgers: self.watch_ledgers,
             start_from_now: self.start_from_now,
+            elector: self.elector,
+            holder_id: self.holder_id,
+            lease_ttl: self.lease_ttl,
+            lease_renew_interval: self.lease_renew_interval,
+            lease_retry_min: self.lease_retry_min,
+            lease_retry_max: self.lease_retry_max,
             tx,
             metrics: Arc::new(SyncMetrics::new()),
             cancel: CancellationToken::new(),
             started: AtomicBool::new(false),
             supervisor: Mutex::new(None),
+            #[cfg(feature = "test-util")]
+            account_handles: Mutex::new(Vec::new()),
         })
     }
 }

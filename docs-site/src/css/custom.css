@@ -1,55 +1,76 @@
-/**
- * EchoMirror SDK docs — global styles
- * Primary palette: teal-green (mood), with dark navy for depth.
- */
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 
-/* ─── Light mode ─────────────────────────────────────────────────────────────── */
 :root {
-  /* Primary: EchoMirror teal-green */
-  --ifm-color-primary: #1a9e72;
-  --ifm-color-primary-dark: #178e66;
-  --ifm-color-primary-darker: #15865f;
-  --ifm-color-primary-darkest: #106e4e;
-  --ifm-color-primary-light: #1db07f;
-  --ifm-color-primary-lighter: #20b885;
-  --ifm-color-primary-lightest: #27cc97;
-
+  --ifm-font-family-base: 'Manrope', system-ui, sans-serif;
+  --ifm-heading-font-family: 'Manrope', system-ui, sans-serif;
+  --ifm-font-size-base: 16px;
+  --ifm-line-height-base: 1.65;
+  --ifm-color-primary: #147b62;
+  --ifm-color-primary-dark: #116a54;
+  --ifm-color-primary-darker: #0f604c;
+  --ifm-color-primary-darkest: #0b4b3c;
+  --ifm-color-primary-light: #188f72;
+  --ifm-color-primary-lighter: #23a580;
+  --ifm-color-primary-lightest: #32bc94;
+  --echo-ink: #102c32;
+  --echo-muted: #587074;
+  --echo-surface: #fffdf8;
+  --echo-surface-soft: #f4f7f1;
+  --echo-border: #dbe5df;
+  --echo-accent: #e3f2c6;
+  --echo-accent-ink: #254c3c;
+  --echo-lime: #d9ffb0;
+  --echo-code: #17343a;
+  --echo-code-ink: #e2ffbd;
+  --echo-editor: #102a30;
+  --echo-editor-ink: #d9f6d0;
+  --echo-preview: #edf5e9;
+  --echo-widget: #fffef9;
+  --echo-mono: 'DM Mono', ui-monospace, SFMono-Regular, monospace;
   --ifm-code-font-size: 92%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.07);
-
-  /* Mermaid diagram overrides */
+  --docusaurus-highlighted-code-line-bg: rgba(20, 123, 98, .1);
+  --ifm-navbar-background-color: #fffdf8;
+  --ifm-footer-background-color: #102c32;
   --echomirror-mermaid-node-bg: #e8f8f2;
-  --echomirror-mermaid-node-border: #1a9e72;
+  --echomirror-mermaid-node-border: #147b62;
 }
 
-/* ─── Dark mode ──────────────────────────────────────────────────────────────── */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-
-  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.07);
-
-  --echomirror-mermaid-node-bg: #0f2a3d;
-  --echomirror-mermaid-node-border: #25c2a0;
+  --ifm-color-primary: #66dbb0;
+  --ifm-color-primary-dark: #4bcca0;
+  --ifm-color-primary-darker: #3ec497;
+  --ifm-color-primary-darkest: #2b9f79;
+  --ifm-color-primary-light: #83e5bf;
+  --ifm-color-primary-lighter: #9debc9;
+  --ifm-color-primary-lightest: #bdf4d9;
+  --echo-ink: #f1faf1;
+  --echo-muted: #a4bbb6;
+  --echo-surface: #11282d;
+  --echo-surface-soft: #0d2227;
+  --echo-border: #2d4a4d;
+  --echo-accent: #203c38;
+  --echo-accent-ink: #d8f4d0;
+  --echo-lime: #d9ffb0;
+  --echo-code: #091b20;
+  --echo-code-ink: #d9ffb0;
+  --echo-editor: #08191d;
+  --echo-editor-ink: #d9f6d0;
+  --echo-preview: #173538;
+  --echo-widget: #173338;
+  --docusaurus-highlighted-code-line-bg: rgba(102, 219, 176, .14);
+  --ifm-navbar-background-color: #11282d;
+  --echomirror-mermaid-node-bg: #173538;
+  --echomirror-mermaid-node-border: #66dbb0;
 }
 
-/* ─── Mermaid diagram global tweaks ──────────────────────────────────────────── */
-.docusaurus-mermaid-container svg {
-  max-width: 100%;
-  height: auto;
-}
-
-/* ─── Inline code ────────────────────────────────────────────────────────────── */
-code {
-  border-radius: 4px;
-}
-
-/* ─── Navbar ─────────────────────────────────────────────────────────────────── */
-.navbar {
-  box-shadow: 0 1px 0 var(--ifm-toc-border-color);
-}
+html { scroll-behavior: smooth; }
+body { background: var(--echo-surface); color: var(--echo-ink); }
+.navbar { box-shadow: 0 1px 0 var(--echo-border); }
+.navbar__title, .menu__link, .footer__link-item { font-weight: 600; }
+.button { border-radius: 7px; font-weight: 700; transition: transform .16s ease, box-shadow .16s ease; }
+.button:active { transform: scale(.97); }
+.button--primary { border-color: var(--ifm-color-primary); background: var(--ifm-color-primary); color: #fff; }
+.button--primary:hover { border-color: var(--ifm-color-primary-light); background: var(--ifm-color-primary-light); color: #fff; box-shadow: 0 8px 22px rgba(20,123,98,.25); }
+code { border-radius: 5px; }
+.docusaurus-mermaid-container svg { max-width: 100%; height: auto; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }

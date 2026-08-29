@@ -347,7 +347,7 @@ pub mod bench {
     /// Encode a memo of exactly `len` bytes.
     #[inline]
     pub fn bench_memo_encode(len: usize) -> String {
-        let text = "x".repeat(len.min(28));
+        let text: String = "x".repeat(len.min(28));
         base64_encode(text.as_bytes())
     }
 

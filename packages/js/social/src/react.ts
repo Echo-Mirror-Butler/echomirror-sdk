@@ -102,7 +102,7 @@ export function useGlobalFeed(
 }
 
 /**
- * React hook providing leaderboard state with configurable time window.
+ * React hook providing leaderboard state with a canonical limit-based fetch and window-scoped realtime updates.
  *
  * @example
  * const { entries, isLoading, refresh } = useLeaderboard(client, 'daily')
@@ -110,7 +110,7 @@ export function useGlobalFeed(
 export function useLeaderboard(
   client: EchoMirrorClient,
   window: LeaderboardWindow = 'weekly',
-  options?: { cache?: CacheConfig },
+  options?: { cache?: CacheConfig; limit?: number },
 ): {
   entries: LeaderboardEntry[]
   isLoading: boolean
@@ -131,14 +131,14 @@ export function useLeaderboard(
     setIsLoading(true)
     setError(null)
     try {
-      const data = await leaderboardRef.current!.fetchLeaderboard({ window })
+      const data = await leaderboardRef.current!.fetchLeaderboard({ limit: options?.limit })
       setEntries(data)
     } catch (err) {
       setError(err as Error)
     } finally {
       setIsLoading(false)
     }
-  }, [window])
+  }, [options?.limit])
 
   const refresh = useCallback(async () => {
     leaderboardRef.current?.clearCache()

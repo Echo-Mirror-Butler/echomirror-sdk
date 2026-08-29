@@ -1,10 +1,14 @@
 import type { EchoMirrorClient } from '@echomirror/core'
 import type { LeaderboardEntry } from '@echomirror/core'
-import type { LeaderboardWindow, LeaderboardFetchOptions, CacheConfig } from './types'
+import type { LeaderboardFetchOptions, CacheConfig } from './types'
 import { TtlCache } from './cache'
 
+interface LeaderboardResponse {
+  entries: LeaderboardEntry[]
+}
+
 /**
- * Client for fetching the leaderboard with time-windowed queries and
+ * Client for fetching the leaderboard with canonical limit-based queries and
  * a short-TTL cache (default 15s so scores feel current).
  *
  * Cache behavior: each `LeaderboardClient` instance owns its own `TtlCache`.
@@ -24,55 +28,40 @@ export class LeaderboardClient {
   }
 
   /**
-   * Fetch the leaderboard for a given time window.
+   * Fetch the leaderboard using the canonical contract shape.
    *
    * Results are cached with a short TTL (default 15s).
    *
    * @example
-   * const daily = await leaderboard.fetchLeaderboard({ window: 'daily' })
-   * const weekly = await leaderboard.fetchLeaderboard()
-   * const allTime = await leaderboard.fetchLeaderboard({ window: 'all-time' })
+   * const topTen = await leaderboard.fetchLeaderboard()
+   * const topFive = await leaderboard.fetchLeaderboard({ limit: 5 })
    */
   async fetchLeaderboard(options?: LeaderboardFetchOptions): Promise<LeaderboardEntry[]> {
-    const window = options?.window ?? 'weekly'
-    const cacheKey = window
+    const limit = options?.limit ?? 10
+    const cacheKey = String(limit)
 
     const cached = this._cache.get(cacheKey)
     if (cached) return cached
 
     const params = new URLSearchParams()
-    params.set('window', window)
+    params.set('limit', String(limit))
 
     /*
-     * ╔══════════════════════════════════════════════════════════════════╗
-     * ║  ASSUMPTION — NOT CONFIRMED                                    ║
-     * ║                                                                  ║
-     * ║  The tie-break rules below are INFEARED from the types in       ║
-     * ║  @echomirror/core and common leaderboard patterns. The actual   ║
-     * ║  EchoMirror backend may sort differently.                       ║
-     * ║                                                                  ║
-     * ║  Assumed order (descending):                                    ║
-     * ║    1. weeklyScore (higher = better)                             ║
-     * ║    2. totalEntries (lower when tied)                            ║
-     * ║    3. streak (higher when still tied)                           ║
-     * ║                                                                  ║
-     * ║  Once the backend is confirmed, either the server-order will    ║
-     * ║  match or this client-side sort can be removed entirely.        ║
-     * ╚══════════════════════════════════════════════════════════════════╝
+     * The contract fixture returns `{ entries }` and accepts `limit`. The API
+     * does not define a time-window parameter, so the client should preserve
+     * backend ordering only after unwrapping the canonical response shape.
      */
-    const entries = await this._client.request<LeaderboardEntry[]>(
+    const response = await this._client.request<LeaderboardResponse>(
       'GET',
       `${this._basePath}?${params}`,
     )
 
-    // Apply inferred tie-break sort (backup in case server doesn't order perfectly)
-    const sorted = [...entries].sort((a, b) => {
+    const sorted = [...response.entries].sort((a, b) => {
       if (b.weeklyScore !== a.weeklyScore) return b.weeklyScore - a.weeklyScore
       if (a.totalEntries !== b.totalEntries) return a.totalEntries - b.totalEntries
       return b.streak - a.streak
     })
 
-    // Re-assign ranks based on sorted order
     const ranked = sorted.map((entry, i) => ({ ...entry, rank: i + 1 }))
 
     this._cache.set(cacheKey, ranked)
@@ -87,4 +76,4 @@ export class LeaderboardClient {
   }
 }
 
-export type { LeaderboardEntry, LeaderboardWindow, LeaderboardFetchOptions }
+export type { LeaderboardEntry, LeaderboardFetchOptions }

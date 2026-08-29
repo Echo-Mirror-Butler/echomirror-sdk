@@ -57,6 +57,7 @@ const config: Config = {
       'classic',
       {
         docs: {
+          lastVersion: 'current',
           sidebarPath: './sidebars.ts',
           editUrl: 'https://github.com/karanjadavi/echomirror-sdk/tree/main/docs-site/',
         },

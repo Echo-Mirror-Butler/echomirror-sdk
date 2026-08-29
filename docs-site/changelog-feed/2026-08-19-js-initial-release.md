@@ -34,8 +34,6 @@ npm install @echomirror/core @echomirror/mood @echomirror/stellar
 
 ## Full changelog
 
-See the [aggregated changelog](https://karanjadavi.github.io/echomirror-sdk/docs/next/changelog)
-for detailed per-package release notes, or subscribe to this feed's
-[RSS](https://karanjadavi.github.io/echomirror-sdk/changelog/rss.xml) /
-[Atom](https://karanjadavi.github.io/echomirror-sdk/changelog/atom.xml) to be
-notified of future releases.
+See the [aggregated changelog](/docs/changelog) for detailed per-package
+release notes, or subscribe to the generated RSS and Atom files under the
+release-feed route to be notified of future releases.

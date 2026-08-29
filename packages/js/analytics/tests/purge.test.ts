@@ -203,6 +203,9 @@ describe('AnalyticsClient purge', () => {
 
     // The pre-computed aggregate is still valid for its original data set
     // (This test documents that purge does NOT retroactively fix aggregates.)
+    // raw: true bypasses the differential-privacy minimum-cohort-size gate
+    // (default 5) so this small sample produces a deterministic result —
+    // this test is about purge/aggregate independence, not DP noise.
     const rollup = aggregateMood(entries, {
       from: '2026-07-01T00:00:00Z',
       to: '2026-07-31T23:59:59Z',
