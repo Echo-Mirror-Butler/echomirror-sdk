@@ -108,4 +108,75 @@ final class ContractTests: XCTestCase {
         XCTAssertFalse(stellar.isValidAddress("SNOTPUBLIC"))
         XCTAssertEqual(stellar.hashPublicKey(spec.stellarPublicKey)?.count, 64)
     }
+
+    /// Validates the real-time feed semantics behind the contract's
+    /// `get_social_feed_since` operation: after a reconnect, entries published
+    /// since the last seen id are backfilled (oldest-first) rather than being
+    /// silently dropped — mirroring the JS `SocialSubscription` behavior the
+    /// FFI can't cover offline. The transport boundary is mocked the same way
+    /// the JS runner fakes its WebSocket.
+    func testRealtimeBackfillMatchesContractFeedSince() async {
+        final class MockTransport: SocialRealtimeTransport {
+            private(set) var connectCalls = 0
+            private var onOpen: ((SocialRealtimeOpenInfo) -> Void)?
+            private var onEvent: ((SocialLiveEvent) -> Void)?
+
+            func connect(
+                url: URL,
+                onOpen: @escaping (SocialRealtimeOpenInfo) -> Void,
+                onEvent: @escaping (SocialLiveEvent) -> Void
+            ) {
+                connectCalls += 1
+                self.onOpen = onOpen
+                self.onEvent = onEvent
+            }
+            func disconnect() {}
+            func receive(_ event: SocialLiveEvent) { onEvent?(event) }
+            func openReconnect() { onOpen?(SocialRealtimeOpenInfo(isReconnect: true)) }
+        }
+
+        let transport = MockTransport()
+        // The backfill anchor/convention matches the contract's feed-since
+        // operation: fetch entries published after a last-seen id, oldest-first.
+        // Here feed-002 (score 6, sleep tag, Austin) was published after feed-001.
+        let backfill: (@Sendable (String) async throws -> [GlobalFeedEntry])? = { sinceId in
+            XCTAssertEqual(sinceId, "feed-001")
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return [try decoder.decode(GlobalFeedEntry.self, from: #"{"id":"feed-002","score":6,"tags":["sleep"],"country":"US","city":"Austin","created_at":"2026-08-17T09:05:00Z"}"#.data(using: .utf8)!)]
+        }
+        let subscription = SocialSubscription(
+            transport: transport,
+            wsURL: URL(string: "wss://contract-test/social/ws")!,
+            backfill: backfill
+        )
+
+        let task = Task {
+            var received: [SocialLiveEvent] = []
+            for await event in subscription.events() {
+                received.append(event)
+                if received.count == 2 { break }
+            }
+            return received
+        }
+
+        transport.receive(.feedNewEntry(GlobalFeedEntry(
+            id: "feed-001",
+            score: 7,
+            tags: ["health"],
+            country: "US",
+            city: "New York",
+            createdAt: ISO8601DateFormatter().date(from: "2026-08-17T09:00:00Z")!
+        )))
+        transport.openReconnect()
+
+        let received = try? await task.value
+        guard case .feedNewEntry(let backfilled)? = received?.last else {
+            return XCTFail("expected backfilled feedNewEntry, got \(String(describing: received?.last))")
+        }
+        XCTAssertEqual(backfilled.id, "feed-002")
+        XCTAssertEqual(backfilled.score, 6)
+        XCTAssertEqual(backfilled.tags, ["sleep"])
+        XCTAssertEqual(backfilled.city, "Austin")
+    }
 }
