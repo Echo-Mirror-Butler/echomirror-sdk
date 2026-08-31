@@ -46,7 +46,7 @@
     "@stellar/stellar-sdk": "^13.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "1.61.1",
+    "@playwright/test": "1.62.1",
     "@types/node": "^22.0.0",
     "esbuild": "^0.28.1",
     "typescript": "*",
