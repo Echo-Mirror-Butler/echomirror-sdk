@@ -59,7 +59,7 @@ const config: Config = {
         docs: {
           lastVersion: 'current',
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/karanjadavi/echomirror-sdk/tree/main/docs-site/',
+          editUrl: 'https://github.com/Echo-Mirror-Butler/echomirror-sdk/tree/main/docs-site/',
         },
         // Changelog RSS/Atom feed — Docusaurus blog plugin used purely as a
         // feed generator. The human-readable aggregate page lives at
@@ -121,7 +121,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://github.com/karanjadavi/echomirror-sdk',
+          href: 'https://github.com/Echo-Mirror-Butler/echomirror-sdk',
           label: 'GitHub',
           position: 'right',
         },
@@ -156,7 +156,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Issues',
-              href: 'https://github.com/karanjadavi/echomirror-sdk/issues',
+              href: 'https://github.com/Echo-Mirror-Butler/echomirror-sdk/issues',
             },
           ],
         },
@@ -165,7 +165,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/karanjadavi/echomirror-sdk',
+              href: 'https://github.com/Echo-Mirror-Butler/echomirror-sdk',
             },
           ],
         },

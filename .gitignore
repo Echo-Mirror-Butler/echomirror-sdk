@@ -61,3 +61,4 @@ packages/js/stellar/playwright-report/
 # VS Code extension build output
 extensions/vscode/out/
 contract-tests/runners/**/__pycache__/
+.vercel

@@ -1,0 +1,17 @@
+node_modules/
+target/
+.git/
+extensions/
+contract-tests/
+packages/flutter/
+crates/
+packages/js/*/dist/
+packages/js/*/coverage/
+packages/js/*/test-results/
+packages/js/*/playwright-report/
+packages/js/*/e2e/
+docs-site/node_modules/
+docs-site/build/
+docs-site/.docusaurus/
+docs-site/docs/api/
+docs-site/static/api/
