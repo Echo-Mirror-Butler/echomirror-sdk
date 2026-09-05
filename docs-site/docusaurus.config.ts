@@ -11,10 +11,10 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://karanjadavi.github.io',
+  url: 'https://echo-mirror-butler.github.io',
   baseUrl: '/echomirror-sdk/',
 
-  organizationName: 'karanjadavi',
+  organizationName: 'Echo-Mirror-Butler',
   projectName: 'echomirror-sdk',
 
   onBrokenLinks: 'throw',
