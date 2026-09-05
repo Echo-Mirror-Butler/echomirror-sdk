@@ -11,8 +11,11 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://echo-mirror-butler.github.io',
-  baseUrl: '/echomirror-sdk/',
+  // Served at the domain root on Vercel — the only deployment target that's
+  // actually wired up (docs.yml builds the site for CI but never publishes
+  // to GitHub Pages, so there's no /echomirror-sdk/ subpath to account for).
+  url: 'https://echomirror-sdk-site.vercel.app',
+  baseUrl: '/',
 
   organizationName: 'Echo-Mirror-Butler',
   projectName: 'echomirror-sdk',
