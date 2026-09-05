@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Echo-Mirror-Butler/echomirror-sdk/security/policy
+    about: Please report vulnerabilities privately per SECURITY.md — do not open a public issue.
+  - name: Documentation
+    url: https://echomirror-sdk-site.vercel.app/
+    about: Quickstarts, API reference, and architecture docs.

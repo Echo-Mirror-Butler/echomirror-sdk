@@ -1,0 +1,68 @@
+name: Bug report
+description: Something in the SDK isn't working as documented
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package?
+      options:
+        - echomirror-core (Rust)
+        - echomirror-stellar (Rust)
+        - echomirror-sync (Rust)
+        - echomirror-ffi (Rust)
+        - echomirror-wasm (Rust/WASM)
+        - "@echomirror/core (JS/TS)"
+        - "@echomirror/mood (JS/TS)"
+        - "@echomirror/stellar (JS/TS)"
+        - "@echomirror/social (JS/TS)"
+        - "@echomirror/analytics (JS/TS)"
+        - "@echomirror/react (JS/TS)"
+        - "@echomirror/widget (JS/TS)"
+        - echomirror_sdk (Flutter/Dart)
+        - echomirror-python (Python)
+        - EchoMirrorSDK (Swift)
+        - VS Code extension
+        - Chrome extension
+        - Docs site
+        - Not sure / other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: e.g. @echomirror/core@0.1.0, or the commit SHA if built from source
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the full error message/stack trace if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: A short code snippet or steps that reliably reproduce the issue.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        OS:
+        Runtime (Node/Rust/Python/Flutter/Xcode) version:
+        Network (testnet/mainnet), if Stellar-related:
+    validations:
+      required: false

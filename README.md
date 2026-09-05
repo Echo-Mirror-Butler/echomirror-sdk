@@ -3,11 +3,17 @@
   <p><strong>Mood intelligence · Stellar payments · Blockchain sync — for every platform and language.</strong></p>
 
   <p>
+    <a href="https://github.com/Echo-Mirror-Butler/echomirror-sdk/actions/workflows/rust-ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Echo-Mirror-Butler/echomirror-sdk/rust-ci.yml?branch=main&label=rust%20ci&style=flat-square" /></a>
+    <a href="https://github.com/Echo-Mirror-Butler/echomirror-sdk/actions/workflows/js-ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Echo-Mirror-Butler/echomirror-sdk/js-ci.yml?branch=main&label=js%20ci&style=flat-square" /></a>
+    <a href="https://github.com/Echo-Mirror-Butler/echomirror-sdk/actions/workflows/contract-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/Echo-Mirror-Butler/echomirror-sdk/contract-tests.yml?branch=main&label=cross-language%20contracts&style=flat-square" /></a>
     <a href="https://www.npmjs.com/package/@echomirror/core"><img src="https://img.shields.io/npm/v/@echomirror/core?color=0c1a2e&label=npm&style=flat-square" /></a>
     <a href="https://crates.io/crates/echomirror-core"><img src="https://img.shields.io/crates/v/echomirror-core?color=ce422b&label=crates.io&style=flat-square" /></a>
     <a href="https://pub.dev/packages/echomirror_sdk"><img src="https://img.shields.io/pub/v/echomirror_sdk?color=0c1a2e&label=pub.dev&style=flat-square" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a>
     <a href="https://github.com/Echo-Mirror-Butler/echomirror-sdk/issues"><img src="https://img.shields.io/github/issues/Echo-Mirror-Butler/echomirror-sdk?style=flat-square" /></a>
+  </p>
+  <p>
+    <a href="https://devpost.com"><img src="https://img.shields.io/badge/devpost-hackathon%20submission-003e54?style=flat-square&logo=devpost&logoColor=white" /></a>
   </p>
 
   <p>
@@ -123,8 +129,6 @@ EchoMirror is a social wellness platform — users log their mood, gift ECHO tok
 |---|---|---|
 | [`echomirror_sdk`](./packages/flutter) | Flutter/Dart | Full SDK — mood, Stellar, social, blockchain sync, FFI |
 | [`echomirror-python`](./crates/echomirror-python) | Python | Async client (PyO3 + maturin) — `pip install echomirror-sdk` |
-| `EchoMirrorSDK` *(coming)* | Swift | iOS/macOS SDK via SPM |
-| `echomirror-python` *(coming)* | Python | Async client — `pip install echomirror` |
 | [`EchoMirrorSDK`](./packages/swift/EchoMirrorSDK) | Swift | iOS/macOS SDK via SPM and `echomirror-ffi` |
 
 ### Extensions
@@ -498,8 +502,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave po
 **Native**
 - [x] `echomirror_sdk` Flutter — mood, stellar, social, blockchain sync, FFI
 - [ ] Riverpod providers
-- [ ] Flutter tests
-- [ ] Python binding (`echomirror-python`)
+- [x] Flutter tests (FFI bindings)
+- [x] Python binding (`echomirror-python`) — PyO3 + maturin, PyPI quickstart
 - [x] Swift package (`EchoMirrorSDK`)
 - [ ] pub.dev publish
 

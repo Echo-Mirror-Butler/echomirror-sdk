@@ -1,0 +1,47 @@
+name: Feature request
+description: Suggest an API, package, or capability that doesn't exist yet
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to build, and where does the SDK currently fall short?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API or behavior
+      description: Sketch the shape you'd want to call, even if rough.
+      render: typescript
+    validations:
+      required: false
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package(s) would this touch?
+      multiple: true
+      options:
+        - echomirror-core (Rust)
+        - echomirror-stellar (Rust)
+        - echomirror-sync (Rust)
+        - echomirror-ffi (Rust)
+        - echomirror-wasm (Rust/WASM)
+        - JS/TS packages
+        - Flutter
+        - Python
+        - Swift
+        - VS Code extension
+        - Chrome extension
+        - Docs site
+        - New package
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you're using today, or why existing APIs don't cover this.
+    validations:
+      required: false
