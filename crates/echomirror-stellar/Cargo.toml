@@ -15,7 +15,7 @@ thiserror.workspace = true
 chrono.workspace = true
 sha2.workspace = true
 hex.workspace = true
-base64 = "0.22"
+base64 = "0.23"
 
 [dev-dependencies]
 wiremock.workspace = true
