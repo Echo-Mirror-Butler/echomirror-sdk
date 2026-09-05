@@ -103,7 +103,7 @@ jobs:
           cd extensions/chrome
           zip -r ../chrome-extension.zip .
       - name: Upload to Chrome Web Store
-        uses: mnao305/chrome-extension-upload@v4.0.1
+        uses: mnao305/chrome-extension-upload@v6.0.0
         with:
           file-path: extensions/chrome-extension.zip
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
