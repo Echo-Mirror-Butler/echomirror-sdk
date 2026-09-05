@@ -79,8 +79,10 @@ describe('LedgerWalletAdapter', () => {
     expect(signed.signatures).toHaveLength(1)
 
     const sig = signed.signatures[0]
-    expect(sig.hint()).toEqual(deviceKeypair.signatureHint())
-    expect(deviceKeypair.verify(signed.signatureBase(), sig.signature())).toBe(true)
+    // hint/signature are readonly BytesValue-wrapped properties since
+    // stellar-sdk v14+ (were method calls returning raw Uint8Arrays before).
+    expect(sig.hint.value).toEqual(deviceKeypair.signatureHint())
+    expect(deviceKeypair.verify(signed.signatureBase(), sig.signature.value)).toBe(true)
   })
 
   it('throws WalletNotFoundError when the transport is unavailable', async () => {

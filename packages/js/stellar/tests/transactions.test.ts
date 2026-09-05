@@ -70,7 +70,10 @@ describe('buildPaymentTransaction', () => {
     expect(op.destination).toBe(BOB)
     expect(op.amount).toBe('12.5000000')
     expect(op.asset.isNative()).toBe(true)
-    expect(tx.memo.value?.toString()).toBe('gift ✨')
+    // memo.value is a Uint8Array since stellar-sdk v14+ (was a Node Buffer,
+    // whose toString() defaulted to utf8 decoding); Uint8Array.toString()
+    // just joins byte values, so decode explicitly.
+    expect(Buffer.from(tx.memo.value as Uint8Array).toString('utf8')).toBe('gift ✨')
     expect(Number(tx.timeBounds?.maxTime)).toBeGreaterThan(Date.now() / 1000)
     expect(tx.networkPassphrase ?? '').not.toContain('Public Global')
   })

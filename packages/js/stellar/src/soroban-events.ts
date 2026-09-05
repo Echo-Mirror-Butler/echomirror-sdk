@@ -25,13 +25,11 @@ export interface SorobanEvent {
   ledger: number
   /** ISO timestamp of when the containing ledger closed, if reported. */
   ledgerClosedAt?: string
-  /** Server-assigned event id. */
-  id: string
   /**
-   * Paging token for cursor-based pagination. Stable per event and used to
-   * resume a query or de-duplicate across subscription polls.
+   * Server-assigned event id. Stable per event and used to de-duplicate
+   * across subscription polls.
    */
-  pagingToken: string
+  id: string
   /**
    * The event's topic segments, base64 XDR-encoded, exactly as the RPC node
    * would accept them back in a topic filter.
@@ -54,9 +52,13 @@ export interface GetContractEventsOptions {
    * topics emitted by the contract.
    */
   topic?: string | string[]
-  /** Earliest ledger (inclusive) to start scanning from. */
+  /**
+   * Earliest ledger (inclusive) to start scanning from. Mutually exclusive
+   * with `cursor` on the underlying RPC call — required if `cursor` isn't
+   * given (the RPC no longer defaults this on your behalf).
+   */
   startLedger?: number
-  /** Resume token from a previous query/subscription. */
+  /** Resume token from a previous query/subscription. Takes priority over `startLedger` if both are given. */
   cursor?: string
   /** Max events per page (server clamps to its own limit). */
   limit?: number
@@ -77,7 +79,6 @@ function mapEvent(ev: rpc.Api.EventResponse): SorobanEvent {
     ledger: ev.ledger,
     ledgerClosedAt: ev.ledgerClosedAt,
     id: ev.id,
-    pagingToken: ev.pagingToken,
     topic: ev.topic.map((t) => t.toXDR('base64')),
     topicScVal: ev.topic,
     value: ev.value.toXDR('base64'),
@@ -101,23 +102,34 @@ export async function getContractEvents(
       : [options.topic]
     : undefined
 
-  const response = await server.getEvents({
-    startLedger: options.startLedger,
-    cursor: options.cursor,
-    limit: options.limit,
-    filters: [
-      {
-        contractIds: [options.contractId],
-        topics: topics ? [topics] : undefined,
-      },
-    ],
-  })
+  const filters = [
+    {
+      contractIds: [options.contractId],
+      topics: topics ? [topics] : undefined,
+    },
+  ]
+
+  // getEvents' request type is a discriminated union — cursor and
+  // startLedger/endLedger are mutually exclusive. Cursor (a resume token)
+  // takes priority when both are supplied. Unlike the pre-v17 SDK, the RPC
+  // no longer accepts an implicit "no preference" default — one of the two
+  // must be given.
+  if (!options.cursor && options.startLedger === undefined) {
+    throw new Error('getContractEvents requires either `cursor` or `startLedger`')
+  }
+
+  const response = await (options.cursor
+    ? server.getEvents({ cursor: options.cursor, limit: options.limit, filters })
+    : server.getEvents({
+        startLedger: options.startLedger as number,
+        limit: options.limit,
+        filters,
+      }))
 
   const events = (response.events ?? []).map(mapEvent)
-  const last = events[events.length - 1]
   return {
     events,
-    cursor: response.cursor ?? last?.pagingToken,
+    cursor: response.cursor,
     latestLedger: response.latestLedger,
   }
 }
@@ -148,8 +160,8 @@ export interface SorobanSubscription {
  *
  * This is **polling with cursor-based deduplication**, not a true push
  * subscription — Soroban RPC offers no streaming endpoint. Each tick fetches
- * events after the last seen cursor and only delivers events whose paging token
- * has not been seen before, so an event is never delivered twice even if a poll
+ * events after the last seen cursor and only delivers events whose id has not
+ * been seen before, so an event is never delivered twice even if a poll
  * boundary splits a batch. `onEvent` fires on the next tick after an event is
  * sealed into a ledger, not instantly.
  */
@@ -158,6 +170,7 @@ export function subscribeContractEvents(
 ): SorobanSubscription {
   const pollIntervalMs = options.pollIntervalMs ?? 5_000
   let cursor = options.cursor
+  let startLedger = options.startLedger
   let started = false
   let timer: ReturnType<typeof setInterval> | undefined
 
@@ -165,17 +178,25 @@ export function subscribeContractEvents(
 
   async function poll() {
     try {
+      // getContractEvents now requires an explicit cursor or startLedger (the
+      // RPC no longer has an implicit "from now" default) — resolve one from
+      // the current chain tip if the caller didn't give us either.
+      if (!cursor && startLedger === undefined) {
+        const latest = await options.server.getLatestLedger()
+        startLedger = latest.sequence
+      }
+
       const result = await getContractEvents(options.server, {
         contractId: options.contractId,
         topic: options.topic,
-        startLedger: started ? undefined : options.startLedger,
+        startLedger: started ? undefined : startLedger,
         cursor,
       })
       started = true
 
       for (const event of result.events) {
-        if (seen.has(event.pagingToken)) continue
-        seen.add(event.pagingToken)
+        if (seen.has(event.id)) continue
+        seen.add(event.id)
         options.onEvent(event)
       }
 

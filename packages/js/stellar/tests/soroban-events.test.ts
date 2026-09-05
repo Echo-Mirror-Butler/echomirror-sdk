@@ -4,9 +4,11 @@ import type { SorobanEvent } from '../src/soroban-events'
 
 vi.mock('@stellar/stellar-sdk', () => {
   const getEvents = vi.fn()
+  const getLatestLedger = vi.fn()
   class Server {
     constructor(_url: string, _opts?: unknown) {}
     getEvents = getEvents
+    getLatestLedger = getLatestLedger
   }
   const ScVal = {
     fromXDR: vi.fn((raw: string) => ({ decoded: raw })),
@@ -24,7 +26,6 @@ function makeRawEvent(overrides: Record<string, unknown> = {}): rpc.Api.EventRes
     },
     ledger: 100,
     id: 'evt-1',
-    pagingToken: 'tok-1',
     topic: [{ toXDR: (_f: string) => 'dG9waWM=', decoded: 'dG9waWM=' }],
     value: { toXDR: (_f: string) => 'dmFsdWU=', decoded: 'dmFsdWU=' },
     ...overrides,
@@ -49,7 +50,7 @@ describe('getContractEvents', () => {
       cursor: 'tok-1',
     } as unknown as rpc.Api.GetEventsResponse)
 
-    const result = await getContractEvents(server, { contractId: 'C CONTRACT' })
+    const result = await getContractEvents(server, { contractId: 'C CONTRACT', startLedger: 1 })
     expect(result.events).toHaveLength(1)
     const evt = result.events[0]
     expect(evt.contractId).toBe('C CONTRACT')
@@ -61,10 +62,11 @@ describe('getContractEvents', () => {
     expect(result.latestLedger).toBe(200)
   })
 
-  it('forwards startLedger, cursor and topic filters to getEvents', async () => {
+  it('forwards cursor and topic filters to getEvents, preferring cursor over startLedger', async () => {
     vi.mocked(server.getEvents).mockResolvedValue({
       events: [],
       latestLedger: 1,
+      cursor: 'tok-prev',
     } as unknown as rpc.Api.GetEventsResponse)
 
     await getContractEvents(server, {
@@ -75,24 +77,46 @@ describe('getContractEvents', () => {
       limit: 25,
     })
 
+    // getEvents' request type is a discriminated union — cursor and
+    // startLedger are mutually exclusive, and cursor wins when both are given.
     expect(server.getEvents).toHaveBeenCalledWith({
-      startLedger: 42,
       cursor: 'tok-prev',
       limit: 25,
       filters: [{ contractIds: ['C X'], topics: [['ABC']] }],
     })
   })
 
-  it('falls back to the last event paging token when no cursor is returned', async () => {
+  it('forwards startLedger when no cursor is given', async () => {
     vi.mocked(server.getEvents).mockResolvedValue({
-      events: [
-        makeRawEvent({ id: 'a', pagingToken: 't1' }),
-        makeRawEvent({ id: 'b', pagingToken: 't2' }),
-      ],
-      latestLedger: 5,
+      events: [],
+      latestLedger: 1,
+      cursor: 'tok-1',
     } as unknown as rpc.Api.GetEventsResponse)
 
-    const result = await getContractEvents(server, { contractId: 'C' })
+    await getContractEvents(server, { contractId: 'C X', startLedger: 42, limit: 25 })
+
+    expect(server.getEvents).toHaveBeenCalledWith({
+      startLedger: 42,
+      limit: 25,
+      filters: [{ contractIds: ['C X'], topics: undefined }],
+    })
+  })
+
+  it('throws when neither cursor nor startLedger is given', async () => {
+    await expect(getContractEvents(server, { contractId: 'C' })).rejects.toThrow(
+      'requires either `cursor` or `startLedger`',
+    )
+    expect(server.getEvents).not.toHaveBeenCalled()
+  })
+
+  it('returns the cursor from the response as-is', async () => {
+    vi.mocked(server.getEvents).mockResolvedValue({
+      events: [makeRawEvent({ id: 'a' }), makeRawEvent({ id: 'b' })],
+      latestLedger: 5,
+      cursor: 't2',
+    } as unknown as rpc.Api.GetEventsResponse)
+
+    const result = await getContractEvents(server, { contractId: 'C', startLedger: 1 })
     expect(result.cursor).toBe('t2')
   })
 })
@@ -110,25 +134,23 @@ describe('subscribeContractEvents', () => {
     const onEvent = vi.fn()
     const onError = vi.fn()
 
+    vi.mocked(server.getLatestLedger).mockResolvedValue({
+      sequence: 100,
+    } as unknown as rpc.Api.GetLatestLedgerResponse)
+
     vi.mocked(server.getEvents)
       .mockResolvedValueOnce({
-        events: [
-          makeRawEvent({ id: 'e1', pagingToken: 'p1' }),
-          makeRawEvent({ id: 'e2', pagingToken: 'p2' }),
-        ],
+        events: [makeRawEvent({ id: 'e1' }), makeRawEvent({ id: 'e2' })],
         cursor: 'p2',
         latestLedger: 10,
       } as unknown as rpc.Api.GetEventsResponse)
       .mockResolvedValueOnce({
-        events: [
-          makeRawEvent({ id: 'e2', pagingToken: 'p2' }),
-          makeRawEvent({ id: 'e3', pagingToken: 'p3' }),
-        ],
+        events: [makeRawEvent({ id: 'e2' }), makeRawEvent({ id: 'e3' })],
         cursor: 'p3',
         latestLedger: 11,
       } as unknown as rpc.Api.GetEventsResponse)
       .mockResolvedValueOnce({
-        events: [makeRawEvent({ id: 'e1', pagingToken: 'p1' })],
+        events: [makeRawEvent({ id: 'e1' })],
         cursor: 'p1',
         latestLedger: 12,
       } as unknown as rpc.Api.GetEventsResponse)
@@ -147,6 +169,28 @@ describe('subscribeContractEvents', () => {
     const delivered: string[] = onEvent.mock.calls.map((c) => (c[0] as SorobanEvent).id)
     expect(delivered).toEqual(['e1', 'e2', 'e3'])
     expect(onError).not.toHaveBeenCalled()
+    expect(server.getLatestLedger).toHaveBeenCalledTimes(1)
+    sub.unsubscribe()
+  })
+
+  it('does not resolve a starting ledger when startLedger is already given', async () => {
+    vi.useFakeTimers()
+    vi.mocked(server.getEvents).mockResolvedValue({
+      events: [],
+      cursor: 'p1',
+      latestLedger: 10,
+    } as unknown as rpc.Api.GetEventsResponse)
+
+    const sub = subscribeContractEvents({
+      server,
+      contractId: 'C',
+      startLedger: 5,
+      pollIntervalMs: 1000,
+      onEvent: vi.fn(),
+    })
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(server.getLatestLedger).not.toHaveBeenCalled()
     sub.unsubscribe()
   })
 
@@ -158,6 +202,7 @@ describe('subscribeContractEvents', () => {
     const sub = subscribeContractEvents({
       server,
       contractId: 'C',
+      startLedger: 1,
       pollIntervalMs: 1000,
       onEvent: vi.fn(),
       onError,

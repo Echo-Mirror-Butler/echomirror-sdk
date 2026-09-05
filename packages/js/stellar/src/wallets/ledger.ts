@@ -75,7 +75,12 @@ export class LedgerWalletAdapter implements WalletAdapter {
           throw new Error('Ledger returned no public key — is the Stellar app open on the device?')
         }
 
-        const { signature } = await stellar.signTransaction(LEDGER_STELLAR_PATH, signatureBase)
+        // signatureBase() returns a Uint8Array since stellar-sdk v14+;
+        // @ledgerhq/hw-app-str's signTransaction still requires a Node Buffer.
+        const { signature } = await stellar.signTransaction(
+          LEDGER_STELLAR_PATH,
+          Buffer.from(signatureBase),
+        )
         if (!signature) {
           throw new Error('Ledger returned no signature — the user may have rejected the transaction.')
         }

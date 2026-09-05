@@ -43,7 +43,7 @@
     "@ledgerhq/hw-app-str": "^7.7.7",
     "@ledgerhq/hw-transport-webhid": "^6.36.0",
     "@stellar/freighter-api": "^6.0.0",
-    "@stellar/stellar-sdk": "^13.0.0"
+    "@stellar/stellar-sdk": "^17.0.1"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
