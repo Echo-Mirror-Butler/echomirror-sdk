@@ -1,5 +1,7 @@
 .hero { position: relative; overflow: hidden; background: var(--echo-ink); color: #fff; }
 .hero::before { position: absolute; inset: 0; background: radial-gradient(circle at 78% 34%, rgba(61, 205, 157, .19), transparent 28%), linear-gradient(135deg, transparent 40%, rgba(255,255,255,.025) 40%, transparent 41%); content: ''; pointer-events: none; }
+.grain { position: absolute; inset: 0; opacity: .35; mix-blend-mode: overlay; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.inlineIcon { display: inline-block; vertical-align: -.15em; width: .9em; height: .9em; margin-left: .25em; }
 .heroNav { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; padding: 1.3rem 0; border-bottom: 1px solid rgba(255,255,255,.14); }
 .brand { display: flex; align-items: center; gap: .65rem; color: #fff; font-size: 1rem; font-weight: 800; letter-spacing: -.03em; text-decoration: none; }
 .mark { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 7px; background: var(--echo-lime); color: var(--echo-ink); font: 800 1rem var(--echo-mono); }
@@ -10,8 +12,8 @@
 .heroCopy { max-width: 680px; }
 .kicker { display: flex; align-items: center; gap: .5rem; margin: 0 0 1.1rem; color: var(--ifm-color-primary); font: 700 .72rem/1 var(--echo-mono); letter-spacing: .12em; text-transform: uppercase; }
 .kicker span { width: 1.5rem; height: 2px; background: currentColor; }
-.hero h1 { max-width: 680px; margin: 0 0 1.45rem; color: #fff; font-size: clamp(3.1rem, 6vw, 5.8rem); font-weight: 750; letter-spacing: -.075em; line-height: .98; }
-.hero h1 em { color: var(--echo-lime); font-style: normal; }
+.hero h1 { max-width: 680px; margin: 0 0 1.45rem; color: #fff; font-family: var(--echo-display); font-size: clamp(3.1rem, 6vw, 5.8rem); font-weight: 560; font-optical-sizing: auto; letter-spacing: -.02em; line-height: .98; }
+.hero h1 em { color: var(--echo-lime); font-style: italic; font-optical-sizing: auto; }
 .heroLead { max-width: 590px; margin: 0; color: rgba(255,255,255,.73); font-size: 1.12rem; line-height: 1.7; }
 .ctaRow { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 2rem; }
 .textCta { color: #fff; font-weight: 700; text-decoration: none; }
@@ -29,18 +31,20 @@
 .centerOrb span { color: rgba(255,255,255,.72); font: .62rem/1.25 var(--echo-mono); text-transform: uppercase; letter-spacing: .1em; }
 .signalCard, .floatCard { position: absolute; display: flex; align-items: center; gap: .7rem; padding: .85rem 1rem; border: 1px solid rgba(255,255,255,.2); border-radius: 12px; background: rgba(17, 44, 50, .88); box-shadow: 0 18px 40px rgba(0,0,0,.22); backdrop-filter: blur(10px); }
 .signalCard { top: 16%; right: 0; min-width: 220px; }
-.signalIcon { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: #d9ffb0; color: #143e35; }
+.signalIcon { display: grid; place-items: center; flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; background: #d9ffb0; color: #143e35; }
+.signalIcon svg { width: 1.15rem; height: 1.15rem; }
 .signalCard span:nth-child(2), .floatCard div { display: grid; gap: .25rem; }
 .signalCard small, .floatCard small { color: rgba(255,255,255,.5); font: .56rem var(--echo-mono); letter-spacing: .08em; }
 .signalCard strong, .floatCard strong { color: #fff; font-size: .78rem; }
 .signalCard b { margin-left: auto; color: var(--echo-lime); font: .72rem var(--echo-mono); }
 .floatCard { padding: .8rem .9rem; }
-.floatCard > span { color: var(--echo-lime); font-size: 1.4rem; }
+.floatCard > span { display: grid; place-items: center; flex-shrink: 0; color: var(--echo-lime); }
+.floatCard > span svg { width: 1.35rem; height: 1.35rem; }
 .paymentCard { top: 63%; left: 1%; }
 .socialCard { right: 2%; bottom: 6%; }
 .introSection { padding: 7rem 0 5rem; background: var(--echo-surface); }
 .introGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: end; }
-.introSection h2, .packageSection h2, .finalCta h2 { max-width: 540px; margin: 0; color: var(--echo-ink); font-size: clamp(2.3rem, 4vw, 4rem); letter-spacing: -.065em; line-height: 1; }
+.introSection h2, .packageSection h2, .finalCta h2 { max-width: 540px; margin: 0; color: var(--echo-ink); font-family: var(--echo-display); font-size: clamp(2.3rem, 4vw, 4rem); font-weight: 540; font-optical-sizing: auto; letter-spacing: -.015em; line-height: 1; }
 .highlight { color: var(--ifm-color-primary); }
 .sectionLead { max-width: 470px; margin: 0; color: var(--echo-muted); font-size: 1.1rem; line-height: 1.7; }
 .packageSection { padding: 3rem 0 7rem; background: var(--echo-surface); }
@@ -50,7 +54,8 @@
 .packageGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 .packageCard { min-height: 260px; padding: 1.4rem; border: 1px solid var(--echo-border); border-radius: 14px; background: var(--echo-surface); transition: transform .18s ease, box-shadow .18s ease; }
 .packageCard:hover { transform: translateY(-4px); box-shadow: 0 18px 35px rgba(25,50,60,.08); }
-.packageIcon { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; margin-bottom: 2rem; border-radius: 8px; color: var(--echo-ink); font: 700 .72rem var(--echo-mono); }
+.packageIcon { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; margin-bottom: 2rem; border-radius: 9px; color: var(--echo-ink); }
+.packageIcon svg { width: 1.4rem; height: 1.4rem; }
 .mint { background: #ccefdc; } .peach { background: #ffd7bb; } .lilac { background: #ded5ff; } .sky { background: #c9eaff; } .gold { background: #ffe8a8; } .coral { background: #ffc5c1; }
 .packageLabel { margin: 0 0 .4rem; color: var(--ifm-color-primary); font: 700 .62rem var(--echo-mono); letter-spacing: .1em; }
 .packageCard h3 { margin: 0 0 .7rem; color: var(--echo-ink); font: 700 1rem var(--echo-mono); }

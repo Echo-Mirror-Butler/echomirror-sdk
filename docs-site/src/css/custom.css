@@ -1,8 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400..600&family=Public+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --ifm-font-family-base: 'Manrope', system-ui, sans-serif;
-  --ifm-heading-font-family: 'Manrope', system-ui, sans-serif;
+  --ifm-font-family-base: 'Public Sans', system-ui, sans-serif;
+  --ifm-heading-font-family: 'Fraunces', 'Public Sans', system-ui, serif;
+  --echo-display: 'Fraunces', serif;
   --ifm-font-size-base: 16px;
   --ifm-line-height-base: 1.65;
   --ifm-color-primary: #147b62;
