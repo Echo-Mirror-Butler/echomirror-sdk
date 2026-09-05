@@ -6,12 +6,12 @@
     "access": "public"
   },
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md"],
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
       "require": "./dist/index.js",
+      "default": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
@@ -39,7 +39,7 @@
   "license": "MIT",
   "dependencies": {
     "@albedo-link/intent": "^0.12.0",
-    "@echomirror/core": "*",
+    "@echomirror/core": "^0.1.0",
     "@ledgerhq/hw-app-str": "^7.7.7",
     "@ledgerhq/hw-transport-webhid": "^6.36.0",
     "@stellar/freighter-api": "^6.0.0",

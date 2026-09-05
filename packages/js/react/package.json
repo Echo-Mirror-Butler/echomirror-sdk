@@ -6,12 +6,12 @@
     "access": "public"
   },
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md"],
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
       "require": "./dist/index.js",
+      "default": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
@@ -30,7 +30,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@echomirror/core": "*"
+    "@echomirror/core": "^0.1.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
