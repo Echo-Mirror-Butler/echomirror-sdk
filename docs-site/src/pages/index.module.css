@@ -27,9 +27,12 @@
 .orbit { position: absolute; inset: 14% 3%; border: 1px solid rgba(150,255,218,.22); border-radius: 50%; transform: rotate(-28deg); }
 .orbitOne { transform: rotate(-28deg) scaleY(.62); }
 .orbitTwo { inset: 7% 14%; border-color: rgba(255,255,255,.13); transform: rotate(55deg) scaleY(.74); }
-.centerOrb { position: absolute; top: 35%; left: 32%; display: grid; place-items: center; width: 190px; height: 190px; border: 1px solid rgba(207,255,222,.4); border-radius: 50%; background: radial-gradient(circle at 38% 30%, #59dba4, #18785c 60%, #0d3d3b); box-shadow: 0 0 0 18px rgba(76,222,165,.05), 0 30px 80px rgba(0,0,0,.35); text-align: center; }
-.centerOrb .mark { width: 2.4rem; height: 2.4rem; margin-bottom: .5rem; background: #e2ffbb; }
-.centerOrb span { color: rgba(255,255,255,.72); font: .62rem/1.25 var(--echo-mono); text-transform: uppercase; letter-spacing: .1em; }
+.centerOrb { position: absolute; top: 35%; left: 32%; overflow: hidden; width: 190px; height: 190px; border: 1px solid rgba(207,255,222,.4); border-radius: 50%; background: #18785c; box-shadow: 0 0 0 18px rgba(76,222,165,.05), 0 30px 80px rgba(0,0,0,.35); }
+.centerOrb img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(1.05) contrast(1.03); }
+.centerOrbTint { position: absolute; inset: 0; mix-blend-mode: soft-light; background: radial-gradient(circle at 32% 26%, rgba(255,255,255,.35), transparent 55%), linear-gradient(155deg, rgba(16,44,50,.15), #147b62 130%); opacity: .7; }
+.centerOrbBadge { position: absolute; right: -2px; bottom: -2px; display: grid; place-items: center; padding: 4px; border-radius: 50%; background: var(--echo-ink-fixed); box-shadow: 0 6px 16px rgba(0,0,0,.35); }
+.centerOrbBadge .mark { width: 1.7rem; height: 1.7rem; }
+.centerOrbCaption { position: absolute; top: calc(35% + 190px + .85rem); left: 32%; width: 190px; margin: 0; color: rgba(255,255,255,.62); font: 700 .62rem/1 var(--echo-mono); text-transform: uppercase; letter-spacing: .1em; text-align: center; }
 .signalCard, .floatCard { position: absolute; display: flex; align-items: center; gap: .7rem; padding: .85rem 1rem; border: 1px solid rgba(255,255,255,.2); border-radius: 12px; background: rgba(17, 44, 50, .88); box-shadow: 0 18px 40px rgba(0,0,0,.22); backdrop-filter: blur(10px); }
 .signalCard { top: 16%; right: 0; min-width: 220px; }
 .signalIcon { display: grid; place-items: center; flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; background: #d9ffb0; color: #143e35; }

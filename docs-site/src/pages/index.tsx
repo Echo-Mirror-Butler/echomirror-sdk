@@ -113,6 +113,7 @@ function PhotoBand(): ReactNode {
 }
 
 function Hero(): ReactNode {
+  const heroPhotoUrl = useBaseUrl('/img/photos/connection-hero.jpg');
   return <header className={styles.hero}>
     <div className={styles.grain} aria-hidden="true" />
     <div className="container">
@@ -128,7 +129,12 @@ function Hero(): ReactNode {
         <div className={styles.heroArt} aria-label="Illustration showing a mood check-in connected to a Stellar payment and social feed" role="img">
           <div className={`${styles.orbit} ${styles.orbitOne}`} /><div className={`${styles.orbit} ${styles.orbitTwo}`} />
           <div className={styles.signalCard}><span className={styles.signalIcon}><Icon name="smile" /></span><span><small>MOOD SIGNAL</small><strong>Feeling good</strong></span><b>+18%</b></div>
-          <div className={styles.centerOrb}><Mark /><span>human<br />connection</span></div>
+          <div className={styles.centerOrb}>
+            <img src={heroPhotoUrl} alt="Two people sharing a genuine laugh together" />
+            <div className={styles.centerOrbTint} aria-hidden="true" />
+            <span className={styles.centerOrbBadge}><Mark /></span>
+          </div>
+          <p className={styles.centerOrbCaption}>Human connection</p>
           <div className={`${styles.floatCard} ${styles.paymentCard}`}><span><Icon name="sparkles" /></span><div><small>STELLAR PAYMENT</small><strong>+ 12.50 ECHO</strong></div></div>
           <div className={`${styles.floatCard} ${styles.socialCard}`}><span><Icon name="heart" /></span><div><small>SOCIAL WELLNESS</small><strong>4 day streak</strong></div></div>
         </div>
