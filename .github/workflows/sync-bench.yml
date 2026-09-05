@@ -49,7 +49,7 @@ jobs:
       # scheduled run compares against the *previous* scheduled run, and
       # `criterion` prints "regressed"/"improved" per benchmark on its own.
       - name: Restore criterion history
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: target/criterion
           key: sync-criterion-history-${{ github.run_id }}
@@ -58,7 +58,7 @@ jobs:
       - run: cargo bench -p echomirror-sync --features postgres
 
       - name: Save criterion history
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: target/criterion
           key: sync-criterion-history-${{ github.run_id }}

@@ -25,8 +25,8 @@ jobs:
     name: Build & Package VS Code Extension
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -44,7 +44,7 @@ jobs:
       - name: Package (.vsix dry-run)
         run: npm run package -w extensions/vscode
       - name: Upload .vsix artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vscode-extension-${{ github.sha }}
           path: extensions/vscode/*.vsix
@@ -53,8 +53,8 @@ jobs:
     name: Build & Package Chrome Extension
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -67,7 +67,7 @@ jobs:
         working-directory: ${{ github.workspace }}/extensions/chrome
         run: zip -r ../chrome-extension.zip .
       - name: Upload .zip artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: chrome-extension-${{ github.sha }}
           path: extensions/chrome-extension.zip
@@ -78,8 +78,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/extension-vscode-v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -97,7 +97,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/extension-chrome-v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Package extension (.zip)
         run: |
           cd extensions/chrome
