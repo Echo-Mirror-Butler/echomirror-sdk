@@ -1,6 +1,6 @@
 {
   "name": "@echomirror/analytics",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Privacy-safe emotional UX analytics for EchoMirror applications",
   "publishConfig": {
     "access": "public"
@@ -16,7 +16,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc",

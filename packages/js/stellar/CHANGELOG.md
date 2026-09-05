@@ -1,10 +1,19 @@
 # @echomirror/stellar
 
+## 0.2.1
+
+### Patch Changes
+
+- 56fa6a4: Configure Changesets release automation and publishing path to npm.
+- Updated dependencies [56fa6a4]
+  - @echomirror/core@0.1.1
+
 ## Unreleased
 
 ### Fixed
 
 - `getTransactionHistory` now sends the canonical `public_key` query parameter expected by the wire contract. This corrects the previously published camelCase `publicKey` request shape.
+
 ## 0.2.0 — 2026-08-19
 
 ### Added

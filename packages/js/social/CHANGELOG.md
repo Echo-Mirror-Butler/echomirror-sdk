@@ -1,10 +1,19 @@
 # @echomirror/social
 
+## 0.1.1
+
+### Patch Changes
+
+- 56fa6a4: Configure Changesets release automation and publishing path to npm.
+- Updated dependencies [56fa6a4]
+  - @echomirror/core@0.1.1
+
 ## Unreleased
 
 ### Fixed
 
 - `LeaderboardClient` now sends the canonical `limit` query parameter and unwraps leaderboard responses from `{ entries }` instead of expecting a bare array.
+
 ## 0.1.0 — 2026-08-19
 
 ### Added

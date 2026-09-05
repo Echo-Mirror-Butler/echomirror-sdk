@@ -1,5 +1,11 @@
 # @echomirror/core
 
+## 0.1.1
+
+### Patch Changes
+
+- 56fa6a4: Configure Changesets release automation and publishing path to npm.
+
 ## 0.1.0 — 2026-08-19
 
 ### Added

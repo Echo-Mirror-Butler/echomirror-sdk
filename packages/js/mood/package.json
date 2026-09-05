@@ -1,6 +1,6 @@
 {
   "name": "@echomirror/mood",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "EchoMirror SDK mood tracking module",
   "publishConfig": {
     "access": "public"

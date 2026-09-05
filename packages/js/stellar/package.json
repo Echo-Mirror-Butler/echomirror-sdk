@@ -1,6 +1,6 @@
 {
   "name": "@echomirror/stellar",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "EchoMirror SDK Stellar integration — multi-wallet (Freighter, Albedo, xBull), transaction builders, and typed errors",
   "publishConfig": {
     "access": "public"
