@@ -2,6 +2,7 @@ import type {ReactNode} from 'react';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import InstallPlayground from '@site/src/components/InstallPlayground';
 import styles from './index.module.css';
 
@@ -61,6 +62,56 @@ const PACKAGES: Package[] = [
 
 function Mark() { return <span className={styles.mark} aria-hidden="true">E</span>; }
 
+type Photo = {src: string; alt: string; tag: string; caption: string; credit: string};
+const PHOTOS: Photo[] = [
+  {
+    src: '/img/photos/connection.jpg',
+    alt: 'A crowd of friends laughing together at an outdoor evening gathering',
+    tag: 'SOCIAL WELLNESS',
+    caption: 'Feeds and reactions built around real moments, not vanity metrics.',
+    credit: 'Samantha Gades',
+  },
+  {
+    src: '/img/photos/mood.jpg',
+    alt: 'A hand sketching in a lined notebook, mid check-in',
+    tag: 'MOOD CHECK-IN',
+    caption: 'A two-second log that turns into a pattern worth noticing.',
+    credit: 'Seljan Salimova',
+  },
+  {
+    src: '/img/photos/generosity.jpg',
+    alt: 'A circle of hands stacked together in a group huddle',
+    tag: 'STELLAR GENEROSITY',
+    caption: 'Payments that read as a gesture of care, settled on-chain.',
+    credit: 'Hannah Busing',
+  },
+];
+
+function PhotoBand(): ReactNode {
+  const urls = [useBaseUrl(PHOTOS[0].src), useBaseUrl(PHOTOS[1].src), useBaseUrl(PHOTOS[2].src)];
+  return <section className={styles.photoBand} aria-labelledby="photo-band-title">
+    <div className={styles.grainSoft} aria-hidden="true" />
+    <div className="container" style={{position: 'relative', zIndex: 1}}>
+      <div className={styles.photoBandHeader}>
+        <p className={styles.kicker} style={{color: 'var(--ifm-color-primary)'}}><span /> Not an abstraction</p>
+        <Heading as="h2" id="photo-band-title">People, not just payloads.</Heading>
+        <p className={styles.sectionLead}>Every event this SDK ships eventually reaches a person having an actual moment — so we designed around that, instead of around the JSON.</p>
+      </div>
+      <div className={styles.photoGrid}>
+        {PHOTOS.map((photo, i) => <figure className={styles.photoCard} key={photo.src} data-tilt={i}>
+          <img src={urls[i]} alt={photo.alt} loading="lazy" />
+          <div className={styles.photoDuotone} aria-hidden="true" />
+          <figcaption className={styles.photoCaption}>
+            <small>{photo.tag}</small>
+            <p>{photo.caption}</p>
+          </figcaption>
+        </figure>)}
+      </div>
+      <p className={styles.photoCredits}>Photos via Unsplash — {PHOTOS.map((p) => p.credit).join(', ')}.</p>
+    </div>
+  </section>;
+}
+
 function Hero(): ReactNode {
   return <header className={styles.hero}>
     <div className={styles.grain} aria-hidden="true" />
@@ -91,7 +142,11 @@ export default function Home(): ReactNode {
     <Hero />
     <main>
       <section className={styles.introSection}><div className="container introGrid"><div><p className={styles.kicker}>One SDK, many ways to care</p><Heading as="h2">The infrastructure for <span className={styles.highlight}>human-centered</span> apps.</Heading></div><p className={styles.sectionLead}>From the first mood check-in to the moment a community gives back, EchoMirror gives developers the building blocks to make wellbeing feel native—not bolted on.</p></div></section>
-      <section className={styles.packageSection} aria-labelledby="packages-title"><div className="container"><div className={styles.sectionHeader}><div><p className={styles.kicker}>Composable by design</p><Heading as="h2" id="packages-title">Pick your starting point.</Heading></div><Link to="/docs/architecture" className={styles.outlineLink}>See the architecture <Icon name="arrow-right" className={styles.inlineIcon} /></Link></div><div className={styles.packageGrid}>{PACKAGES.map((pkg) => <article className={styles.packageCard} key={pkg.name}><div className={`${styles.packageIcon} ${styles[pkg.tone]}`} aria-hidden="true"><Icon name={pkg.icon} /></div><p className={styles.packageLabel}>{pkg.label}</p><h3>{pkg.name}</h3><p>{pkg.description}</p><Link to={pkg.name === '@echomirror/react' ? '/docs/quickstart/react' : '/docs/architecture'} aria-label={`Learn about ${pkg.name}`}>Learn more <Icon name="arrow-up-right" className={styles.inlineIcon} /></Link></article>)}</div></div></section>
+      <PhotoBand />
+      <section className={styles.packageSection} aria-labelledby="packages-title">
+        <div className={styles.grainSoft} aria-hidden="true" />
+        <div className="container" style={{position: 'relative', zIndex: 1}}><div className={styles.sectionHeader}><div><p className={styles.kicker}>Composable by design</p><Heading as="h2" id="packages-title">Pick your starting point.</Heading></div><Link to="/docs/architecture" className={styles.outlineLink}>See the architecture <Icon name="arrow-right" className={styles.inlineIcon} /></Link></div><div className={styles.packageGrid}>{PACKAGES.map((pkg) => <article className={`${styles.packageCard} ${pkg.name === '@echomirror/stellar' ? styles.packageCardFeatured : ''}`} key={pkg.name}><div className={`${styles.packageIcon} ${styles[pkg.tone]}`} aria-hidden="true"><Icon name={pkg.icon} /></div><p className={styles.packageLabel}>{pkg.label}</p><h3>{pkg.name}</h3><p>{pkg.description}</p><Link to={pkg.name === '@echomirror/react' ? '/docs/quickstart/react' : '/docs/architecture'} aria-label={`Learn about ${pkg.name}`}>Learn more <Icon name="arrow-up-right" className={styles.inlineIcon} /></Link></article>)}</div></div>
+      </section>
       <InstallPlayground />
       <section className={styles.finalCta}><div className="container"><div><p className={styles.kicker}>Ready when you are</p><Heading as="h2">Make room for better moments.</Heading><p>Read the quickstart, bring your own product context, and help shape the next layer of social wellness infrastructure.</p></div><Link className="button button--primary button--lg" to="/docs/intro">Read the quickstart <Icon name="arrow-right" className={styles.inlineIcon} /></Link></div></section>
     </main>
