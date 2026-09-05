@@ -37,7 +37,7 @@ redis = { workspace = true, optional = true }
 
 [dev-dependencies]
 wiremock.workspace = true
-criterion = { version = "0.5", features = ["async_tokio"] }
+criterion = { version = "0.8", features = ["async_tokio"] }
 
 [[bench]]
 name = "pipeline_bench"

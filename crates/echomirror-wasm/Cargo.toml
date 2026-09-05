@@ -22,7 +22,7 @@ sha2.workspace = true
 hex.workspace = true
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 wasm-bindgen-test = "0.3"
 # getrandom with js feature is needed when running wasm-bindgen-test in a
 # browser/Node environment and any transitive dep pulls in getrandom.
