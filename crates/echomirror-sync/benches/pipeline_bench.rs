@@ -29,12 +29,13 @@
 #[path = "support.rs"]
 mod support;
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use echomirror_core::SyncEvent;
 use echomirror_stellar::HorizonPaymentRecord;
 use echomirror_sync::filter::SyncRecord;
 use echomirror_sync::record::map_payment;
 use echomirror_sync::{SyncEngine, SyncFilter};
+use std::hint::black_box;
 use std::time::{Duration, Instant};
 use support::common::{
     horizon_fixture::HorizonFixture, next_event_matching, payment_record, test_client,
