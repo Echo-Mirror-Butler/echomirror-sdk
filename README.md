@@ -7,6 +7,7 @@
     <a href="https://github.com/Echo-Mirror-Butler/echomirror-sdk/actions/workflows/js-ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Echo-Mirror-Butler/echomirror-sdk/js-ci.yml?branch=main&label=js%20ci&style=flat-square" /></a>
     <a href="https://github.com/Echo-Mirror-Butler/echomirror-sdk/actions/workflows/contract-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/Echo-Mirror-Butler/echomirror-sdk/contract-tests.yml?branch=main&label=cross-language%20contracts&style=flat-square" /></a>
     <a href="https://www.npmjs.com/package/@echomirror/core"><img src="https://img.shields.io/npm/v/@echomirror/core?color=0c1a2e&label=npm&style=flat-square" /></a>
+    <a href="https://pypi.org/project/echomirror-sdk/"><img src="https://img.shields.io/pypi/v/echomirror-sdk?color=3776ab&label=pypi&style=flat-square" /></a>
     <a href="https://crates.io/crates/echomirror-core"><img src="https://img.shields.io/crates/v/echomirror-core?color=ce422b&label=crates.io&style=flat-square" /></a>
     <a href="https://pub.dev/packages/echomirror_sdk"><img src="https://img.shields.io/pub/v/echomirror_sdk?color=0c1a2e&label=pub.dev&style=flat-square" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a>
