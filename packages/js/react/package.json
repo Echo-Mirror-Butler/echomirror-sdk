@@ -40,7 +40,7 @@
     "typescript": "*",
     "vitest": "*",
     "@vitest/coverage-v8": "*",
-    "@types/react": "^18.0.0",
+    "@types/react": "^19.2.18",
     "@types/react-dom": "^18.0.0"
   },
   "size-limit": [
