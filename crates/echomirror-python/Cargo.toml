@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 echomirror-core = { path = "../echomirror-core" }
 echomirror-stellar = { path = "../echomirror-stellar" }
-pyo3 = { workspace = true, features = ["extension-module"] }
+pyo3 = { workspace = true, features = ["extension-module", "generate-import-lib"] }
 pyo3-async-runtimes = { workspace = true, features = ["tokio-runtime"] }
 tokio.workspace = true
 serde_json.workspace = true
