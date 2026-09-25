@@ -1,6 +1,9 @@
 {
   "name": "@echomirror/react",
   "version": "0.1.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "description": "EchoMirror SDK React bindings",
   "publishConfig": {
     "access": "public"

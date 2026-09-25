@@ -1,7 +1,8 @@
-// pyo3 0.22's `create_exception!` macro and `#[pymethods]` codegen trip two
-// lints on code *they* generate, not on anything we wrote: an `unexpected_cfgs`
-// warning from an internal `gil-refs` check, and a `useless_conversion` on the
-// generated `PyErr -> PyErr` wrapping for async method return types.
+// These allows were added for lints tripped by pyo3 0.22's own
+// `create_exception!`/`#[pymethods]` codegen (issue #196: upgraded to
+// 0.28 here). Left in place since an unnecessary `#![allow]` is harmless,
+// but a `cargo build` on 0.28 should confirm whether either lint still
+// fires on generated code before removing these.
 #![allow(unexpected_cfgs)]
 #![allow(clippy::useless_conversion)]
 

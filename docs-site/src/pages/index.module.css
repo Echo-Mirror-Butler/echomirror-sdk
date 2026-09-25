@@ -76,7 +76,16 @@
 .packageCardFeatured { border-color: var(--ifm-color-primary); box-shadow: 0 12px 28px rgba(20,123,98,.14); }
 .packageIcon { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; margin-bottom: 2rem; border-radius: 9px; color: var(--echo-ink); }
 .packageIcon svg { width: 1.4rem; height: 1.4rem; }
-.mint { background: #ccefdc; } .peach { background: #ffd7bb; } .lilac { background: #ded5ff; } .sky { background: #c9eaff; } .gold { background: #ffe8a8; } .coral { background: #ffc5c1; }
+.mint { background: #ccefdc; } .peach { background: #ffd7bb; } .lilac { background: #ded5ff; } .sky { background: #c9eaff; } .gold { background: #ffe8a8; } .coral { background: #ffc5c1; } .teal { background: #bdeeea; } .rose { background: #ffd2e6; }
+
+.nativeSection { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--echo-border); }
+.nativeIntro { margin: .3rem 0 1.2rem; color: var(--echo-muted); font-size: .92rem; max-width: 46ch; }
+.nativeGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem; margin-bottom: 1rem; }
+.nativeCard { display: block; padding: 1rem 1.1rem; border: 1px solid var(--echo-border); border-radius: 12px; background: var(--echo-widget); text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
+.nativeCard:hover { transform: translateY(-3px); box-shadow: 0 14px 28px rgba(25,50,60,.08); }
+.nativeCard h4 { margin: 0 0 .4rem; color: var(--echo-ink); font: 700 .88rem var(--echo-mono); }
+.nativeCard p { margin: 0 0 .6rem; color: var(--echo-muted); font-size: .82rem; line-height: 1.5; min-height: 44px; }
+.nativeLink { color: var(--echo-ink); font-size: .76rem; font-weight: 700; }
 .packageLabel { margin: 0 0 .4rem; color: var(--ifm-color-primary); font: 700 .62rem var(--echo-mono); letter-spacing: .1em; }
 .packageCard h3 { margin: 0 0 .7rem; color: var(--echo-ink); font: 700 1rem var(--echo-mono); }
 .packageCard > p:not(.packageLabel) { min-height: 65px; margin: 0 0 1.2rem; color: var(--echo-muted); font-size: .88rem; line-height: 1.55; }
@@ -86,5 +95,11 @@
 .finalCta .container { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
 .finalCta p:not(.kicker) { max-width: 520px; margin: 1rem 0 0; color: var(--echo-muted); line-height: 1.6; }
 @media (max-width: 900px) { .heroGrid { grid-template-columns: 1fr; padding-top: 4rem; } .heroArt { min-height: 430px; max-width: 570px; width: 100%; margin: 0 auto; } .introGrid { gap: 2rem; } .photoGrid { grid-template-columns: 1fr; grid-template-rows: none; } .photoCard, .photoCard:nth-child(2), .photoCard:nth-child(3) { grid-row: auto; height: 17rem; transform: none; } }
-@media (max-width: 700px) { .heroGrid { min-height: auto; padding-bottom: 4rem; } .heroArt { min-height: 360px; transform: scale(.9); transform-origin: top center; margin-bottom: -2rem; } .trustRow { margin-top: 3rem; gap: 1.2rem; } .introGrid, .packageGrid { grid-template-columns: 1fr; } .sectionHeader, .finalCta .container { align-items: flex-start; flex-direction: column; } .packageSection { padding-bottom: 4rem; } .photoBand { padding: 4rem 0 4.5rem; } }
+/* Tablet: 2 columns for both grids instead of jumping straight from 3 to 1. */
+@media (max-width: 1024px) and (min-width: 701px) {
+  .packageGrid { grid-template-columns: repeat(2, 1fr); }
+  .nativeGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) { .nativeGrid { grid-template-columns: 1fr; } .heroGrid { min-height: auto; padding-bottom: 4rem; } .heroArt { min-height: 360px; transform: scale(.9); transform-origin: top center; margin-bottom: -2rem; } .trustRow { margin-top: 3rem; gap: 1.2rem; } .introGrid, .packageGrid { grid-template-columns: 1fr; } .sectionHeader, .finalCta .container { align-items: flex-start; flex-direction: column; } .packageSection { padding-bottom: 4rem; } .photoBand { padding: 4rem 0 4.5rem; } }
 @media (max-width: 480px) { .navLinks { gap: .7rem; } .hero h1 { font-size: 3.2rem; } .heroLead { font-size: 1rem; } .heroArt { min-height: 315px; transform: scale(.76); width: 132%; margin-left: -16%; margin-bottom: -4rem; } .signalCard { right: 4%; } .paymentCard { left: 4%; } .socialCard { right: 5%; } }

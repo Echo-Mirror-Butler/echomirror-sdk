@@ -41,8 +41,12 @@ js-sys = { version = "0.3" }
 # FFI
 uniffi = { version = "0.27" }
 # Python bindings
-pyo3 = { version = "0.22" }
-pyo3-async-runtimes = { version = "0.22" }
+# Issue #196: 0.22's newest supported CPython is 3.13 — building against a
+# 3.14 interpreter fails with "the configured Python interpreter version
+# (3.14) is newer than PyO3's maximum supported version (3.13)". 0.28
+# solidifies 3.14 (and free-threaded 3.14t) support.
+pyo3 = { version = "0.28" }
+pyo3-async-runtimes = { version = "0.28" }
 # crypto
 sha2 = "0.11"
 hex = "0.4"

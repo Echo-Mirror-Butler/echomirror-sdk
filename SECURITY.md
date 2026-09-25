@@ -85,6 +85,24 @@ The following are **out of scope** for this policy:
 - Vulnerabilities in unsupported versions (see table above)
 - Issues that require physical access to a user's device
 
+## Known Dev-Tooling Advisories (Issue #199)
+
+`npm audit` findings we've evaluated and accepted, with reasoning. None of
+these packages ship in any published `@echomirror/*` artifact — they're
+only present in the dev/test dependency graph.
+
+| Package | Severity | Status | Reason |
+| --- | --- | --- | --- |
+| `vitest`, `@vitest/coverage-v8`, `@vitest/browser` | Critical | Fixed — bumped to `^4.1.11` | Patches the arbitrary file read via the Vitest dev/UI server. |
+| `vite` | High | Fixed transitively via the `vitest` bump | `vitest@4.1.11` depends on a patched `vite`. |
+| `markdown-it` | High | Fixed via `overrides: "^14.1.0"` | Patches the quadratic-complexity smartquotes rule; no direct dependents have released a fix yet. |
+| `linkify-it` | High | Fixed via `overrides: "^5.0.0"` | Patches the quadratic scan loop; pulled in transitively by docs tooling. |
+| `tmp` | High | Fixed via `overrides: "^0.2.5"` | Patches the arbitrary file write via a symlinked `dir` option; pulled in transitively by build tooling. |
+
+CI runs `npm audit --audit-level=high` (see `security-audit.yml`) so a new
+critical/high advisory in dev tooling surfaces on the next PR instead of
+being discovered only when someone happens to run `npm audit` locally.
+
 ## Preferred Languages
 
 We accept reports in English or Spanish.

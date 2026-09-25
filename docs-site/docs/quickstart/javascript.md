@@ -4,6 +4,15 @@ sidebar_position: 1
 
 # JavaScript / TypeScript Quickstart
 
+## Supported Node.js versions
+
+Requires **Node.js ≥ 20**. If you also install `@echomirror/stellar`, that
+package specifically requires **Node.js ≥ 22.12** — its dependency
+`@stellar/stellar-sdk@17` needs that version, and its CJS build imports an
+ESM-only package, so `require('@echomirror/stellar')` throws
+`ERR_REQUIRE_ESM` on Node 20. Every other `@echomirror/*` package works on
+Node 20.
+
 ## Install
 
 ```bash

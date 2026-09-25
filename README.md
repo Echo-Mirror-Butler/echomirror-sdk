@@ -144,6 +144,15 @@ EchoMirror is a social wellness platform — users log their mood, gift ECHO tok
 
 ## Quickstart
 
+### Supported Node.js versions
+
+| Package | Minimum Node.js |
+| --- | --- |
+| `@echomirror/core`, `@echomirror/mood`, `@echomirror/react`, `@echomirror/social`, `@echomirror/analytics`, `@echomirror/wasm` | **20.0.0** |
+| `@echomirror/stellar` | **22.12.0** — its dependency `@stellar/stellar-sdk@17` requires Node ≥ 22.12, and its CJS build does `require('uint8array-extras')`, an ESM-only package. On Node 20, `require('@echomirror/stellar')` throws `ERR_REQUIRE_ESM`; every other package works fine there. |
+
+**Decision:** if you're on Node 20 and need `@echomirror/stellar`, upgrade to Node ≥ 22.12 — we are not maintaining a pinned older `@stellar/stellar-sdk` line for Node 20, since that would mean shipping two divergent code paths for one package. Every other package supports Node 20. CI (`js-ci.yml`) tests the whole workspace on Node 20, 22, and 24, skipping only `@echomirror/stellar`'s own test/coverage step on 20.
+
 ### Rust (server-side)
 
 ```bash

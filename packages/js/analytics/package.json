@@ -1,6 +1,9 @@
 {
   "name": "@echomirror/analytics",
   "version": "0.1.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "description": "Privacy-safe emotional UX analytics for EchoMirror applications",
   "publishConfig": {
     "access": "public"

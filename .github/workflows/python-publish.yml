@@ -8,13 +8,69 @@ on:
         required: false
 
 jobs:
-  build-wheels:
+  # Issue #196: the crate builds with pyo3's `abi3-py39` feature (see
+  # crates/echomirror-python/Cargo.toml), so maturin only needs ONE
+  # interpreter per (platform, arch, libc) combination — the resulting
+  # wheel's `cp39-abi3` tag is valid on every CPython >= 3.9, 3.13 and 3.14
+  # included, without a matching per-version build job.
+  build-wheels-manylinux:
+    name: build wheels (manylinux ${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          working-directory: crates/echomirror-python
+          target: ${{ matrix.target }}
+          args: --release --out dist -i 3.9
+          manylinux: auto
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: wheels-manylinux-${{ matrix.target }}
+          path: crates/echomirror-python/dist
+
+  # musllinux covers Alpine and other musl-libc-based Docker images, which
+  # a manylinux wheel is not compatible with — those users currently fall
+  # back to the sdist and need a Rust toolchain in their image.
+  build-wheels-musllinux:
+    name: build wheels (musllinux ${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          working-directory: crates/echomirror-python
+          target: ${{ matrix.target }}
+          args: --release --out dist -i 3.9
+          manylinux: musllinux_1_2
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: wheels-musllinux-${{ matrix.target }}
+          path: crates/echomirror-python/dist
+
+  build-wheels-macos-windows:
     name: build wheels (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v7
 
@@ -23,8 +79,7 @@ jobs:
         with:
           working-directory: crates/echomirror-python
           target: ${{ matrix.os == 'macos-latest' && 'universal2-apple-darwin' || '' }}
-          args: --release --out dist -i 3.9 3.10 3.11 3.12
-          manylinux: auto
+          args: --release --out dist -i 3.9
 
       - name: Upload wheels
         uses: actions/upload-artifact@v7
@@ -52,7 +107,13 @@ jobs:
 
   publish:
     name: publish to PyPI
-    needs: [build-wheels, build-sdist]
+    needs:
+      [
+        build-wheels-manylinux,
+        build-wheels-musllinux,
+        build-wheels-macos-windows,
+        build-sdist,
+      ]
     runs-on: ubuntu-latest
     environment: pypi
     steps:
