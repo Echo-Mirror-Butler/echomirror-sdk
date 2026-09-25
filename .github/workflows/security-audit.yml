@@ -1,0 +1,25 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  npm-audit:
+    name: npm audit (high + critical)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Issue #199: fail the build on any new high/critical advisory.
+      # Advisories we've evaluated and accepted are recorded in
+      # SECURITY.md's "Known Dev-Tooling Advisories" section, not silenced
+      # here — this step should stay strict so a *new* one is always
+      # visible.
+      - run: npm audit --audit-level=high

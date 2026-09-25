@@ -13,7 +13,11 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 echomirror-core = { path = "../echomirror-core" }
 echomirror-stellar = { path = "../echomirror-stellar" }
-pyo3 = { workspace = true, features = ["extension-module", "generate-import-lib"] }
+# Issue #196: abi3-py39 targets Python's stable/limited C API from 3.9
+# onward, so maturin builds one wheel per platform (cp39-abi3-...) instead
+# of one per CPython minor version — it works unmodified on every newer
+# interpreter, including 3.13/3.14, without a rebuild.
+pyo3 = { workspace = true, features = ["extension-module", "generate-import-lib", "abi3-py39"] }
 pyo3-async-runtimes = { workspace = true, features = ["tokio-runtime"] }
 tokio.workspace = true
 serde_json.workspace = true

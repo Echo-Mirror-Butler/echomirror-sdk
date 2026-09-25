@@ -50,14 +50,30 @@ function Icon({name, className}: {name: IconName; className?: string}) {
   }
 }
 
-type Package = {name: string; label: string; description: string; tone: string; icon: IconName};
+type Package = {name: string; label: string; description: string; tone: string; icon: IconName; href: string};
+// One card per published JS package under packages/js/* (issue #197) — the
+// hero stat below derives its count from this array's length instead of a
+// hardcoded number, so the two can never drift apart again.
 const PACKAGES: Package[] = [
-  {name: '@echomirror/core', label: 'CORE', description: 'Typed client primitives, retries, middleware, and shared configuration.', tone: 'mint', icon: 'cpu'},
-  {name: '@echomirror/react', label: 'REACT', description: 'Provider, hooks, and MoodWidget components for product teams.', tone: 'peach', icon: 'atom'},
-  {name: '@echomirror/stellar', label: 'STELLAR', description: 'Wallet connections, payments, balances, and Soroban-ready flows.', tone: 'lilac', icon: 'star'},
-  {name: '@echomirror/social', label: 'SOCIAL', description: 'Feeds, reactions, leaderboards, and wellness-first community signals.', tone: 'sky', icon: 'users'},
-  {name: '@echomirror/analytics', label: 'ANALYTICS', description: 'Privacy-conscious events that help teams understand engagement.', tone: 'gold', icon: 'bar-chart'},
-  {name: 'echomirror-sync', label: 'SYNC', description: 'Resumable event streaming with cursors, reconnects, and backfill.', tone: 'coral', icon: 'refresh'},
+  {name: '@echomirror/core', label: 'CORE', description: 'Typed client primitives, retries, middleware, and shared configuration.', tone: 'mint', icon: 'cpu', href: '/docs/quickstart/javascript'},
+  {name: '@echomirror/react', label: 'REACT', description: 'Provider, hooks, and MoodWidget components for product teams.', tone: 'peach', icon: 'atom', href: '/docs/quickstart/react'},
+  {name: '@echomirror/stellar', label: 'STELLAR', description: 'Wallet connections, payments, balances, and Soroban-ready flows.', tone: 'lilac', icon: 'star', href: '/docs/architecture'},
+  {name: '@echomirror/social', label: 'SOCIAL', description: 'Feeds, reactions, leaderboards, and wellness-first community signals.', tone: 'sky', icon: 'users', href: '/docs/architecture'},
+  {name: '@echomirror/analytics', label: 'ANALYTICS', description: 'Privacy-conscious events that help teams understand engagement.', tone: 'gold', icon: 'bar-chart', href: '/docs/architecture'},
+  {name: '@echomirror/mood', label: 'MOOD', description: 'Mood entry logging, streaks, and trend helpers shared by every client.', tone: 'teal', icon: 'smile', href: '/docs/quickstart/javascript'},
+  {name: '@echomirror/wasm', label: 'WASM', description: 'Address validation, hashing, and XDR utilities running entirely client-side.', tone: 'rose', icon: 'sparkles', href: '/docs/architecture'},
+];
+
+type NativePackage = {name: string; description: string; href: string; linkLabel: string};
+// Non-JS distributables (Rust crates, Python SDK) get their own section
+// instead of being squeezed into the npm-package grid (issue #197: the old
+// "echomirror-sync" card implied an npm package that doesn't exist — sync
+// is a Rust crate).
+const NATIVE_PACKAGES: NativePackage[] = [
+  {name: 'echomirror-sync', description: 'Resumable event streaming with cursors, reconnects, and backfill.', href: 'https://crates.io/crates/echomirror-sync', linkLabel: 'crates.io'},
+  {name: 'echomirror-core', description: 'The Rust core every other crate and binding builds on.', href: 'https://crates.io/crates/echomirror-core', linkLabel: 'crates.io'},
+  {name: 'echomirror-stellar', description: 'Horizon client, Friendbot, and transaction building in Rust.', href: 'https://crates.io/crates/echomirror-stellar', linkLabel: 'crates.io'},
+  {name: 'echomirror-sdk', description: 'Python bindings — sync client, typed models, and async support.', href: 'https://pypi.org/project/echomirror-sdk/', linkLabel: 'PyPI'},
 ];
 
 function Mark() { return <span className={styles.mark} aria-hidden="true">E</span>; }
@@ -124,7 +140,7 @@ function Hero(): ReactNode {
           <Heading as="h1">Build products that understand <em>how people feel.</em></Heading>
           <p className={styles.heroLead}>EchoMirror brings mood intelligence, Stellar payments, and social wellness into one composable SDK—so a check-in can become a healthier habit, a generous moment, or a connected community.</p>
           <div className={styles.ctaRow}><Link className="button button--primary button--lg" to="/docs/quickstart/react">Start with React <Icon name="arrow-right" className={styles.inlineIcon} /></Link><a className={styles.textCta} href="https://github.com/Echo-Mirror-Butler/echomirror-sdk">Explore on GitHub <Icon name="arrow-up-right" className={styles.inlineIcon} /></a></div>
-          <div className={styles.trustRow} aria-label="Repository facts"><div><strong>26</strong><span>contributors</span></div><div><strong>7</strong><span>JS packages</span></div><div><strong>Rust-first</strong><span>cross-platform core</span></div></div>
+          <div className={styles.trustRow} aria-label="Repository facts"><div><strong>26</strong><span>contributors</span></div><div><strong>{PACKAGES.length}</strong><span>JS packages</span></div><div><strong>Rust-first</strong><span>cross-platform core</span></div></div>
         </div>
         <div className={styles.heroArt} aria-label="Illustration showing a mood check-in connected to a Stellar payment and social feed" role="img">
           <div className={`${styles.orbit} ${styles.orbitOne}`} /><div className={`${styles.orbit} ${styles.orbitTwo}`} />
@@ -151,7 +167,8 @@ export default function Home(): ReactNode {
       <PhotoBand />
       <section className={styles.packageSection} aria-labelledby="packages-title">
         <div className={styles.grainSoft} aria-hidden="true" />
-        <div className="container" style={{position: 'relative', zIndex: 1}}><div className={styles.sectionHeader}><div><p className={styles.kicker}>Composable by design</p><Heading as="h2" id="packages-title">Pick your starting point.</Heading></div><Link to="/docs/architecture" className={styles.outlineLink}>See the architecture <Icon name="arrow-right" className={styles.inlineIcon} /></Link></div><div className={styles.packageGrid}>{PACKAGES.map((pkg) => <article className={`${styles.packageCard} ${pkg.name === '@echomirror/stellar' ? styles.packageCardFeatured : ''}`} key={pkg.name}><div className={`${styles.packageIcon} ${styles[pkg.tone]}`} aria-hidden="true"><Icon name={pkg.icon} /></div><p className={styles.packageLabel}>{pkg.label}</p><h3>{pkg.name}</h3><p>{pkg.description}</p><Link to={pkg.name === '@echomirror/react' ? '/docs/quickstart/react' : '/docs/architecture'} aria-label={`Learn about ${pkg.name}`}>Learn more <Icon name="arrow-up-right" className={styles.inlineIcon} /></Link></article>)}</div></div>
+        <div className="container" style={{position: 'relative', zIndex: 1}}><div className={styles.sectionHeader}><div><p className={styles.kicker}>Composable by design</p><Heading as="h2" id="packages-title">Pick your starting point.</Heading></div><Link to="/docs/architecture" className={styles.outlineLink}>See the architecture <Icon name="arrow-right" className={styles.inlineIcon} /></Link></div><div className={styles.packageGrid}>{PACKAGES.map((pkg) => <article className={`${styles.packageCard} ${pkg.name === '@echomirror/stellar' ? styles.packageCardFeatured : ''}`} key={pkg.name}><div className={`${styles.packageIcon} ${styles[pkg.tone]}`} aria-hidden="true"><Icon name={pkg.icon} /></div><p className={styles.packageLabel}>{pkg.label}</p><h3>{pkg.name}</h3><p>{pkg.description}</p><Link to={pkg.href} aria-label={`Learn about ${pkg.name}`}>Learn more <Icon name="arrow-up-right" className={styles.inlineIcon} /></Link></article>)}</div>
+        <div className={styles.nativeSection} aria-labelledby="native-packages-title"><p className={styles.kicker} id="native-packages-title">Beyond JavaScript</p><p className={styles.nativeIntro}>Rust crates and a Python SDK share the same core — pick these up when you're not in a JS runtime.</p><div className={styles.nativeGrid}>{NATIVE_PACKAGES.map((pkg) => <a className={styles.nativeCard} href={pkg.href} target="_blank" rel="noopener noreferrer" key={pkg.name}><h4>{pkg.name}</h4><p>{pkg.description}</p><span className={styles.nativeLink}>{pkg.linkLabel} <Icon name="arrow-up-right" className={styles.inlineIcon} /></span></a>)}</div><Link to="/docs/quickstart/rust" className={styles.textCta}>Rust quickstart <Icon name="arrow-right" className={styles.inlineIcon} /></Link>{' '}<Link to="/docs/quickstart/python" className={styles.textCta}>Python quickstart <Icon name="arrow-right" className={styles.inlineIcon} /></Link></div></div>
       </section>
       <InstallPlayground />
       <section className={styles.finalCta}><div className="container"><div><p className={styles.kicker}>Ready when you are</p><Heading as="h2">Make room for better moments.</Heading><p>Read the quickstart, bring your own product context, and help shape the next layer of social wellness infrastructure.</p></div><Link className="button button--primary button--lg" to="/docs/intro">Read the quickstart <Icon name="arrow-right" className={styles.inlineIcon} /></Link></div></section>

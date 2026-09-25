@@ -8,13 +8,26 @@ on:
 
 jobs:
   js-checks:
-    name: Lint, Typecheck, Test & Build
+    name: Lint, Typecheck, Test & Build (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Issue #198: @stellar/stellar-sdk 17 (a dependency of
+        # @echomirror/stellar) requires Node >= 22.12 and its CJS build
+        # does `require('uint8array-extras')`, an ESM-only package — so
+        # `require('@echomirror/stellar')` throws ERR_REQUIRE_ESM on
+        # Node 20 even though it installs without error there. 20 stays in
+        # the matrix (it's still a maintained LTS and every other package
+        # supports it), but the stellar package's own test/coverage step is
+        # skipped on it — see the per-step `if` below. 22 covers the
+        # minimum stellar needs; 24 is current LTS.
+        node: [20, 22, 24]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
       - run: npm run lint --workspaces --if-present
@@ -35,5 +48,9 @@ jobs:
       # see the backlog doc. @echomirror/wasm is covered by its own
       # runtime-matrix tests (rust-ci.yml's wasm-build job), not source-line
       # coverage here.
-      - run: npm run coverage --if-present --workspace=packages/js/core --workspace=packages/js/mood --workspace=packages/js/react --workspace=packages/js/stellar --workspace=packages/js/social --workspace=packages/js/analytics
+      - run: npm run coverage --if-present --workspace=packages/js/core --workspace=packages/js/mood --workspace=packages/js/react --workspace=packages/js/social --workspace=packages/js/analytics
+      # Issue #198: @echomirror/stellar's runtime tests need Node >= 22.12
+      # (see the matrix comment above) — run them only on 22/24.
+      - if: matrix.node != 20
+        run: npm run coverage --if-present --workspace=packages/js/stellar
       - run: npm run build --workspaces --if-present

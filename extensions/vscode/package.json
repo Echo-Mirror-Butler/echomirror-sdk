@@ -134,7 +134,7 @@
     "typescript": "^5.4.0",
     "@vscode/vsce": "^2.26.0",
     "esbuild": "^0.20.0",
-    "vitest": "^1.6.0"
+    "vitest": "^4.1.11"
   },
   "repository": {
     "type": "git",
