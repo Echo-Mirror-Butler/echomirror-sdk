@@ -54,3 +54,4 @@ jobs:
       - if: matrix.node != 20
         run: npm run coverage --if-present --workspace=packages/js/stellar
       - run: npm run build --workspaces --if-present
+      - run: npm run check:exports

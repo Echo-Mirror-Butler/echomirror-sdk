@@ -13,16 +13,22 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
+    "check:exports": "node scripts/check-exports.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@changesets/cli": "^2.27.12",
+    "@size-limit/preset-small-lib": "^11.1.6",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^8.57.0",
+    "publint": "^0.3.24",
+    "size-limit": "^11.1.6",
+    "tsup": "^8.5.1",
     "typescript": "^5.4.0",
     "vitest": "^4.1.11"
   },
