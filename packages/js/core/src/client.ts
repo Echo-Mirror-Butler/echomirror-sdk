@@ -101,7 +101,7 @@ export class EchoMirrorClient {
         throw err
       }
 
-      if (result.decision === 'success' && result.value !== undefined) {
+      if (result.decision === 'success') {
         return result.value as T
       }
     }
