@@ -4,13 +4,25 @@ description = "EchoMirror C-ABI FFI bindings — used by Flutter (dart:ffi) and 
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+# Issue #195: this crate is a C-ABI shim built per-platform as a static/shared
+# library for the Flutter and Swift packages. It is never consumed from
+# crates.io, and publishing it would be actively misleading (the published
+# artifact would carry no dylib/staticlib and no Kotlin/Swift codegen output).
+publish = false
 
 [lib]
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-echomirror-core = { path = "../echomirror-core" }
-echomirror-stellar = { path = "../echomirror-stellar" }
+# Issue #195: version + path on every internal dependency — see the note in
+# echomirror-stellar/Cargo.toml. (Required for `cargo publish` even though this
+# crate is not published, so the manifests stay publish-shaped and consistent.)
+echomirror-core = { version = "0.1.0", path = "../echomirror-core" }
+echomirror-stellar = { version = "0.1.0", path = "../echomirror-stellar" }
 serde_json.workspace = true
 sha2.workspace = true
 hex.workspace = true

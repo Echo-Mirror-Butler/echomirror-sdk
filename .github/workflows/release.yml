@@ -45,3 +45,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Issue #206: `id-token: write` above is only useful for provenance if
+          # npm actually generates the attestation. `changeset publish` shells
+          # out to `npm publish`, which reads NPM_CONFIG_PROVENANCE, so setting
+          # it here is enough to make every package published by this workflow
+          # carry an npm provenance attestation (the badge on npmjs.com).
+          # The same job already had the permission — it was simply never
+          # turned on. See scripts/verify-attestations.mjs for the post-release
+          # check that fails the release if an attestation is missing.
+          NPM_CONFIG_PROVENANCE: 'true'
+
+      - name: Verify npm provenance attestations
+        # Issue #206: only meaningful on the run that actually published. The
+        # changesets action publishes when the "Version Packages" PR is merged,
+        # which lands on main as a push whose head commit is that same commit,
+        # so this is the "we just released" signal. Every other push (including
+        # the one that opened the release PR) is a no-op here.
+        if: startsWith(github.event.head_commit.message, 'Version Packages')
+        run: node scripts/verify-attestations.mjs

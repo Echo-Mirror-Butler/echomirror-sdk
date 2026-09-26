@@ -4,6 +4,14 @@ description = "PyO3 native bindings for the EchoMirror SDK — Mood, Stellar, an
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+# Issue #195: distributed to PyPI as a compiled wheel by maturin
+# (python-publish.yml), never from crates.io — a crates.io copy would be an
+# unusable cdylib with no Python extension-module setup.
+publish = false
 
 [lib]
 # Must match the `module-name` leaf in pyproject.toml ([tool.maturin]).
@@ -11,8 +19,10 @@ name = "_echomirror"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-echomirror-core = { path = "../echomirror-core" }
-echomirror-stellar = { path = "../echomirror-stellar" }
+# Issue #195: version + path on every internal dependency — see the note in
+# echomirror-stellar/Cargo.toml.
+echomirror-core = { version = "0.1.0", path = "../echomirror-core" }
+echomirror-stellar = { version = "0.1.0", path = "../echomirror-stellar" }
 # Issue #196: abi3-py39 targets Python's stable/limited C API from 3.9
 # onward, so maturin builds one wheel per platform (cp39-abi3-...) instead
 # of one per CPython minor version — it works unmodified on every newer

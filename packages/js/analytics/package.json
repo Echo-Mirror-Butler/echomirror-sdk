@@ -8,6 +8,11 @@
   "publishConfig": {
     "access": "public"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Echo-Mirror-Butler/echomirror-sdk.git",
+    "directory": "packages/js/analytics"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

@@ -14,6 +14,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
     "check:exports": "node scripts/check-exports.mjs",
+    "check:package": "node scripts/pack-smoke.mjs",
+    "check:provenance": "node scripts/verify-attestations.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish"

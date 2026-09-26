@@ -16,6 +16,12 @@ edition = "2021"
 license = "MIT"
 authors = ["Echo Mirror Butler <dev@echomirror.dev>"]
 repository = "https://github.com/Echo-Mirror-Butler/echomirror-sdk"
+homepage = "https://echomirror-sdk-site.vercel.app"
+# Issue #195: crates.io surfaces this as the "Minimum Supported Rust Version"
+# badge and refuses to build a dependent on an older toolchain. 1.85 is the
+# floor imposed by `rand 0.10` (a direct dependency of echomirror-core and
+# echomirror-sync), which is the highest MSRV in the graph.
+rust-version = "1.85"
 
 [workspace.dependencies]
 # async runtime

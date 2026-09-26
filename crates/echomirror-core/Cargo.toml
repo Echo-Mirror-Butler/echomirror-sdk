@@ -4,6 +4,17 @@ description = "EchoMirror SDK core — types, API client, error handling"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+keywords = ["echomirror", "api-client", "async", "wellness", "http"]
+categories = ["api-bindings", "asynchronous", "web-programming", "science"]
+# Issue #195: docs.rs builds every target and feature by default; this crate
+# has no optional features, so `all-features` is just insurance if one is added.
+[package.metadata.docs.rs]
+all-features = true
 
 [dependencies]
 tokio.workspace = true

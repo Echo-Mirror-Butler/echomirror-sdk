@@ -15,7 +15,6 @@ Pre-release (`0.x`) and older major versions are **not** patched.
 | `echomirror-core` (crates.io) | ✅ latest |
 | `echomirror-stellar` (crates.io) | ✅ latest |
 | `echomirror-sync` (crates.io) | ✅ latest |
-| `echomirror-ffi` (crates.io) | ✅ latest |
 | `echomirror-wasm` (crates.io) | ✅ latest |
 | `@echomirror/core` (npm) | ✅ latest |
 | `@echomirror/mood` (npm) | ✅ latest |
@@ -29,6 +28,10 @@ Pre-release (`0.x`) and older major versions are **not** patched.
 | `EchoMirrorSDK` (Swift / SPM) | ✅ latest |
 | Any `0.x` release | ❌ not supported |
 | Older major releases (if any) | ❌ not supported |
+
+`echomirror-ffi` is not listed because it is `publish = false` — it is never on
+crates.io (issue #195). It ships inside the Flutter and Swift packages, which
+are listed above and are the versions to report against.
 
 ## Reporting a Vulnerability
 
@@ -102,6 +105,47 @@ only present in the dev/test dependency graph.
 CI runs `npm audit --audit-level=high` (see `security-audit.yml`) so a new
 critical/high advisory in dev tooling surfaces on the next PR instead of
 being discovered only when someone happens to run `npm audit` locally.
+
+## Verifying a release (issue #206)
+
+Every `@echomirror/*` package on npm is published from CI, and every publish
+requests an **npm provenance attestation** — an SLSA-style statement, signed by
+npm against the GitHub Actions OIDC token, that binds the published tarball to
+the commit in this repository it was built from. `release.yml` turns it on with
+`NPM_CONFIG_PROVENANCE: "true"` (the `id-token: write` permission it needs was
+already there); `wasm-publish.yml` passes `--provenance` directly. A release
+that somehow published without attestations fails in CI — see
+`scripts/verify-attestations.mjs`.
+
+Consumers can check this for themselves, without trusting this repository:
+
+```bash
+# 1. Audit the signature + provenance of every @echomirror/* package in a project
+npm audit signatures
+
+# 2. Or inspect one package's attestation directly
+npm view @echomirror/core dist.attestations
+```
+
+The same attestations also show up as a **Provenance** badge on the package's
+npmjs.com page, linking to the exact workflow run and commit.
+
+Maintainers can re-run the same check at any time against whatever is currently
+on the registry:
+
+```bash
+npm run check:provenance
+```
+
+> **Note on the publishing token:** releases currently authenticate with a
+> long-lived automation `NPM_TOKEN` rather than npm's OIDC "trusted publishing".
+> Trusted publishing is supported by npm and would let us drop that token
+> entirely, but switching requires the `changesets/action` publish path to
+> authenticate through OIDC, and a misconfigured trusted-publisher entry fails
+> the release outright with no fallback. The trade-off is documented in
+> [CONTRIBUTING.md](./CONTRIBUTING.md#releasing); until the switch is made, the
+> provenance attestations above are the actual guarantee that a tarball came
+> from this repository, and they are what `npm audit signatures` verifies.
 
 ## Preferred Languages
 

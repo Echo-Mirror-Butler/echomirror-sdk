@@ -2,7 +2,16 @@ use echomirror_core::{EchoMirrorClient, EchoMirrorError, Result};
 use reqwest::Client;
 
 /// Fund a Stellar testnet account using Friendbot (gives 10,000 XLM).
-/// Returns an error if called on mainnet — testnet only.
+///
+/// Returns [`EchoMirrorError::Config`] when no Friendbot is configured, which is
+/// the case on mainnet — Friendbot only exists on testnet. An explicit
+/// `friendbot_url` override takes precedence over the network default, so a
+/// mainnet-configured client pointed at a Friendbot URL is deliberately
+/// allowed: that is how self-hosted testnet nodes and tests are wired up.
+///
+/// The request is made on a fresh, un-configured HTTP client and is never
+/// retried — a rejected funding request (a duplicate `?addr=`, say) will be
+/// rejected again, and the account's balance is the caller's to check.
 ///
 /// ```rust,no_run
 /// use echomirror_core::{EchoMirrorClient, EchoMirrorConfig};
