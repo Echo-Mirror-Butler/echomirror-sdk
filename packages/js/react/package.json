@@ -9,19 +9,30 @@
     "access": "public"
   },
   "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "README.md"],
+  "type": "commonjs",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "default": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "scripts": {
-    "build": "tsc",
-    "test": "vitest run --passWithNoTests",
-    "coverage": "vitest run --coverage --passWithNoTests",
+    "build": "tsup src/index.tsx --format cjs,esm --dts --clean",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "size-limit": "size-limit"
@@ -40,17 +51,18 @@
     "react-dom": ">=18.0.0"
   },
   "devDependencies": {
-    "typescript": "*",
-    "vitest": "*",
-    "@vitest/coverage-v8": "*",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0"
+    "@types/react-dom": "^18.0.0",
+    "@vitest/coverage-v8": "*",
+    "typescript": "*",
+    "vitest": "*"
   },
   "size-limit": [
     {
       "name": "@echomirror/react",
       "path": "dist/index.js",
-      "limit": "1.4 KB"
+      "limit": "2.8 KB"
     }
   ]
 }

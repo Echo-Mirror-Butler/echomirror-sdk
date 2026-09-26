@@ -9,17 +9,25 @@
     "access": "public"
   },
   "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "type": "commonjs",
+  "sideEffects": false,
   "files": ["dist", "README.md"],
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "default": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "test:integration": "STELLAR_INTEGRATION=1 vitest run tests/integration --testTimeout 120000",
