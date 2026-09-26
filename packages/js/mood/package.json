@@ -5,8 +5,14 @@
     "node": ">=20.0.0"
   },
   "description": "EchoMirror SDK mood tracking module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Echo-Mirror-Butler/echomirror-sdk.git",
+    "directory": "packages/js/mood"
+  },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

@@ -54,19 +54,19 @@ fn _echomirror(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Exceptions
     m.add(
         "EchoMirrorException",
-        py.get_type_bound::<errors::EchoMirrorException>(),
+        py.get_type::<errors::EchoMirrorException>(),
     )?;
-    m.add("AuthError", py.get_type_bound::<errors::AuthError>())?;
-    m.add("NetworkError", py.get_type_bound::<errors::NetworkError>())?;
+    m.add("AuthError", py.get_type::<errors::AuthError>())?;
+    m.add("NetworkError", py.get_type::<errors::NetworkError>())?;
     m.add(
         "RateLimitError",
-        py.get_type_bound::<errors::RateLimitError>(),
+        py.get_type::<errors::RateLimitError>(),
     )?;
     m.add(
         "NotFoundError",
-        py.get_type_bound::<errors::NotFoundError>(),
+        py.get_type::<errors::NotFoundError>(),
     )?;
-    m.add("ConfigError", py.get_type_bound::<errors::ConfigError>())?;
+    m.add("ConfigError", py.get_type::<errors::ConfigError>())?;
 
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())

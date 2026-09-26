@@ -35,6 +35,7 @@ jobs:
         run: npm run build
 
       - name: Create Release PR or Publish
+        id: changeset
         uses: changesets/action@v2
         with:
           version: npm run version-packages
@@ -45,3 +46,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+
+      - name: Verify package provenance attestations
+        if: steps.changeset.outputs.published == 'true'
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.changeset.outputs.publishedPackages }}
+        run: node scripts/verify-provenance.mjs "$PUBLISHED_PACKAGES"

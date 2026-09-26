@@ -5,8 +5,14 @@
     "node": ">=20.0.0"
   },
   "description": "EchoMirror SDK React bindings",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Echo-Mirror-Butler/echomirror-sdk.git",
+    "directory": "packages/js/react"
+  },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

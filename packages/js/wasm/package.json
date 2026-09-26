@@ -2,6 +2,15 @@
   "name": "@echomirror/wasm",
   "version": "0.1.0",
   "description": "EchoMirror SDK compiled to WebAssembly — crypto, XDR and sync helpers for browser and Node.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Echo-Mirror-Butler/echomirror-sdk.git",
+    "directory": "packages/js/wasm"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

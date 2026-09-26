@@ -103,6 +103,54 @@ CI runs `npm audit --audit-level=high` (see `security-audit.yml`) so a new
 critical/high advisory in dev tooling surfaces on the next PR instead of
 being discovered only when someone happens to run `npm audit` locally.
 
+## Package Provenance & Supply-Chain Integrity
+
+All `@echomirror/*` npm packages published from this repository are built and released with cryptographic provenance attestations via GitHub Actions and Sigstore, meeting SLSA Build Level 2 standards.
+
+### Verifying Signatures & Provenance
+
+Consumers and integrators can cryptographically verify that installed packages were built and published directly by this repository's automated CI/CD workflows:
+
+1. **Verify all project dependencies:**
+   ```bash
+   npm audit signatures
+   ```
+   This validates Sigstore signatures and transparency logs for all installed packages in `node_modules`.
+
+2. **Inspect attestations for a specific package release:**
+   ```bash
+   npm view @echomirror/core dist.attestations
+   ```
+   Or for a specific version:
+   ```bash
+   npm view @echomirror/core@0.2.0 dist.attestations --json
+   ```
+   A verified release returns a Sigstore attestation bundle linking the published artifact to its build commit, workflow run, and repository (`Echo-Mirror-Butler/echomirror-sdk`).
+
+### Evaluation of npm Trusted Publishing (OIDC)
+
+We evaluated migrating from long-lived secret tokens (`NPM_TOKEN`) to npm Trusted Publishing via OpenID Connect (OIDC):
+
+- **Benefits**:
+  - Eliminates long-lived repository secrets, removing the risk of credential leakage.
+  - Automatically exchanges short-lived OIDC tokens using GitHub Actions' `id-token: write` permission.
+  - Establishes granular trust policies scoped to specific repository environments and workflows.
+
+- **Monorepo Constraints & Architectural Decision**:
+  - npm Trusted Publishing requires configuring trust relationships on npmjs.com on a **per-package basis**. Because npm does not currently offer organization-wide or monorepo-wide wildcard trusted publisher policies, each of our 7 publishable packages (`@echomirror/core`, `@echomirror/mood`, `@echomirror/stellar`, `@echomirror/social`, `@echomirror/analytics`, `@echomirror/react`, `@echomirror/wasm`) must be registered individually on the npm registry.
+  - In addition, the Changesets release workflow (`changeset publish`) expects authentication credentials upfront; removing `NPM_TOKEN` prior to full registry configuration across all packages causes release pipeline failures with `ENEEDAUTH`.
+  - **Decision**: We have enabled SLSA provenance generation via `NPM_CONFIG_PROVENANCE: "true"`, `id-token: write`, `repository.directory`, and `publishConfig.provenance: true`, while retaining `NPM_TOKEN` as the baseline authentication credential. This delivers immediate, end-to-end cryptographic provenance guarantees on all future releases without risking automated release interruptions.
+
+- **Migration Path to Keyless OIDC**:
+  Organization administrators can complete the transition to pure keyless publishing by registering each package on npmjs.com:
+  1. Navigate to `https://www.npmjs.com/package/<package-name>/access`.
+  2. Under **Publishing Access** → **GitHub Actions**, configure:
+     - Organization / User: `Echo-Mirror-Butler`
+     - Repository: `echomirror-sdk`
+     - Workflow: `release.yml` (and `wasm-publish.yml` for `@echomirror/wasm`)
+     - Environment: (leave blank / default)
+  3. Once all publishable packages have Trusted Publishing enabled, `NPM_TOKEN` can be safely removed from repository secrets.
+
 ## Preferred Languages
 
 We accept reports in English or Spanish.

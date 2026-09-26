@@ -5,8 +5,14 @@
     "node": ">=22.12.0"
   },
   "description": "EchoMirror SDK Stellar integration — multi-wallet (Freighter, Albedo, xBull), transaction builders, and typed errors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Echo-Mirror-Butler/echomirror-sdk.git",
+    "directory": "packages/js/stellar"
+  },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
