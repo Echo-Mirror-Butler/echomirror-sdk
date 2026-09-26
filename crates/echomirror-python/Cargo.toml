@@ -9,6 +9,8 @@ license.workspace = true
 # Must match the `module-name` leaf in pyproject.toml ([tool.maturin]).
 name = "_echomirror"
 crate-type = ["cdylib", "rlib"]
+test = false
+doctest = false
 
 [dependencies]
 echomirror-core = { path = "../echomirror-core" }

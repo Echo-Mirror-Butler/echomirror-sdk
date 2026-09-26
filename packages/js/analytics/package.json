@@ -5,8 +5,14 @@
     "node": ">=20.0.0"
   },
   "description": "Privacy-safe emotional UX analytics for EchoMirror applications",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Echo-Mirror-Butler/echomirror-sdk.git",
+    "directory": "packages/js/analytics"
+  },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "type": "module",
   "main": "./dist/index.js",

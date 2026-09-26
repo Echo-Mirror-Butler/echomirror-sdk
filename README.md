@@ -525,6 +525,27 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave po
 
 ---
 
+## Security & Package Provenance
+
+All `@echomirror/*` npm packages are published directly from GitHub Actions with cryptographic Sigstore provenance attestations (SLSA Build Level 2).
+
+You can verify that installed packages were built and published by this repository using npm's built-in signature auditor:
+
+```bash
+# Verify cryptographic signatures and build provenance for all dependencies
+npm audit signatures
+```
+
+To inspect provenance attestations for an individual package:
+
+```bash
+npm view @echomirror/core dist.attestations
+```
+
+For full details on our threat model and npm Trusted Publishing (OIDC) architecture, see [SECURITY.md](./SECURITY.md).
+
+---
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
