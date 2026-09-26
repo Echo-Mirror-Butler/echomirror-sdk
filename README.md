@@ -421,6 +421,29 @@ npm install && npm run build
 
 ---
 
+## Verifying a release
+
+Every `@echomirror/*` package on npm is published by CI and ships an **npm
+provenance attestation** — a signed statement that the exact tarball you
+installed was built from a commit in this repository, by GitHub Actions. The
+attestations surface as a *Provenance* badge on each package's npmjs.com page.
+
+You don't have to take our word for it:
+
+```bash
+npm audit signatures                    # audit every @echomirror/* in a project
+npm view @echomirror/core dist.attestations   # inspect one package's attestation
+```
+
+Rust crates published to crates.io are similarly checksummed by the registry
+(`cargo install` verifies them for you), and Python wheels on PyPI can be
+checked with `pip install --require-hashes`.
+
+Details, including how to check the current state of the registry yourself:
+[SECURITY.md](./SECURITY.md#verifying-a-release-issue-206).
+
+---
+
 ## Build from Source
 
 ### JavaScript packages

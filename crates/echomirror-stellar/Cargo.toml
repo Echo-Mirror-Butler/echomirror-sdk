@@ -4,9 +4,23 @@ description = "EchoMirror Stellar primitives — XLM balance, ECHO token, transa
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+keywords = ["echomirror", "stellar", "horizon", "blockchain", "payments"]
+categories = ["api-bindings", "asynchronous", "cryptography", "web-programming"]
+# Issue #195: this crate has no optional features of its own, but enabling them
+# all keeps docs.rs correct if a gated module is added later.
+[package.metadata.docs.rs]
+all-features = true
 
 [dependencies]
-echomirror-core = { path = "../echomirror-core" }
+# Issue #195: crates.io requires a version on every dependency, including path
+# dependencies — a bare `path = "..."` is a hard publish error. Keep the version
+# in sync with `[workspace.package] version` above when bumping the release.
+echomirror-core = { version = "0.1.0", path = "../echomirror-core" }
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -17,6 +17,15 @@ impl HorizonClient {
         }
     }
 
+    /// The Horizon base URL this client talks to.
+    ///
+    /// Useful for asserting which network a client is pointed at (the
+    /// `mainnet()`/`testnet()` defaults, or a self-hosted override) without
+    /// issuing a request.
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
     pub fn mainnet() -> Self {
         Self::new("https://horizon.stellar.org")
     }

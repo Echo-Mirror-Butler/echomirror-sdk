@@ -144,6 +144,71 @@ runs it across Node, Bun, Deno, and headless Chromium — see that package's
 
 All PRs are reviewed within 48 hours. Contributors earn Stellar Wave points for merged PRs.
 
+## Releasing
+
+Releases are automated — you don't cut one by hand.
+
+| Artifact | Mechanism | Trigger |
+|---|---|---|
+| `@echomirror/*` (npm) | [Changesets](https://github.com/changesets/changesets) — add a changeset with `npm run changeset`, and CI opens/merges a **Version Packages** PR that publishes on merge | `.github/workflows/release.yml`, on every push to `main` |
+| `echomirror-{core,stellar,sync,wasm}` (crates.io) | `cargo publish` | `.github/workflows/crates-publish.yml`, manual dispatch |
+| `echomirror-sdk` (PyPI) | `maturin` wheels + sdist | `.github/workflows/python-publish.yml`, manual dispatch |
+| `@echomirror/wasm` (npm) | built from a git tag | `.github/workflows/wasm-publish.yml`, `wasm-v*` tags |
+
+### npm provenance (and why we still use `NPM_TOKEN`)
+
+Every npm release requests a **provenance attestation** via
+`NPM_CONFIG_PROVENANCE: "true"` on the publish step of `release.yml`, so each
+published tarball carries signed proof of the commit and workflow run it came
+from. The release also runs `scripts/verify-attestations.mjs` right after
+publishing (a separate run fails the release if an attestation is missing), and
+each manifest carries the `repository` field npm requires for provenance.
+
+npm also offers **trusted publishing**, where the workflow authenticates to npm
+with the same short-lived OIDC token used for provenance and no long-lived
+secret is needed at all. We evaluated it and are **not** switching yet:
+
+- Trusted publishing requires a per-package trusted-publisher entry configured
+  on npmjs.com, keyed to this repository, workflow filename, and (optionally)
+  environment. A mismatch fails the release immediately with no fallback.
+- `changesets/action` still expects an auth token for its publish path, so the
+  switch is not a one-line deletion — it needs the publish command replaced and
+  a dry run against a scratch package.
+- Until then the attestations above *are* the guarantee: they are signed by npm
+  and verified with `npm audit signatures`, and they are exactly what trusted
+  publishing would rely on. The residual risk of the automation token is
+  credential theft, not build tampering.
+
+Revisit this when the npm-side configuration is set up; the switch is
+`NODE_AUTH_TOKEN`-removal plus a publish-command change, not a re-architecture.
+
+### crates.io releases
+
+The four publishable Rust crates are versioned together by the workspace
+(`[workspace.package] version`) and must be published in dependency order:
+
+```bash
+cargo publish --dry-run -p echomirror-core     # always verify first
+cargo publish --dry-run -p echomirror-stellar
+cargo publish --dry-run -p echomirror-sync
+cargo publish --dry-run -p echomirror-wasm
+```
+
+> **When bumping the Rust version**, update the `version = "…"` on every
+> internal path dependency too (`echomirror-core = { version = "0.2.0", path =
+> "../echomirror-core" }` and friends in `echomirror-stellar`, `-sync`, `-ffi`
+> and `-python`). crates.io requires a version on path dependencies, so they
+> cannot inherit it — cargo fails the build with a clear error if they drift.
+
+`echomirror-ffi` and `echomirror-python` are `publish = false` — they are
+consumed as source (the Swift package and `maturin develop`/PyPI builds
+respectively), never from crates.io.
+
+The real publish is manual-dispatch only (`.github/workflows/crates-publish.yml`,
+`CARGO_REGISTRY_TOKEN` secret) so a first release stays a deliberate
+maintainer action. See [crates/echomirror-core/README.md](./crates/echomirror-core/README.md)
+for what each crate contains.
+
 ## Questions?
 
 Open a GitHub Discussion or join the Discord at https://discord.gg/echomirror.

@@ -1,5 +1,5 @@
 use echomirror_stellar::HorizonClient;
-use wiremock::matchers::{method, path, query_param};
+use wiremock::matchers::{method, path, query_param, query_param_is_missing};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 fn payment_page_json() -> serde_json::Value {
@@ -118,4 +118,73 @@ async fn get_payments_surfaces_http_errors() {
         echomirror_core::EchoMirrorError::Http { status, .. } => assert_eq!(status, 429),
         other => panic!("expected Http error, got {other:?}"),
     }
+}
+
+#[tokio::test]
+async fn get_payments_maps_5xx_to_a_retryable_error() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .respond_with(ResponseTemplate::new(503).set_body_string("horizon is down"))
+        .mount(&server)
+        .await;
+
+    let err = HorizonClient::new(server.uri())
+        .get_payments("GACCOUNT", None, 100, false)
+        .await
+        .expect_err("expected an error");
+
+    match &err {
+        echomirror_core::EchoMirrorError::Http { status, message } => {
+            assert_eq!(*status, 503);
+            assert_eq!(message, "horizon is down");
+        }
+        other => panic!("expected Http error, got {other:?}"),
+    }
+    assert!(err.is_retryable(), "5xx is transient");
+}
+
+#[tokio::test]
+async fn get_payments_omits_the_join_param_when_transactions_are_not_requested() {
+    let server = MockServer::start().await;
+    // A mock that only matches the no-`join` request: if `join=transactions`
+    // were sent unconditionally this would 404 and the call would fail.
+    Mock::given(method("GET"))
+        .and(path("/accounts/GACCOUNT/payments"))
+        .and(query_param_is_missing("join"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(serde_json::json!({ "_embedded": { "records": [] } })),
+        )
+        .mount(&server)
+        .await;
+
+    let page = HorizonClient::new(server.uri())
+        .get_payments("GACCOUNT", None, 10, false)
+        .await
+        .expect("get_payments without join");
+    assert!(page.embedded.records.is_empty());
+}
+
+#[tokio::test]
+async fn get_payments_rejects_a_malformed_page() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(serde_json::json!({ "_embedded": { "records": "nope" } })),
+        )
+        .mount(&server)
+        .await;
+
+    let err = HorizonClient::new(server.uri())
+        .get_payments("GACCOUNT", None, 100, false)
+        .await
+        .expect_err("a schema-drifted page must not be reported as empty");
+
+    // `res.json()` decode failures arrive as reqwest errors, which this crate
+    // maps to `Network` (see horizon_account_tests.rs for the full note).
+    assert!(
+        matches!(err, echomirror_core::EchoMirrorError::Network(_)),
+        "expected Network, got {err:?}"
+    );
 }

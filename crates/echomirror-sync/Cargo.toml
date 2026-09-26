@@ -4,6 +4,18 @@ description = "EchoMirror blockchain sync engine — real-time Stellar SSE strea
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+keywords = ["echomirror", "stellar", "sync", "sse", "streaming"]
+categories = ["api-bindings", "asynchronous", "database", "network-programming"]
+# Issue #195: the `postgres` and `redis` cursor stores are behind optional
+# features but are part of this crate's documented API, so docs.rs must build
+# with all of them or those modules would be missing from the rendered docs.
+[package.metadata.docs.rs]
+all-features = true
 # benches/support.rs is shared helper code (via #[path]), not a bench target.
 autobenches = false
 
@@ -17,8 +29,10 @@ redis = ["dep:redis"]
 test-util = []
 
 [dependencies]
-echomirror-core = { path = "../echomirror-core" }
-echomirror-stellar = { path = "../echomirror-stellar" }
+# Issue #195: version + path on every internal dependency — see the note in
+# echomirror-stellar/Cargo.toml.
+echomirror-core = { version = "0.1.0", path = "../echomirror-core" }
+echomirror-stellar = { version = "0.1.0", path = "../echomirror-stellar" }
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true

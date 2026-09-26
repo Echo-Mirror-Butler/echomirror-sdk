@@ -4,6 +4,19 @@ description = "EchoMirror SDK compiled to WebAssembly — high-performance crypt
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+keywords = ["echomirror", "wasm", "webassembly", "stellar", "crypto"]
+categories = ["api-bindings", "cryptography", "wasm", "web-programming"]
+# Issue #195: no features.rs config is needed — `all-features` would only pull
+# in the `simd` intrinsics that require a wasm32 target, which is the wrong
+# build for docs.rs. `targets` covers the two things users actually read the
+# docs for: the scalar API and the SIMD-gated additions.
+[package.metadata.docs.rs]
+targets = ["wasm32-unknown-unknown"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

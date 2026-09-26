@@ -1,0 +1,89 @@
+name: Publish crates to crates.io
+
+# Issue #195. Manual-dispatch only, on purpose: the first crates.io release is
+# irreversible in the ways that matter (crate names and versions can never be
+# reused), so it stays a deliberate maintainer action rather than something a
+# merge can trigger.
+on:
+  workflow_dispatch:
+    inputs:
+      crates:
+        description: 'Comma-separated crates to publish, in dependency order (empty = all four)'
+        required: false
+        default: 'echomirror-core,echomirror-stellar,echomirror-sync,echomirror-wasm'
+      dry_run:
+        description: 'Package + verify only (cargo publish --dry-run) — no upload'
+        type: boolean
+        required: false
+        default: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    name: Publish crates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Dependency order is not cosmetic: crates.io resolves a published
+      # crate's dependencies from the registry, so a crate can only be
+      # published after everything it depends on already exists there.
+      DEFAULT_CRATES: echomirror-core,echomirror-stellar,echomirror-sync,echomirror-wasm
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: ${{ hashFiles('Cargo.lock') }}-crates-publish
+
+      - name: Resolve crate list
+        id: crates
+        run: |
+          list="${INPUT_CRATES:-$DEFAULT_CRATES}"
+          echo "value=$list" >> "$GITHUB_OUTPUT"
+          echo "Publishing order: $(echo "$list" | tr ',' ' ')"
+          # Fail fast, before any upload, if someone names a crate that is not
+          # publishable — `cargo publish` would otherwise error halfway through
+          # an ordered list and leave a partial release behind.
+          for crate in $(echo "$list" | tr ',' ' '); do
+            if [ ! -f "crates/$crate/Cargo.toml" ]; then
+              echo "::error::no such crate: $crate" >&2
+              exit 1
+            fi
+            if grep -q '^publish = false' "crates/$crate/Cargo.toml"; then
+              echo "::error::$crate is publish = false (not distributed via crates.io)" >&2
+              exit 1
+            fi
+          done
+
+      - name: Verify packaging (cargo publish --dry-run)
+        run: |
+          for crate in $(echo "${{ steps.crates.outputs.value }}" | tr ',' ' '); do
+            echo "::group::$crate"
+            cargo publish --dry-run -p "$crate"
+            echo "::endgroup::"
+          done
+
+      # cargo packages and uploads each crate separately, so crates.io needs
+      # a fresh index lookup between publishes; `--no-verify` on the publish
+      # itself avoids rebuilding what the dry run above just built (the dry
+      # run is the verification).
+      - name: Publish to crates.io
+        if: ${{ !inputs.dry_run }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          for crate in $(echo "${{ steps.crates.outputs.value }}" | tr ',' ' '); do
+            echo "::group::publish $crate"
+            cargo publish -p "$crate" --no-verify
+            echo "::endgroup::"
+            # crates.io is eventually consistent: publishing a crate whose
+            # dependency was uploaded seconds earlier can fail to resolve it.
+            # Wait for the index to catch up before the next crate.
+            sleep 30
+          done
