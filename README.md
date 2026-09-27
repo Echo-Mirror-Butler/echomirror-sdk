@@ -274,12 +274,12 @@ sync.watch(publicKey).listen((event) {
 
 ### Swift
 
-Build the local XCFramework, then add `packages/swift/EchoMirrorSDK` as a Swift
-Package Manager dependency:
+Add `https://github.com/Echo-Mirror-Butler/echomirror-sdk.git` in Xcode and choose an available Swift release tag. The root `Package.swift` downloads a checksum-verified XCFramework from that tag's GitHub Release. For a source checkout, build it locally:
 
 ```bash
-packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
-swift test --package-path packages/swift/EchoMirrorSDK
+bash scripts/build-xcframework.sh
+swift build
+swift test
 ```
 
 ```swift
@@ -494,8 +494,9 @@ cargo build -p echomirror-ffi --release
 ### Swift XCFramework
 
 ```bash
-packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
-swift test --package-path packages/swift/EchoMirrorSDK
+bash scripts/build-xcframework.sh
+swift build
+swift test
 ```
 
 The script builds `echomirror-ffi` as static libraries for iOS devices, iOS
@@ -537,7 +538,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) — all merged PRs earn Stellar Wave po
 - [ ] Riverpod providers
 - [x] Flutter tests (FFI bindings)
 - [x] Python binding (`echomirror-python`) — PyO3 + maturin, PyPI quickstart
-- [x] Swift package (`EchoMirrorSDK`)
+- [x] Swift package sources and local XCFramework build (`EchoMirrorSDK`)
+- [ ] Publish the first tagged SwiftPM XCFramework release
 - [ ] pub.dev publish
 
 **Extensions**

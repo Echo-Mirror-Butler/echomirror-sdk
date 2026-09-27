@@ -27,8 +27,8 @@ EchoMirror SDK is built as layers, with a shared Rust core at the bottom and idi
 
   JS/TS packages              Native packages
   @echomirror/core,mood,      echomirror_sdk (Flutter/Dart)
-  stellar,social,analytics,   echomirror-python (coming)
-  react,wasm,widget           EchoMirrorSDK - Swift (coming)
+  stellar,social,analytics,   echomirror-python
+  react,wasm,widget           EchoMirrorSDK - Swift
 ```
 
 ## How echomirror-core relates to the platform bindings
@@ -36,7 +36,7 @@ EchoMirror SDK is built as layers, with a shared Rust core at the bottom and idi
 `echomirror-core` owns the HTTP client, auth token handling, request/response types, and error types shared by every language binding. Nothing above it re-implements networking or crypto - each platform binding is a thin, idiomatic wrapper:
 
 - **`@echomirror/*` (JS/TS)** wraps `echomirror-wasm`, a WebAssembly build of the Rust core, via `wasm-bindgen`.
-- **`echomirror_sdk` (Flutter/Dart)** and the upcoming Python/Swift bindings wrap `echomirror-ffi`, a C-ABI shared library, via `dart:ffi` / `ctypes` / Swift FFI respectively.
+- **`echomirror_sdk` (Flutter/Dart)**, `echomirror-python`, and `EchoMirrorSDK` (Swift) wrap `echomirror-ffi`, a C-ABI shared library, via `dart:ffi`, `ctypes`, and Swift FFI respectively.
 - **Native Rust backends** depend on `echomirror-core`, `echomirror-stellar`, and `echomirror-sync` directly - no FFI boundary at all.
 
 This means a fix or new feature landing in the Rust core propagates to every platform without being reimplemented per-language.

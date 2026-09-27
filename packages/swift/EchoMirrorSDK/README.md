@@ -4,13 +4,18 @@ EchoMirrorSDK is a Swift Package Manager wrapper around the Rust `echomirror-ffi
 crate. It exposes Swift-native clients for mood, Stellar, and social features
 while keeping ownership of Rust-allocated values explicit.
 
-## Build the binary target
+## Add by URL
+
+In Xcode, add `https://github.com/Echo-Mirror-Butler/echomirror-sdk.git`, choose a tag listed in [Releases](https://github.com/Echo-Mirror-Butler/echomirror-sdk/releases), and select the `EchoMirrorSDK` product. Each Swift release includes a checksum-pinned XCFramework for iOS devices, iOS simulators, and macOS. The root `Package.swift` is the URL package manifest.
+
+## Build the binary target locally
 
 The package links a local XCFramework generated from `echomirror-ffi`:
 
 ```bash
-packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
-swift test --package-path packages/swift/EchoMirrorSDK
+bash scripts/build-xcframework.sh
+swift build
+swift test
 ```
 
 The build script produces:
@@ -18,6 +23,8 @@ The build script produces:
 ```text
 packages/swift/EchoMirrorSDK/Artifacts/EchoMirrorFFI.xcframework
 ```
+
+To publish a new tag, run the `Swift SDK CI` workflow with the `swift_release_tag` input. It builds a zip and records its checksum and workflow run ID in `swift-release.json`. Commit that file on `main` before creating the matching `vX.Y.Z` tag. The tag workflow verifies and uploads the exact prepared zip, then tests the URL package.
 
 ## Usage
 
