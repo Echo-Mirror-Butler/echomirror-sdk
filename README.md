@@ -121,7 +121,7 @@ EchoMirror is a social wellness platform — users log their mood, gift ECHO tok
 | [`@echomirror/social`](./packages/js/social) | JS/TS | Global feed, leaderboard, follows |
 | [`@echomirror/analytics`](./packages/js/analytics) | JS/TS | Emotional UX event tracking |
 | [`@echomirror/react`](./packages/js/react) | React | Hooks, Provider, context |
-| [`@echomirror/widget`](./packages/js/widget) | React + Web Component | Drop-in floating mood widget |
+| `@echomirror/widget` *(coming)* | React + Web Component | Drop-in floating mood widget — see issue #26 |
 | [`@echomirror/wasm`](./packages/js/wasm) | Browser + Node.js | Rust WASM — crypto, cursor serialization |
 
 ### Native
@@ -215,19 +215,20 @@ await sendEcho(client, { from: wallet.publicKey, to: 'GRECIPIENT', amount: 5, me
 ### React
 
 ```bash
-npm install @echomirror/react @echomirror/widget
+npm install @echomirror/react
 ```
 
 ```tsx
-import { EchoMirrorProvider, useMoodStreak } from '@echomirror/react'
-import { MoodWidget } from '@echomirror/widget'
+import { EchoMirrorProvider, useMoodStreak, useProfile } from '@echomirror/react'
 
 function App() {
   const { streak } = useMoodStreak()
+  const { profile, isLoading } = useProfile()
+  
   return (
     <div>
+      {!isLoading && profile && <h2>Welcome, {profile.name}!</h2>}
       <p>{streak?.current} day streak 🔥</p>
-      <MoodWidget position="bottom-right" theme="auto" />
     </div>
   )
 }

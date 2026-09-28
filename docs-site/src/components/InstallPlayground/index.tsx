@@ -14,10 +14,21 @@ const INSTALL_TABS: InstallTab[] = [
   {id: 'yarn', label: 'yarn', command: 'yarn add @echomirror/react'},
 ];
 
-const STARTER_CODE = `import { MoodWidget } from '@echomirror/react';
+const STARTER_CODE = `import { EchoMirrorProvider, useMoodStreak } from '@echomirror/react';
+
+function MoodStreakDisplay() {
+  const { streak, isLoading } = useMoodStreak();
+  
+  if (isLoading) return <p>Loading...</p>;
+  return <p>{streak?.current} day streak 🔥</p>;
+}
 
 export default function App() {
-  return <MoodWidget userId="demo-user" />;
+  return (
+    <EchoMirrorProvider apiKey="your_api_key">
+      <MoodStreakDisplay />
+    </EchoMirrorProvider>
+  );
 }`;
 
 export default function InstallPlayground(): ReactNode {
