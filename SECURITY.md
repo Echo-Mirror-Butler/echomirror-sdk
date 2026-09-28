@@ -12,10 +12,10 @@ Pre-release (`0.x`) and older major versions are **not** patched.
 
 | Component | Supported |
 |---|---|
-| `echomirror-core` (crates.io) | ✅ latest |
-| `echomirror-stellar` (crates.io) | ✅ latest |
-| `echomirror-sync` (crates.io) | ✅ latest |
-| `echomirror-wasm` (crates.io) | ✅ latest |
+| `echomirror-core` (crates.io) | 🚧 not yet published — see issue #195 |
+| `echomirror-stellar` (crates.io) | 🚧 not yet published — see issue #195 |
+| `echomirror-sync` (crates.io) | 🚧 not yet published — see issue #195 |
+| `echomirror-wasm` (crates.io) | 🚧 not yet published — see issue #195 |
 | `@echomirror/core` (npm) | ✅ latest |
 | `@echomirror/mood` (npm) | ✅ latest |
 | `@echomirror/stellar` (npm) | ✅ latest |
@@ -23,7 +23,7 @@ Pre-release (`0.x`) and older major versions are **not** patched.
 | `@echomirror/analytics` (npm) | ✅ latest |
 | `@echomirror/react` (npm) | ✅ latest |
 | `@echomirror/wasm` (npm) | ✅ latest |
-| `echomirror_sdk` (pub.dev) | ✅ latest |
+| `echomirror_sdk` (pub.dev) | 🚧 not yet published — see issue #203 |
 | `echomirror-sdk` (PyPI) | ✅ latest |
 | `EchoMirrorSDK` (Swift / SPM) | ✅ latest |
 | Any `0.x` release | ❌ not supported |
@@ -32,6 +32,14 @@ Pre-release (`0.x`) and older major versions are **not** patched.
 `echomirror-ffi` is not listed because it is `publish = false` — it is never on
 crates.io (issue #195). It ships inside the Flutter and Swift packages, which
 are listed above and are the versions to report against.
+
+> **Process note:** When closing #195 (crates.io publish) or #203 (pub.dev
+> publish), update the corresponding rows in this table from 🚧 to ✅ latest,
+> so the table accurately reflects what is actually available on each registry.
+
+> **Process note:** When closing #195 (crates.io publish) or #203 (pub.dev
+> publish), update the corresponding rows in this table from 🚧 to ✅ latest,
+> so the table accurately reflects what is actually available on each registry.
 
 ## Reporting a Vulnerability
 
