@@ -41,6 +41,13 @@
     "mood"
   ],
   "license": "MIT",
+  "size-limit": [
+    {
+      "name": "@echomirror/analytics",
+      "path": "dist/index.js",
+      "limit": "4.5 KB"
+    }
+  ],
   "devDependencies": {
     "typescript": "*",
     "vitest": "*",

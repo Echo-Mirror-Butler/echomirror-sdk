@@ -1,5 +1,8 @@
 # @echomirror/wasm — SIMD Benchmark Results
 
+> [!IMPORTANT]
+> **Point-in-Time Snapshot Notice:** The benchmark measurements and speedup figures in this document represent a point-in-time snapshot recorded as of **2026-08-27** (commit `283b751`) on an Apple M3 host during the initial SIMD investigation (Issue #147). They are not automatically re-verified or continuously monitored by CI. Subsequent changes to `crates/echomirror-wasm` or compiler toolchains may result in variations from these figures.
+
 This document records the before/after benchmark results from Issue #147, which
 evaluated whether enabling WASM SIMD128 meaningfully accelerates the crypto and
 XDR-heavy operations in `@echomirror/wasm`.
