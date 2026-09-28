@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Default-deny GITHUB_TOKEN scope (#222): jobs opt in to anything beyond read.
+permissions:
+  contents: read
+
 jobs:
   flutter-ci:
     name: Format · Analyze · Test

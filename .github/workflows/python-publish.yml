@@ -7,6 +7,10 @@ on:
         description: "Optional note for this run (e.g. release version) — informational only"
         required: false
 
+# Default-deny GITHUB_TOKEN scope (#222): jobs opt in to anything beyond read.
+permissions:
+  contents: read
+
 jobs:
   # Issue #196: the crate builds with pyo3's `abi3-py39` feature (see
   # crates/echomirror-python/Cargo.toml), so maturin only needs ONE

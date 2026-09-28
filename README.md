@@ -391,7 +391,7 @@ let engine = SyncEngine::builder(&client)
 
 ### VS Code Extension
 
-Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/publishers/EchoMirrorButler) *(coming soon)* or build locally:
+Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=EchoMirrorButler.echomirror-sdk-vscode) *(coming soon: the first publish is pending, see [#217](https://github.com/Echo-Mirror-Butler/echomirror-sdk/issues/217))* or build locally:
 
 ```bash
 cd extensions/vscode

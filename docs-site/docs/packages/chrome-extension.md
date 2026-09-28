@@ -11,16 +11,16 @@ The EchoMirror Chrome extension is a browser companion that lets you check Stell
 
 ### Development (Unpacked)
 
-1. Build the extension source (TypeScript must be compiled to JavaScript):
+1. Build the extension. This compiles `src/*.ts` and assembles `manifest.json`, `icons/` and `public/` into `dist/`:
 
    ```bash
-   cd extensions/chrome
-   # Compile TypeScript (once a build pipeline is configured)
+   npm install            # from the repo root
+   npm run build -w extensions/chrome
    ```
 
 2. Open `chrome://extensions/` in Chrome
 3. Enable **Developer mode**
-4. Click **Load unpacked** and select the `extensions/chrome/` directory
+4. Click **Load unpacked** and select the `extensions/chrome/dist/` directory
 
 ### Chrome Web Store
 
@@ -52,10 +52,6 @@ The background service worker runs independently of the popup:
 - Polls Stellar Horizon for new transactions on the watched account
 - Fires Chrome notifications for each new transaction (ledger number, truncated hash, memo)
 
-### Content Script
-
-The extension declares a content script (`content.js`) injected on all pages at `document_idle`. _This file is not yet implemented._
-
 ## Permissions
 
 | Permission | Purpose |
@@ -71,11 +67,18 @@ The extension declares a content script (`content.js`) injected on all pages at 
 |---|---|
 | `https://horizon.stellar.org/*` | Mainnet Horizon API |
 | `https://horizon-testnet.stellar.org/*` | Testnet Horizon API |
-| `https://api.echomirror.dev/*` | EchoMirror API (reserved for future use) |
+
+The extension does not declare a persistent content script: the mood widget is injected on demand into the active tab only, via `activeTab` + `scripting`.
+
+### Content Security Policy
+
+`manifest.json` sets an explicit `content_security_policy.extension_pages`: scripts, styles and images load only from the extension itself (`'self'`), `object-src` is `'none'`, and network requests (`connect-src`) are limited to the two Horizon hosts above.
+
+## CI
+
+`Extensions CI` builds `dist/`, validates that every file the manifest references exists at the declared icon size (`npm run validate -w extensions/chrome`), and then loads the built extension into headless Chromium with Puppeteer (`scripts/smoke-load.mjs`). A manifest that Chrome would refuse to load, such as one referencing a missing icon, fails the build.
 
 ## Known Limitations
 
-- **No build pipeline**: The extension has TypeScript source but no compilation step, `tsconfig.json`, or bundler configuration. The `popup.html`, `background.js`, and `content.js` files referenced in `manifest.json` do not yet exist on disk. To load the extension, these must be compiled from the TypeScript sources.
-- **Missing icons**: The `icons/` directory with `icon16.png`, `icon48.png`, and `icon128.png` is not present.
 - **Mood widget is local-only**: The injected mood widget logs moods to the UI but does not persist them or send them to an EchoMirror backend.
 - **No Stripe/SDK integration**: The popup and background worker use raw `fetch()` against Horizon rather than `@echomirror/core` or `@echomirror/stellar`.

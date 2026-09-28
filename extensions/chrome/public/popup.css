@@ -1,0 +1,94 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #0c1a2e;
+  --muted: #64748b;
+  --border: #cbd5e1;
+  --accent: #6366f1;
+  --accent-fg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c1a2e;
+    --fg: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+}
+
+body {
+  width: 300px;
+  margin: 0;
+  padding: 14px 16px 16px;
+  font: 13px/1.4 system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 15px;
+}
+
+label {
+  display: block;
+  margin: 8px 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+input,
+select,
+button {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+}
+
+button {
+  margin-top: 10px;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+#balance {
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+#status {
+  min-height: 1.4em;
+  margin: 10px 0 0;
+  color: var(--muted);
+}
