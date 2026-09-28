@@ -56,7 +56,7 @@ type Package = {name: string; label: string; description: string; tone: string; 
 // hardcoded number, so the two can never drift apart again.
 const PACKAGES: Package[] = [
   {name: '@echomirror/core', label: 'CORE', description: 'Typed client primitives, retries, middleware, and shared configuration.', tone: 'mint', icon: 'cpu', href: '/docs/quickstart/javascript'},
-  {name: '@echomirror/react', label: 'REACT', description: 'Provider, hooks, and MoodWidget components for product teams.', tone: 'peach', icon: 'atom', href: '/docs/quickstart/react'},
+  {name: '@echomirror/react', label: 'REACT', description: 'Provider, hooks for mood streaks, profiles, and real-time SDK events.', tone: 'peach', icon: 'atom', href: '/docs/quickstart/react'},
   {name: '@echomirror/stellar', label: 'STELLAR', description: 'Wallet connections, payments, balances, and Soroban-ready flows.', tone: 'lilac', icon: 'star', href: '/docs/architecture'},
   {name: '@echomirror/social', label: 'SOCIAL', description: 'Feeds, reactions, leaderboards, and wellness-first community signals.', tone: 'sky', icon: 'users', href: '/docs/architecture'},
   {name: '@echomirror/analytics', label: 'ANALYTICS', description: 'Privacy-conscious events that help teams understand engagement.', tone: 'gold', icon: 'bar-chart', href: '/docs/architecture'},
