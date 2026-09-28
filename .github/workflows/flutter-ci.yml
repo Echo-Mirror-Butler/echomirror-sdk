@@ -55,6 +55,9 @@ jobs:
             echo "Warning: coverage/lcov.info not found"
           fi
 
+      - name: Check publish readiness (dry run)
+        run: flutter pub publish --dry-run
+
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
         with:
