@@ -155,6 +155,8 @@ Releases are automated — you don't cut one by hand.
 | `echomirror-sdk` (PyPI) | `maturin` wheels + sdist | `.github/workflows/python-publish.yml`, manual dispatch |
 | `@echomirror/wasm` (npm) | built from a git tag | `.github/workflows/wasm-publish.yml`, `wasm-v*` tags |
 
+> **Release Discipline:** `@echomirror/*` packages must be published exclusively through the automated Changesets release pipeline. If an out-of-band manual `npm publish` is ever performed, you must immediately remove or reconcile any pending changesets in `.changeset/` that were satisfied by that release, ensuring `changeset status` only reflects genuinely unreleased changes.
+
 ### npm provenance (and why we still use `NPM_TOKEN`)
 
 Every npm release requests a **provenance attestation** via

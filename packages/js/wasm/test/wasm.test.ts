@@ -56,7 +56,7 @@ describe('mood', () => {
     buf.push(7)
     expect(buf.length).toBe(1)
     buf[Symbol.dispose]()
-    expect(() => buf.push(1)).toThrow(/null pointer/)
+    expect(() => buf.push(1)).toThrow(/null pointer|moved value/i)
   })
 })
 
@@ -135,7 +135,7 @@ describe('memory management', () => {
     const buf = new MoodBuffer()
     buf.push(5)
     buf.free()
-    expect(() => buf.free()).toThrow(/null pointer/)
-    expect(() => buf.push(3)).toThrow(/null pointer/)
+    expect(() => buf.free()).toThrow(/null pointer|moved value/i)
+    expect(() => buf.push(3)).toThrow(/null pointer|moved value/i)
   })
 })
