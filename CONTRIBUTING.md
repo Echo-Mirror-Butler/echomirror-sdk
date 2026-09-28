@@ -211,4 +211,4 @@ for what each crate contains.
 
 ## Questions?
 
-Open a GitHub Discussion or join the Discord at https://discord.gg/echomirror.
+[Open a GitHub Issue](https://github.com/Echo-Mirror-Butler/echomirror-sdk/issues/new) with the `question` label, or reach out to the maintainers via the repository's issue tracker.
