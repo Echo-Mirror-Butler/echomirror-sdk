@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { connectWallet, LedgerWalletAdapter } from '@echomirror/stellar'
+import { connectWallet } from '@echomirror/stellar'
 
 /**
  * Soroban demo — placeholder pending #103 (Soroban invocation support).
