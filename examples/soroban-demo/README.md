@@ -1,27 +1,25 @@
 # Soroban Demo
 
-Minimal example demonstrating Soroban smart-contract interaction using the EchoMirror SDK.
+This example demonstrates the current `@echomirror/stellar` wallet API. It
+connects a testnet wallet; contract invocation and state-reading controls are
+intentionally disabled because the package does not yet expose Soroban
+invocation support.
 
-## Status
+## Run and build
 
-**Blocked on #103** (Soroban invocation support). This example will be completed once Soroban contract invocation lands in `@echomirror/stellar`.
-
-## What this demo will show
-
-1. Connecting a Stellar wallet (Freighter, xBull, Albedo, or Ledger)
-2. Invoking a simple deployed Soroban contract on testnet
-3. Reading contract state without signing
-4. Handling typed error cases from the SDK
-
-## Running
+From this directory:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Point the example at a different contract ID by editing the `CONTRACT_ID` constant in `src/App.tsx`.
+To verify the production build and TypeScript types:
 
-## Testnet contract
+```bash
+npm run build
+```
 
-The demo targets a minimal counter contract deployed on Stellar testnet. The contract ID is configured in `src/App.tsx`.
+Install a supported browser wallet and connect it to Stellar testnet to try the
+wallet flow. Contract invocation is not currently implemented; the placeholder
+contract ID is not deployed or used by the wallet connection.
