@@ -16,6 +16,10 @@ env:
   ECHOMIRROR_CONTRACT_API_BASE: http://127.0.0.1:18080
   ECHOMIRROR_CONTRACT_HORIZON_BASE: http://127.0.0.1:18081
 
+# Default-deny GITHUB_TOKEN scope (#222): jobs opt in to anything beyond read.
+permissions:
+  contents: read
+
 jobs:
   rust:
     name: Rust contract

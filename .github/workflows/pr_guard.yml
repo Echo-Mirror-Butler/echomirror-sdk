@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: [main]
 
+# Default-deny GITHUB_TOKEN scope (#222). Both jobs only list PR files via
+# github-script, which needs pull-requests: read and nothing else.
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   size-check:
     runs-on: ubuntu-latest

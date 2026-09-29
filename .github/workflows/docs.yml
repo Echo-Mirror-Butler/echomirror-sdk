@@ -17,6 +17,10 @@ on:
       - 'docs-site/**'
       - '.github/workflows/docs.yml'
 
+# Default-deny GITHUB_TOKEN scope (#222): jobs opt in to anything beyond read.
+permissions:
+  contents: read
+
 jobs:
   build-docs:
     runs-on: ubuntu-latest

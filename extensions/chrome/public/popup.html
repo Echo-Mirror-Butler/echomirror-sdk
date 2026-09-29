@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>EchoMirror SDK Companion</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script type="module" src="popup.js"></script>
+  </head>
+  <body>
+    <header>
+      <img src="icons/icon32.png" width="24" height="24" alt="" />
+      <h1>EchoMirror</h1>
+    </header>
+
+    <label for="public-key">Stellar public key</label>
+    <input id="public-key" type="text" placeholder="G…" spellcheck="false" autocomplete="off" />
+
+    <label for="network">Network</label>
+    <select id="network">
+      <option value="testnet">testnet</option>
+      <option value="mainnet">mainnet</option>
+    </select>
+
+    <button id="check-btn" type="button">Check Balance</button>
+    <div id="balance" aria-live="polite"></div>
+
+    <div class="row">
+      <button id="watch-btn" type="button" class="secondary">Watch Transactions</button>
+      <button id="inject-btn" type="button" class="secondary">Inject Mood Widget</button>
+    </div>
+
+    <p id="status" role="status"></p>
+  </body>
+</html>

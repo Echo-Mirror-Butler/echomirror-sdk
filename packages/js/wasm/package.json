@@ -43,7 +43,8 @@
     "wasm-node",
     "wasm-web-simd",
     "wasm-node-simd",
-    "src/wasm-binding.d.ts"
+    "src/wasm-binding.d.ts",
+    "LICENSE"
   ],
   "scripts": {
     "build:wasm": "node scripts/build.mjs",

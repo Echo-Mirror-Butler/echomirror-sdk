@@ -4,6 +4,7 @@
   "description": "EchoMirror SDK developer tools — Stellar address validation, mood log snippets, blockchain sync explorer, and live ECHO balance in the status bar",
   "version": "0.1.0",
   "publisher": "EchoMirrorButler",
+  "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.88.0"
   },

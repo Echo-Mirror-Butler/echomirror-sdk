@@ -142,6 +142,30 @@ Most JS-only PRs finish CI in a couple of minutes; a Rust change that touches
 runs it across Node, Bun, Deno, and headless Chromium — see that package's
 [README](./packages/js/wasm/README.md#runtime-compatibility)).
 
+### Workflow permissions
+
+Every workflow under `.github/workflows/` declares an explicit `permissions:`
+block, and the default is **`contents: read` and nothing else**. Don't rely
+on the repository's or organization's default `GITHUB_TOKEN` scope. When a job
+genuinely needs more, grant it on that job only, name the specific scope, and
+add a comment saying why. For example:
+
+```yaml
+permissions:          # workflow default: read-only
+  contents: read
+
+jobs:
+  release:
+    permissions:
+      contents: write       # changesets pushes the version commit/tags
+      pull-requests: write  # ...and opens the Version Packages PR
+      id-token: write       # npm provenance (OIDC)
+```
+
+A new workflow without a `permissions:` block will be asked to add one in
+review. The same rule applies to `pull_request_target`, which none of our
+workflows use; don't introduce it without a maintainer's sign-off.
+
 All PRs are reviewed within 48 hours. Contributors earn Stellar Wave points for merged PRs.
 
 ## Releasing
@@ -154,6 +178,8 @@ Releases are automated — you don't cut one by hand.
 | `echomirror-{core,stellar,sync,wasm}` (crates.io) | `cargo publish` | `.github/workflows/crates-publish.yml`, manual dispatch |
 | `echomirror-sdk` (PyPI) | `maturin` wheels + sdist | `.github/workflows/python-publish.yml`, manual dispatch |
 | `@echomirror/wasm` (npm) | built from a git tag | `.github/workflows/wasm-publish.yml`, `wasm-v*` tags |
+| VS Code extension (Marketplace) | `vsce publish` | `.github/workflows/extensions-ci.yml`, `extension-vscode-v*` tags |
+| Chrome extension (Web Store) | zipped `extensions/chrome/dist` | `.github/workflows/extensions-ci.yml`, `extension-chrome-v*` tags |
 
 > **Release Discipline:** `@echomirror/*` packages must be published exclusively through the automated Changesets release pipeline. If an out-of-band manual `npm publish` is ever performed, you must immediately remove or reconcile any pending changesets in `.changeset/` that were satisfied by that release, ensuring `changeset status` only reflects genuinely unreleased changes.
 
@@ -210,6 +236,28 @@ The real publish is manual-dispatch only (`.github/workflows/crates-publish.yml`
 `CARGO_REGISTRY_TOKEN` secret) so a first release stays a deliberate
 maintainer action. See [crates/echomirror-core/README.md](./crates/echomirror-core/README.md)
 for what each crate contains.
+
+### Editor and browser extensions
+
+Both extensions publish from `.github/workflows/extensions-ci.yml` when a
+matching tag is pushed. The publish jobs need repository secrets that only a
+maintainer with publisher access can create:
+
+| Tag | Secret(s) | Where to get it |
+|---|---|---|
+| `extension-vscode-v<version>` | `VSCE_PAT` | An Azure DevOps personal access token with the **Marketplace → Manage** scope, created by a member of the `EchoMirrorButler` publisher ([docs](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token)) |
+| `extension-chrome-v<version>` | `CHROME_EXTENSION_ID`, `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`, `CHROME_REFRESH_TOKEN` | The Chrome Web Store developer account that owns the listing ([docs](https://developer.chrome.com/docs/webstore/using-api)) |
+
+To cut a VS Code release, bump `version` in `extensions/vscode/package.json`,
+merge, then push the tag:
+
+```bash
+git tag extension-vscode-v0.1.0 && git push origin extension-vscode-v0.1.0
+```
+
+The listing lives at
+<https://marketplace.visualstudio.com/items?itemName=EchoMirrorButler.echomirror-sdk-vscode>.
+The item ID is `<publisher>.<name>` from `extensions/vscode/package.json`.
 
 ## Questions?
 
