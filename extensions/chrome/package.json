@@ -8,7 +8,11 @@
     "coverage": "vitest run --coverage --config vitest.config.ts",
     "test:watch": "vitest watch --config vitest.config.ts",
     "typecheck": "tsc --noEmit --project tsconfig.json",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "build": "node scripts/build.mjs",
+    "validate": "node scripts/validate-manifest.mjs",
+    "smoke": "node scripts/smoke-load.mjs",
+    "icons": "for s in 16 32 48 128; do rsvg-convert -w $s -h $s icons/icon.svg -o icons/icon$s.png; done"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.301",

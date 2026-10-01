@@ -1,4 +1,4 @@
-﻿# Node
+# Node
 node_modules/
 package-lock.json
 npm-debug.log*
@@ -9,6 +9,7 @@ npm-debug.log*
 Cargo.lock
 
 # Python (crates/echomirror-python), created by scripts/bootstrap.sh
+.venv/
 crates/echomirror-python/.venv/
 crates/echomirror-python/**/__pycache__/
 crates/echomirror-python/**/*.so

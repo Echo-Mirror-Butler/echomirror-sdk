@@ -20,6 +20,10 @@ on:
       - 'extension-vscode-v*'
       - 'extension-chrome-v*'
 
+# Default-deny GITHUB_TOKEN scope (#222): jobs opt in to anything beyond read.
+permissions:
+  contents: read
+
 jobs:
   build-vscode:
     name: Build & Package VS Code Extension
@@ -63,9 +67,38 @@ jobs:
         run: npm run lint -w extensions/chrome
       - name: Typecheck
         run: npm run typecheck -w extensions/chrome
+      - name: Test (includes manifest/icon validation)
+        run: npm run test -w extensions/chrome
+      # Compiles src/*.ts and assembles manifest.json, icons/ and public/ into
+      # dist/ — the directory Chrome actually loads. Fails if the manifest
+      # references a file that is not in dist/ (issue #216).
+      - name: Build
+        run: npm run build -w extensions/chrome
+      # Load dist/ into headless Chromium so manifest errors Chrome enforces at
+      # install time (missing icons, service worker, invalid CSP) fail CI.
+      # Puppeteer is installed into a scratch prefix rather than the workspace
+      # so it (and its browser download) stays out of package-lock.json.
+      - name: Install Puppeteer (smoke test only)
+        run: npm install --prefix "$RUNNER_TEMP/smoke" --no-audit --no-fund puppeteer@24
+      - name: Smoke test — load unpacked extension in headless Chromium
+        working-directory: extensions/chrome
+        env:
+          NODE_PATH: ${{ runner.temp }}/smoke/node_modules
+        run: npm run smoke
+      - name: Smoke test must reject a missing icon
+        working-directory: extensions/chrome
+        env:
+          NODE_PATH: ${{ runner.temp }}/smoke/node_modules
+        run: |
+          cp -r dist "$RUNNER_TEMP/broken-extension"
+          rm "$RUNNER_TEMP/broken-extension/icons/icon48.png"
+          if node scripts/smoke-load.mjs "$RUNNER_TEMP/broken-extension"; then
+            echo "::error::smoke test accepted an extension with a missing icon"
+            exit 1
+          fi
       - name: Package extension (.zip)
-        working-directory: ${{ github.workspace }}/extensions/chrome
-        run: zip -r ../chrome-extension.zip .
+        working-directory: ${{ github.workspace }}/extensions/chrome/dist
+        run: zip -r ../../chrome-extension.zip .
       - name: Upload .zip artifact
         uses: actions/upload-artifact@v7
         with:
@@ -98,10 +131,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run build -w extensions/chrome
       - name: Package extension (.zip)
-        run: |
-          cd extensions/chrome
-          zip -r ../chrome-extension.zip .
+        working-directory: ${{ github.workspace }}/extensions/chrome/dist
+        run: zip -r ../../chrome-extension.zip .
       - name: Upload to Chrome Web Store
         uses: mnao305/chrome-extension-upload@v6.0.0
         with:

@@ -21,7 +21,7 @@ Then press `F5` in VS Code to launch the Extension Development Host, or package 
 
 ### From VS Code Marketplace
 
-_search "EchoMirror SDK" in the Extensions panel (once published)._
+_Once published, install [`EchoMirrorButler.echomirror-sdk-vscode`](https://marketplace.visualstudio.com/items?itemName=EchoMirrorButler.echomirror-sdk-vscode) or search "EchoMirror SDK" in the Extensions panel._
 
 ## Features
 

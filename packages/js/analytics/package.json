@@ -24,7 +24,7 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": ["dist", "README.md", "LICENSE"],
   "sideEffects": false,
   "scripts": {
     "build": "tsc",
@@ -41,6 +41,13 @@
     "mood"
   ],
   "license": "MIT",
+  "size-limit": [
+    {
+      "name": "@echomirror/analytics",
+      "path": "dist/index.js",
+      "limit": "4.5 KB"
+    }
+  ],
   "devDependencies": {
     "typescript": "*",
     "vitest": "*",

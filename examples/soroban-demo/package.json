@@ -4,11 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@echomirror/stellar": "workspace:*",
+    "@echomirror/core": "^0.1.0",
+    "@echomirror/stellar": "^0.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },

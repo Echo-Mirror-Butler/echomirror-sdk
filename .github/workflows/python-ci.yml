@@ -15,6 +15,10 @@ on:
       - "crates/echomirror-stellar/**"
       - ".github/workflows/python-ci.yml"
 
+# Default-deny GITHUB_TOKEN scope (#222): jobs opt in to anything beyond read.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: test (${{ matrix.os }}, py${{ matrix.python-version }})

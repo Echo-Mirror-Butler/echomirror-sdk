@@ -5,11 +5,6 @@ name: Size Limit
 # touches a budgeted package. Fails the job — not just the comment — when a
 # package goes over its budget.
 #
-# @echomirror/analytics is left unbudgeted: it has no React/DOM dependency,
-# and its exports (a webhook transport and mood-aggregation helpers) run in
-# backend jobs, not browser pages. If it ever grows a browser-facing entry
-# point, it should get a budget too — see CONTRIBUTING.md.
-#
 # @echomirror/wasm has its own dedicated size-limit-wasm job below because
 # it requires a Rust/wasm-pack build step before the standard JS size-limit
 # check can run. Its raw .wasm binary size is also tracked separately via
@@ -51,7 +46,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [core, mood, react, social, stellar]
+        package: [analytics, core, mood, react, social, stellar]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

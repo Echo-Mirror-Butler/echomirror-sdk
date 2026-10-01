@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { EchoMirrorProvider, useProfile, useMoodStreak } from '@echomirror/react'
+import { EchoMirrorProvider, useMoodStreak } from '@echomirror/react'
 import { logMood } from '@echomirror/mood'
 import { connectFreighter, getBalance } from '@echomirror/stellar'
 import { useEchoMirrorClient } from '@echomirror/react'
 import { init as initWasm, hashPublicKey, MoodBuffer } from '@echomirror/wasm'
 import { useGlobalFeed, useLeaderboard } from '@echomirror/social'
+import type { MoodScore } from '@echomirror/mood'
 
 function MoodLogger() {
   const client = useEchoMirrorClient()
@@ -17,7 +18,7 @@ function MoodLogger() {
   async function handleLog() {
     setLoading(true)
     try {
-      const entry = await logMood(client, { score: score as 1, note, tags: [] })
+      const entry = await logMood(client, { score: score as MoodScore, note, tags: [] })
       setLastEntry(entry)
       setNote('')
     } finally {
@@ -199,7 +200,6 @@ function WasmInsights() {
   const [anonymizedId, setAnonymizedId] = useState<string | null>(null)
   const [localAverage, setLocalAverage] = useState<number | null>(null)
 
-  // init() fetches + instantiates the .wasm binary once per page load.
   useEffect(() => {
     initWasm().then(() => setReady(true))
   }, [])
@@ -208,8 +208,6 @@ function WasmInsights() {
     if (!ready) return
     setAnonymizedId(hashPublicKey('GDEMO...PUBLICKEY').slice(0, 16))
 
-    // MoodBuffer owns wasm-side memory — free() it once you're done with
-    // it (here: synchronously, since we only need the average).
     const buffer = new MoodBuffer()
     try {
       for (const score of [7, 8, 6, 9, 7]) buffer.push(score)

@@ -1,0 +1,111 @@
+name: Examples CI
+
+on:
+  pull_request:
+    paths:
+      - 'packages/js/**'
+      - 'examples/**'
+      - '.github/workflows/examples-ci.yml'
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-examples:
+    name: Build ${{ matrix.example }}
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_commit.message, 'Version Packages'))
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [react-app, soroban-demo, vanilla-js]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        if: github.event_name == 'pull_request'
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Install monorepo dependencies
+        if: github.event_name == 'pull_request'
+        run: npm ci
+
+      - name: Build WASM package artifacts
+        if: github.event_name == 'pull_request'
+        run: npm run build:wasm --workspace=packages/js/wasm
+
+      - name: Build SDK packages
+        if: github.event_name == 'pull_request'
+        run: >-
+          npm run build
+          --workspace=packages/js/core
+          --workspace=packages/js/mood
+          --workspace=packages/js/react
+          --workspace=packages/js/social
+          --workspace=packages/js/stellar
+          --workspace=packages/js/wasm
+
+      - name: Pack SDK packages under review
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p "$RUNNER_TEMP/echomirror-tarballs"
+          for package in core mood react social stellar wasm; do
+            npm pack "packages/js/$package" --pack-destination "$RUNNER_TEMP/echomirror-tarballs"
+          done
+
+      - name: Install PR tarballs
+        if: github.event_name == 'pull_request'
+        working-directory: examples/${{ matrix.example }}
+        env:
+          TARBALL_DIR: ${{ runner.temp }}/echomirror-tarballs
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs'
+          import { resolve } from 'node:path'
+
+          const sdkPackages = {
+            '@echomirror/core': 'core',
+            '@echomirror/mood': 'mood',
+            '@echomirror/react': 'react',
+            '@echomirror/social': 'social',
+            '@echomirror/stellar': 'stellar',
+            '@echomirror/wasm': 'wasm',
+          }
+          const manifest = JSON.parse(readFileSync('package.json', 'utf8'))
+          for (const section of ['dependencies', 'devDependencies']) {
+            for (const name of Object.keys(manifest[section] ?? {})) {
+              const packageDir = sdkPackages[name]
+              if (!packageDir) continue
+              const packageManifest = JSON.parse(
+                readFileSync(`../../packages/js/${packageDir}/package.json`, 'utf8'),
+              )
+              const tarball = `${name.slice(1).replace('/', '-')}-${packageManifest.version}.tgz`
+              manifest[section][name] = `file:${resolve(process.env.TARBALL_DIR, tarball)}`
+            }
+          }
+          writeFileSync('package.json', `${JSON.stringify(manifest, null, 2)}\n`)
+          NODE
+          npm install --package-lock=false
+
+      - name: Install published packages
+        if: github.event_name == 'workflow_run'
+        working-directory: examples/${{ matrix.example }}
+        run: npm install --no-package-lock
+
+      - name: Type-check and build example
+        working-directory: examples/${{ matrix.example }}
+        run: npm run build
