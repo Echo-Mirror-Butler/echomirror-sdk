@@ -1,0 +1,18 @@
+name: Publish Flutter package
+
+# Manual and tag-driven release of `packages/flutter` to pub.dev using pub.dev's
+# GitHub OIDC automated publishing. Configure this repository and workflow in the
+# package's pub.dev admin page; no long-lived PUB_TOKEN secret is required.
+on:
+  push:
+    tags:
+      - "flutter-v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    permissions:
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/flutter
