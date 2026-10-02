@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=22.12.0"
   },
-  "description": "EchoMirror SDK Stellar integration — multi-wallet (Freighter, Albedo, xBull), transaction builders, and typed errors",
+  "description": "EchoMirror SDK Stellar integration \u2014 multi-wallet (Freighter, Albedo, xBull), transaction builders, and typed errors",
   "publishConfig": {
     "access": "public"
   },
@@ -18,7 +18,11 @@
   "types": "./dist/index.d.ts",
   "type": "commonjs",
   "sideEffects": false,
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "import": {
@@ -32,7 +36,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "build": "node init && tsup src/index.ts --format cjs,esm --dts --clean",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "test:integration": "STELLAR_INTEGRATION=1 vitest run tests/integration --testTimeout 120000",
