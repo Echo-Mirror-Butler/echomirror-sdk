@@ -36,7 +36,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.tsx --format cjs,esm --dts --clean",
+    "build": "node init && tsup src/index.tsx --format cjs,esm --dts --clean",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",

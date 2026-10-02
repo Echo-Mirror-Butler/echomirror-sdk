@@ -1,14 +1,14 @@
 {
   "name": "echomirror-sdk",
   "private": true,
-  "description": "EchoMirror SDK monorepo — mood intelligence, Stellar payments, and social wellness for any app",
+  "description": "EchoMirror SDK monorepo \u2014 mood intelligence, Stellar payments, and social wellness for any app",
   "workspaces": [
     "packages/js/*",
     "extensions/vscode",
     "extensions/chrome"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "node init && npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
