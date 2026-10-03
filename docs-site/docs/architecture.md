@@ -111,10 +111,10 @@ dependencies:
 
 ### I'm building an **iOS or macOS** app in Swift
 
-Add `packages/swift/EchoMirrorSDK` as a Swift Package Manager local dependency, or wait for the SPM registry release. Build the XCFramework first:
+Add `https://github.com/Echo-Mirror-Butler/echomirror-sdk.git` in Xcode at a published Swift release tag. For a source checkout, build the XCFramework first:
 
 ```bash
-packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
+bash scripts/build-xcframework.sh
 ```
 
 ### I'm building a **Python** backend

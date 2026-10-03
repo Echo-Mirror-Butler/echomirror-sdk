@@ -151,9 +151,10 @@ final class ContractTests: XCTestCase {
             backfill: backfill
         )
 
+        let events = subscription.events()
         let task = Task {
             var received: [SocialLiveEvent] = []
-            for await event in subscription.events() {
+            for await event in events {
                 received.append(event)
                 if received.count == 2 { break }
             }

@@ -8,6 +8,11 @@ npm-debug.log*
 /target/
 Cargo.lock
 
+# Swift build output and the generated native binary
+.build/
+packages/swift/EchoMirrorSDK/.build/
+packages/swift/EchoMirrorSDK/Artifacts/
+
 # Python (crates/echomirror-python), created by scripts/bootstrap.sh
 .venv/
 crates/echomirror-python/.venv/

@@ -3,8 +3,19 @@ name: Swift SDK CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      swift_release_tag:
+        description: 'Prepare a Swift release tag (for example v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
 
 # Default-deny GITHUB_TOKEN scope (#222): jobs opt in to anything beyond read.
 permissions:
@@ -13,6 +24,7 @@ permissions:
 jobs:
   swift-sdk:
     name: Build XCFramework and Test
+    if: github.event_name != 'workflow_dispatch'
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v7
@@ -28,6 +40,96 @@ jobs:
           xcodebuild -version
           swift --version
       - name: Build EchoMirrorFFI XCFramework
-        run: bash packages/swift/EchoMirrorSDK/Scripts/build-xcframework.sh
-      - name: Run Swift tests
-        run: swift test --package-path packages/swift/EchoMirrorSDK
+        run: bash scripts/build-xcframework.sh
+      - name: Build root Swift package
+        run: swift build
+      - name: Run root Swift tests
+        run: swift test
+      - name: Call the native version function on an iOS simulator
+        run: |
+          simulator_id="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for runtime in devices.values() for d in runtime if d["name"].startswith("iPhone")))')"
+          xcodebuild test -scheme EchoMirrorSDK \
+            -destination "platform=iOS Simulator,id=$simulator_id" \
+            -only-testing:EchoMirrorSDKTests/EchoMirrorSDKTests/testVersionString
+
+  prepare-release:
+    name: Prepare Swift binary release
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable (2026-08-05)
+        with:
+          toolchain: stable
+          targets: aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin,x86_64-apple-darwin
+      - name: Build archive and record its checksum
+        env:
+          SWIFT_RELEASE_TAG: ${{ inputs.swift_release_tag }}
+        run: bash scripts/prepare-swift-release.sh "$SWIFT_RELEASE_TAG"
+      - name: Verify package against the prepared binary
+        run: swift build && swift test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swift-xcframework
+          path: |
+            .build/swift-release/EchoMirrorFFI.xcframework.zip
+            packages/swift/EchoMirrorSDK/swift-release.json
+          retention-days: 90
+
+  publish-release:
+    name: Publish tagged Swift binary
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-14
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify tag and download the prepared archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          manifest=packages/swift/EchoMirrorSDK/swift-release.json
+          test -f "$manifest"
+          test "$(jq -r .tag "$manifest")" = "$GITHUB_REF_NAME"
+          run_id="$(jq -r .artifactRunId "$manifest")"
+          [[ "$run_id" =~ ^[0-9]+$ ]]
+          mkdir -p .build/swift-release
+          gh run download "$run_id" -R "$GITHUB_REPOSITORY" -n swift-xcframework -D .build/swift-release
+          archive="$(find .build/swift-release -name EchoMirrorFFI.xcframework.zip -print -quit)"
+          test -n "$archive"
+          test "$(swift package compute-checksum "$archive")" = "$(jq -r .checksum "$manifest")"
+          echo "SWIFT_ARCHIVE=$archive" >> "$GITHUB_ENV"
+      - name: Upload release archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "$SWIFT_ARCHIVE" --verify-tag --title "$GITHUB_REF_NAME" --notes 'SwiftPM binary for EchoMirrorSDK.'
+      - name: Resolve and test the tagged URL package
+        run: swift build && swift test
+      - name: Resolve a clean consumer by repository URL and tag
+        run: |
+          set -euo pipefail
+          consumer="$(mktemp -d)"
+          mkdir -p "$consumer/Sources/Smoke"
+          version="${GITHUB_REF_NAME#v}"
+          cat > "$consumer/Package.swift" <<EOF
+          // swift-tools-version: 5.9
+          import PackageDescription
+          let package = Package(
+              name: "Smoke",
+              dependencies: [.package(url: "https://github.com/Echo-Mirror-Butler/echomirror-sdk.git", exact: "$version")],
+              targets: [.executableTarget(name: "Smoke", dependencies: [.product(name: "EchoMirrorSDK", package: "echomirror-sdk")])]
+          )
+          EOF
+          printf 'import EchoMirrorSDK\nprint("EchoMirror FFI version: \\(EchoMirrorVersion.current())")\n' > "$consumer/Sources/Smoke/main.swift"
+          swift run --package-path "$consumer" Smoke
+      - name: Call the released binary on an iOS simulator
+        run: |
+          simulator_id="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for runtime in devices.values() for d in runtime if d["name"].startswith("iPhone")))')"
+          xcodebuild test -scheme EchoMirrorSDK \
+            -destination "platform=iOS Simulator,id=$simulator_id" \
+            -only-testing:EchoMirrorSDKTests/EchoMirrorSDKTests/testVersionString

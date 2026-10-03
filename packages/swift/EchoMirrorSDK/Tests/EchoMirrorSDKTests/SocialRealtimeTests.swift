@@ -7,6 +7,7 @@ import XCTest
 private final class MockTransport: SocialRealtimeTransport {
     private(set) var connectCalls = 0
     private(set) var disconnectCalls = 0
+    var onConnect: (() -> Void)?
     private var onOpen: ((SocialRealtimeOpenInfo) -> Void)?
     private var onEvent: ((SocialLiveEvent) -> Void)?
 
@@ -18,6 +19,7 @@ private final class MockTransport: SocialRealtimeTransport {
         connectCalls += 1
         self.onOpen = onOpen
         self.onEvent = onEvent
+        onConnect?()
     }
 
     func disconnect() {
@@ -94,10 +96,11 @@ final class SocialRealtimeTests: XCTestCase {
     func testReceivesFeedNewEntryViaForAwait() async throws {
         let transport = MockTransport()
         let subscription = makeStream(transport: transport)
+        let events = subscription.events()
 
         let task = Task {
             var received: [SocialLiveEvent] = []
-            for await event in subscription.events() {
+            for await event in events {
                 received.append(event)
                 if received.count == 1 { break }
             }
@@ -124,10 +127,11 @@ final class SocialRealtimeTests: XCTestCase {
             echoBalance: "1250.0000000",
             weeklyScore: 88.6
         )
+        let events = subscription.events()
 
         let task = Task {
             var received: [SocialLiveEvent] = []
-            for await event in subscription.events() {
+            for await event in events {
                 received.append(event)
                 if received.count == 1 { break }
             }
@@ -146,10 +150,11 @@ final class SocialRealtimeTests: XCTestCase {
     func testEmitsConnectionGapWhenNoBackfillOnReconnect() async throws {
         let transport = MockTransport()
         let subscription = makeStream(transport: transport)
+        let events = subscription.events()
 
         let task = Task {
             var received: [SocialLiveEvent] = []
-            for await event in subscription.events() {
+            for await event in events {
                 received.append(event)
                 if received.count == 2 { break }
             }
@@ -173,10 +178,11 @@ final class SocialRealtimeTests: XCTestCase {
              GlobalFeedEntry(id: "3", score: 9, tags: [], country: nil, city: nil, createdAt: Date(timeIntervalSince1970: 1_700_000_002))]
         }
         let subscription = makeStream(transport: transport, backfill: backfill)
+        let events = subscription.events()
 
         let task = Task {
             var received: [SocialLiveEvent] = []
-            for await event in subscription.events() {
+            for await event in events {
                 received.append(event)
                 if received.count == 3 { break }
             }
@@ -200,10 +206,11 @@ final class SocialRealtimeTests: XCTestCase {
             throw SocialRealtimeTests.TestError.backfill
         }
         let subscription = makeStream(transport: transport, backfill: backfill)
+        let events = subscription.events()
 
         let task = Task {
             var received: [SocialLiveEvent] = []
-            for await event in subscription.events() {
+            for await event in events {
                 received.append(event)
                 if received.count == 2 { break }
             }
@@ -223,6 +230,8 @@ final class SocialRealtimeTests: XCTestCase {
     func testDisconnectsTransportWhenStreamEnds() async throws {
         let transport = MockTransport()
         let subscription = makeStream(transport: transport)
+        let connected = expectation(description: "transport connected")
+        transport.onConnect = { connected.fulfill() }
 
         let task = Task {
             for await event in subscription.events() {
@@ -231,6 +240,7 @@ final class SocialRealtimeTests: XCTestCase {
             }
         }
 
+        await fulfillment(of: [connected], timeout: 5)
         transport.receive(.feedNewEntry(entry("1")))
         await task.value
         await Task.yield()
@@ -246,10 +256,11 @@ final class SocialRealtimeTests: XCTestCase {
         """
         let transport = MockTransport()
         let subscription = makeStream(transport: transport)
+        let events = subscription.events()
 
         let task = Task {
             var received: [SocialLiveEvent] = []
-            for await event in subscription.events() {
+            for await event in events {
                 received.append(event)
                 if received.count == 1 { break }
             }
