@@ -140,3 +140,10 @@ export function useSDKEvent<T extends Parameters<typeof EchoMirrorClient.prototy
     return client.on(eventType as never, handler as never)
   }, [client, eventType, handler])
 }
+
+// ─── MoodWidget ───────────────────────────────────────────────────────────────
+
+export { MoodWidget } from './mood-widget'
+export { useMoodWidget, DEFAULT_THEME } from './useMoodWidget'
+export type { MoodWidgetProps, MoodWidgetTheme, MoodWidgetState, UseMoodWidgetOptions, UseMoodWidgetReturn } from './useMoodWidget'
+export type { MoodWidgetProps as MoodWidgetPropsType } from './mood-widget'
