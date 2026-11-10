@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "description": "EchoMirror SDK social module — global feed, leaderboard, and real-time updates",
+  "description": "EchoMirror SDK social module \u2014 global feed, leaderboard, and real-time updates",
   "publishConfig": {
     "access": "public"
   },
@@ -18,7 +18,11 @@
   "types": "./dist/index.d.ts",
   "type": "commonjs",
   "sideEffects": false,
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "import": {
@@ -32,7 +36,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "build": "node init && tsup src/index.ts --format cjs,esm --dts --clean",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage --passWithNoTests",
     "typecheck": "tsc --noEmit",
