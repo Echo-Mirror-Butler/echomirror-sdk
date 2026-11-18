@@ -1,15 +1,25 @@
 {
   "name": "echomirror-sdk-vscode",
   "displayName": "EchoMirror SDK",
-  "description": "EchoMirror SDK developer tools — Stellar address validation, mood log snippets, blockchain sync explorer, and live ECHO balance in the status bar",
+  "description": "EchoMirror SDK developer tools \u2014 Stellar address validation, mood log snippets, blockchain sync explorer, and live ECHO balance in the status bar",
   "version": "0.1.0",
   "publisher": "EchoMirrorButler",
   "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.88.0"
   },
-  "categories": ["Other", "Snippets", "Debuggers"],
-  "keywords": ["stellar", "blockchain", "wellness", "echomirror", "web3"],
+  "categories": [
+    "Other",
+    "Snippets",
+    "Debuggers"
+  ],
+  "keywords": [
+    "stellar",
+    "blockchain",
+    "wellness",
+    "echomirror",
+    "web3"
+  ],
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -63,7 +73,10 @@
         },
         "echomirror.network": {
           "type": "string",
-          "enum": ["mainnet", "testnet"],
+          "enum": [
+            "mainnet",
+            "testnet"
+          ],
           "default": "testnet",
           "description": "Stellar network to connect to"
         },
@@ -117,7 +130,7 @@
   "scripts": {
     "vscode:prepublish": "npm run esbuild-base -- --minify",
     "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
-    "build": "npm run esbuild-base -- --sourcemap",
+    "build": "node init && npm run esbuild-base -- --sourcemap",
     "watch": "npm run esbuild-base -- --sourcemap --watch",
     "package": "vsce package --no-dependencies",
     "typecheck": "tsc --noEmit",

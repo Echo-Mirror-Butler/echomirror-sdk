@@ -24,10 +24,14 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsc",
+    "build": "node init && tsc",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage --passWithNoTests",
     "typecheck": "tsc --noEmit",

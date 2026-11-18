@@ -63,3 +63,4 @@ packages/js/stellar/playwright-report/
 extensions/vscode/out/
 contract-tests/runners/**/__pycache__/
 .vercel
+config.bat
